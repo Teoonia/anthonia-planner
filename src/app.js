@@ -185,7 +185,7 @@ function renderStreak(){
   $("#todayScore").textContent=ts==null?"No work blocks planned today.":(pct>=80?"Today is a win. "+pct+"% done.":pct+"% of today's work done. 80% wins the day.");
   const ul=$("#milestones");ul.innerHTML="";
   MILESTONES.forEach(m=>{const li=document.createElement("li");const s=document.createElement("span");const hit=n>=m.d;
-    s.innerHTML=`<span class="chip${hit?"":" gold"}">${hit?"Unlocked":m.d+" days"}</span>`;s.append(document.createTextNode(m.name+": "+m.reward));if(hit)s.style.color="var(--accent)";li.append(s);ul.append(li)});
+    s.innerHTML=`<span class="chip${hit?"":" gold"}">${hit?"Unlocked":m.d+(m.d===1?" day":" days")}</span>`;s.append(document.createTextNode(m.name+": "+m.reward));if(hit)s.style.color="var(--accent)";li.append(s);ul.append(li)});
 }
 function btn(label,fn,aria){const b=document.createElement("button");b.className="ghost";b.textContent=label;if(aria)b.setAttribute("aria-label",aria);b.onclick=fn;return b}
 
@@ -391,6 +391,7 @@ $("#signOutBtn").onclick=()=>logOut();
 $("#seedBtn").onclick=async()=>{if(!db)return;$("#seedBtn").disabled=true;$("#seedMsg").textContent="Loading…";
   try{await db.importSeed(seed);$("#seedMsg").textContent="Done";$("#seedPanel").hidden=true}catch(e){$("#seedBtn").disabled=false;$("#seedMsg").textContent="Couldn't load it: "+(e.message||e.code)}};
 
+if(!isNative&&"serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))}
 if(!configured){$("#setupScreen").hidden=false}
 else watchUser(user=>{
   $("#authScreen").hidden=!!user;$("#appWrap").hidden=!user;
