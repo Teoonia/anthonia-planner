@@ -4,7 +4,7 @@ import { app } from "./firebase.js";
 /* Mini Mi: chat partner powered by Gemini through Firebase AI Logic (free tier).
    Turn it on once in Firebase console → Build → AI Logic → Get started → Gemini Developer API. */
 
-const MODELS = ["gemini-flash-latest", "gemini-2.5-flash"];
+const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"];
 export const AREA_IDS = ["gigs", "staff", "targets", "cmax", "website", "school", "life"];
 
 const replySchema = Schema.object({
@@ -56,24 +56,47 @@ ${context}`;
 }
 
 /** history: [{role:"user"|"model", text}] (oldest first). Returns {reply, suggestions}. */
+/* Gemini needs turns to alternate user → model → user, starting with user.
+   Failed answers leave gaps, so merge neighbours with the same role. */
+function cleanHistory(history) {
+  const out = [];
+  for (const m of history) {
+    const text = String(m.text || "").trim();
+    if (!text) continue;
+    const last = out[out.length - 1];
+    if (last && last.role === m.role) last.parts[0].text += "\n" + text;
+    else out.push({ role: m.role, parts: [{ text }] });
+  }
+  while (out.length && out[0].role !== "user") out.shift();
+  if (out.length && out[out.length - 1].role === "user") out.pop(); // the new message is sent separately
+  return out;
+}
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const busy = (e) => /\b(500|502|503|504|429)\b|high demand|overloaded|unavailable|RESOURCE_EXHAUSTED/i.test(String(e?.message));
+const missing = (e) => /not.?found|404|is not supported/i.test(String(e?.message));
+
+/** history: [{role:"user"|"model", text}] (oldest first). Returns {reply, suggestions}. */
 export async function askPartner({ system, history, message }) {
-  const hist = history.map((m) => ({ role: m.role, parts: [{ text: m.text }] }));
+  const hist = cleanHistory(history);
   let lastErr = null;
   for (const model of MODELS) {
-    try {
-      const gm = getGenerativeModel(aiInstance(), {
-        model,
-        systemInstruction: system,
-        generationConfig: { responseMimeType: "application/json", responseSchema: replySchema, temperature: 0.9 }
-      });
-      const r = await gm.startChat({ history: hist }).sendMessage(message);
-      const out = JSON.parse(r.response.text());
-      return { reply: String(out.reply || ""), suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
-    } catch (e) {
-      console.warn("Mini Mi error", e);
-      lastErr = e;
-      if (/not.?found|404|is not supported/i.test(String(e?.message))) continue;
-      break;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const gm = getGenerativeModel(aiInstance(), {
+          model,
+          systemInstruction: system,
+          generationConfig: { responseMimeType: "application/json", responseSchema: replySchema, temperature: 0.9 }
+        });
+        const r = await gm.startChat({ history: hist }).sendMessage(message);
+        const out = JSON.parse(r.response.text());
+        return { reply: String(out.reply || ""), suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
+      } catch (e) {
+        console.warn("Mini Mi error", model, e);
+        lastErr = e;
+        if (missing(e)) break;                          // try the next model
+        if (busy(e)) { if (attempt === 0) { await wait(1500); continue; } break; } // retry once, then next model
+        throw e;                                        // anything else: show it
+      }
     }
   }
   throw lastErr || new Error("Mini Mi couldn't answer");
@@ -84,6 +107,7 @@ export function friendlyError(e) {
   if (/api.?not.?enabled|has not been used|disabled|PERMISSION_DENIED|403/i.test(m))
     return "Mini Mi isn't switched on yet. In Firebase, open Build → AI Logic → Get started → choose the free Gemini Developer API, then try again.";
   if (/quota|429|RESOURCE_EXHAUSTED/i.test(m)) return "Mini Mi is out of free answers for the moment. Try again in a minute.";
+  if (/high demand|overloaded|unavailable|\b50[0-4]\b/i.test(m)) return "Google's servers are busy right now, so Mini Mi can't think straight. Try again in a minute.";
   if (/network|Failed to fetch|offline/i.test(m)) return "No connection right now. Try again when you're online.";
   if (/App Check|401/i.test(m))
     return "Mini Mi is blocked by Firebase's security check (error 401). Full message: " + m.replace(/^.*?\[401[^\]]*\]\s*/, "");
