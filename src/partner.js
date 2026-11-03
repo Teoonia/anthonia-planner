@@ -70,6 +70,7 @@ export async function askPartner({ system, history, message }) {
       const out = JSON.parse(r.response.text());
       return { reply: String(out.reply || ""), suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
     } catch (e) {
+      console.warn("Mini Mi error", e);
       lastErr = e;
       if (/not.?found|404|is not supported/i.test(String(e?.message))) continue;
       break;
@@ -84,5 +85,7 @@ export function friendlyError(e) {
     return "Mini Mi isn't switched on yet. In Firebase, open Build → AI Logic → Get started → choose the free Gemini Developer API, then try again.";
   if (/quota|429|RESOURCE_EXHAUSTED/i.test(m)) return "Mini Mi is out of free answers for the moment. Try again in a minute.";
   if (/network|Failed to fetch|offline/i.test(m)) return "No connection right now. Try again when you're online.";
-  return "Mini Mi couldn't answer: " + m.slice(0, 160);
+  if (/App Check|401/i.test(m))
+    return "Mini Mi is blocked by Firebase's security check (error 401). Full message: " + m.replace(/^.*?\[401[^\]]*\]\s*/, "");
+  return "Mini Mi couldn't answer: " + m;
 }

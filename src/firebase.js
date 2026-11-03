@@ -18,7 +18,12 @@ if (configured) {
   auth = getAuth(app);
   // offline cache: the plan keeps working on the train without signal
   // multi-tab: the installed app window and a browser tab can be open at the same time
-  fs = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  fs = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    // plain HTTPS requests instead of a streaming connection: works through
+    // antivirus, VPNs and campus Wi-Fi that block streaming
+    experimentalForceLongPolling: true
+  });
 }
 
 export function watchUser(cb) {
