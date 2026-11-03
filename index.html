@@ -43,6 +43,7 @@
     <nav class="tabs" aria-label="Views">
       <a href="#today" data-v="today">Today</a>
       <a href="#board" data-v="board">Week board</a>
+      <a href="#partner" data-v="partner">Mini Mi</a>
       <a href="#plan-setup" data-v="plan-setup">Setup</a>
     </nav>
   </header>
@@ -115,6 +116,41 @@
   </section>
 
   <!-- SETUP -->
+  <section id="v-partner" class="view" hidden>
+    <div class="partner">
+      <div class="panel chatbox">
+        <div class="chat-head">
+          <div class="avatar" aria-hidden="true">M</div>
+          <div><h2 id="pName">Mini Mi</h2><span class="empty" id="pSub">Your accountability partner</span></div>
+        </div>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="quick" id="quick">
+          <button data-q="tomorrow">Plan my tomorrow</button>
+          <button data-q="week">Plan next week</button>
+          <button data-q="check">How am I doing?</button>
+          <button data-q="roast">Roast me</button>
+        </div>
+        <form id="chatForm" class="chat-form">
+          <textarea id="chatIn" rows="1" placeholder="Gist with Mini Mi, or tell her what happened today" aria-label="Message Mini Mi"></textarea>
+          <button class="primary" id="chatSend">Send</button>
+        </form>
+      </div>
+      <details class="panel psettings">
+        <summary><h2>Mini Mi's settings</h2></summary>
+        <label for="p-name">Her name<input id="p-name" type="text"></label>
+        <label for="p-banter">How she talks to you
+          <select id="p-banter">
+            <option value="gentle">Gentle: kind, light teasing</option>
+            <option value="cheeky">Cheeky: teases like a close friend</option>
+            <option value="savage">Savage: roasts you, then pushes you</option>
+          </select>
+        </label>
+        <label for="p-about">What she knows about you<textarea id="p-about" rows="9"></textarea></label>
+        <div class="row"><button class="primary" id="pSave">Save</button><button id="pClear" class="ghost">Clear today's chat</button><span class="empty" id="pMsg"></span></div>
+      </details>
+    </div>
+  </section>
+
   <section id="v-plan-setup" class="view" hidden>
     <div style="display:flex;flex-direction:column;gap:18px">
       <div class="panel">

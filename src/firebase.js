@@ -11,7 +11,8 @@ import { firebaseConfig } from "./firebase-config.js";
 
 export const configured = !String(firebaseConfig.apiKey || "").includes("PASTE");
 
-let app = null, auth = null, fs = null;
+export let app = null;
+let auth = null, fs = null;
 if (configured) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);

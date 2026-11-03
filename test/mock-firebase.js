@@ -23,3 +23,4 @@ export function makeDb() {
     importSeed: async () => {}
   };
 }
+export const app = null;
