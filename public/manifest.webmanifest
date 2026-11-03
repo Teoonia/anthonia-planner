@@ -1,0 +1,9 @@
+{
+  "name": "Weekly Board",
+  "short_name": "Weekly Board",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F6F3FA",
+  "theme_color": "#6D3FC0",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

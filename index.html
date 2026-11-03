@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6D3FC0">
+<title>Weekly Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="manifest" href="/manifest.webmanifest">
+</head>
+<body>
+
+
+<section id="authScreen" class="auth" hidden>
+  <form id="authForm" class="auth-card">
+    <h1>Weekly Board</h1>
+    <p class="sub">Sign in to your planner.</p>
+    <label for="a-email">Email<input id="a-email" type="email" autocomplete="email" required></label>
+    <label for="a-pw">Password<input id="a-pw" type="password" autocomplete="current-password" minlength="6" required></label>
+    <div class="row">
+      <button class="primary" id="a-in" type="submit">Sign in</button>
+      <button id="a-up" type="button">Create account</button>
+      <button id="a-reset" type="button" class="ghost">Forgot password</button>
+    </div>
+    <p class="empty" id="a-msg" role="status"></p>
+  </form>
+</section>
+<section id="setupScreen" class="auth" hidden>
+  <div class="auth-card">
+    <h1>Almost there</h1>
+    <p class="sub">This app isn't connected to Firebase yet. Paste your firebaseConfig into <code>src/firebase-config.js</code> and rebuild.</p>
+  </div>
+</section>
+<div class="wrap" id="appWrap" hidden>
+  <header>
+    <div>
+      <h1>Anthonia's Weekly Board</h1>
+      <p class="sub">Classes stay fixed. Everything else flows around them and moves when your day changes.</p>
+    </div>
+    <nav class="tabs" aria-label="Views">
+      <a href="#today" data-v="today">Today</a>
+      <a href="#board" data-v="board">Week board</a>
+      <a href="#plan-setup" data-v="plan-setup">Setup</a>
+    </nav>
+  </header>
+  <div id="note" class="note" hidden></div>
+
+  <!-- TODAY -->
+  <section id="v-today" class="view">
+    <div class="bar-top">
+      <div class="row">
+        <button id="dPrev" aria-label="Previous day">←</button>
+        <span class="datelabel" id="dLabel">Today</span>
+        <button id="dNext" aria-label="Next day">→</button>
+        <button id="dToday">Today</button>
+      </div>
+      <div class="row">
+        <span id="chgLeft" class="chgleft">2 changes left today</span>
+        <button class="primary" id="btnCame">Something came up</button>
+        <button id="btnRestart" title="Re-plan the rest of the day starting now">Re-plan from now</button>
+      </div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="panel" id="seedPanel" hidden>
+      <h2>Welcome to your own app</h2>
+      <p class="empty" style="margin:0">Bring over everything we set up in Claude: your classes, routine, rides, meetings and this week's tasks.</p>
+      <div class="row"><button class="primary" id="seedBtn">Load my plan</button><span class="empty" id="seedMsg"></span></div>
+    </div>
+    <div class="cols">
+      <div class="tl" id="timeline" aria-live="polite"></div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="panel" id="streakPanel"><h2>Win streak</h2>
+          <div class="row" style="align-items:baseline"><span id="streakNum" style="font-family:var(--display);font-size:40px;font-weight:700;line-height:1;color:var(--accent)">0</span><span class="empty" id="streakTxt">days in a row</span></div>
+          <div class="bar"><i id="todayBar" style="width:0%"></i></div>
+          <span class="empty" id="todayScore">Finish 80% of today's work blocks to win the day.</span>
+          <ul class="mini" id="milestones"></ul>
+        </div>
+        <div class="panel"><h2>Didn't fit today</h2><ul class="mini" id="overflow"></ul></div>
+        <div class="panel"><h2>Done today</h2><ul class="mini" id="doneList"></ul></div>
+        <div class="panel"><h2>How it moves</h2>
+          <p class="empty" style="margin:0">Tap <b>Something came up</b> to block out time. Blocks after it shift down. Use ↑ ↓ to swap order, <b>Skip</b> to drop a block for today, or <b>Tomorrow</b> to carry it over. You get <b>2 changes a day</b>, then the plan locks. Real surprises go through <b>Something came up</b>, which does not count. A short break follows each work block, and a longer one follows long blocks. Each block takes the earliest free slot around your classes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOARD -->
+  <section id="v-board" class="view" hidden>
+    <div class="bar-top">
+      <div class="row">
+        <button id="wPrev" aria-label="Previous week">←</button>
+        <span class="datelabel" id="wLabel">This week</span>
+        <button id="wNext" aria-label="Next week">→</button>
+        <button id="wToday">This week</button>
+      </div>
+      <span class="empty">Monthly targets out by the 3rd · reports checked every Monday · review every Sunday</span>
+    </div>
+    <div style="height:14px"></div>
+    <div class="strip" id="strip"></div>
+    <div style="height:14px"></div>
+    <div class="lanes" id="lanes"></div>
+    <div style="height:14px"></div>
+    <div class="panel review">
+      <h2>Sunday review</h2>
+      <div class="grid">
+        <label for="rv-wins">What I completed<textarea id="rv-wins" placeholder="Wins this week, big or small"></textarea></label>
+        <label for="rv-stuck">What's stuck<textarea id="rv-stuck" placeholder="Blockers, waiting on someone, things that slipped"></textarea></label>
+        <label for="rv-next">Next week's top 3<textarea id="rv-next" placeholder="The three things that matter most next week"></textarea></label>
+      </div>
+      <div class="row"><button class="primary" id="saveReview">Save review</button><span class="empty" id="revStatus"></span></div>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="v-plan-setup" class="view" hidden>
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div class="panel">
+        <div class="bar-top"><h2>My classes</h2><button id="addClass">Add a class</button></div>
+        <p class="empty" style="margin:0">Fixed every week. Nothing gets planned on top of these.</p>
+        <div class="tbl"><table><thead><tr><th>Course</th><th>Day</th><th>Start</th><th>End</th><th>Room</th><th></th></tr></thead><tbody id="classRows"></tbody></table></div>
+      </div>
+      <div class="panel">
+        <div class="bar-top"><h2>My routine</h2><button id="addRoutine">Add a block</button></div>
+        <p class="empty" style="margin:0">Flexible blocks. Higher in the list means higher priority: each takes the earliest free slot around classes. "Not before" keeps a block from starting too early, e.g. lunch.</p>
+        <div class="tbl"><table><thead><tr><th>Order</th><th>Block</th><th>Area</th><th>Minutes</th><th>Not before</th><th>Days</th><th></th></tr></thead><tbody id="routineRows"></tbody></table></div>
+      </div>
+      <div class="panel" id="phonePanel" hidden>
+        <h2>Phone alerts</h2>
+        <p class="empty" style="margin:0">Turn each of these on once. Samsung phones also need the app set to "Unrestricted" battery use, or alerts can arrive late.</p>
+        <ul class="mini" id="phoneList"></ul>
+        <div class="row"><button class="primary" id="testAlertBtn">Send a test alert</button></div>
+      </div>
+      <div class="panel">
+        <h2>Account</h2>
+        <div class="row"><span class="empty" id="whoami"></span><button id="signOutBtn">Sign out</button></div>
+      </div>
+      <div class="panel">
+        <h2>Day rules</h2>
+        <div class="settings">
+          <label for="s-wake">Day starts<input type="time" id="s-wake"></label>
+          <label for="s-sleep">Day ends<input type="time" id="s-sleep"></label>
+          <label for="s-short">Short break (min)<input type="number" id="s-short" min="0" max="60"></label>
+          <label for="s-long">Long break (min)<input type="number" id="s-long" min="0" max="120"></label>
+          <label for="s-after">Long break after blocks of (min)<input type="number" id="s-after" min="30" max="300"></label>
+          <label for="s-commute">Ride time, bus/train (min)<input type="number" id="s-commute" min="0" max="180"></label>
+          <label for="s-walkwait">Walk + wait at the stop (min)<input type="number" id="s-walkwait" min="0" max="120"></label>
+          <label for="s-early">Arrive before class (min)<input type="number" id="s-early" min="0" max="60"></label>
+          <label for="s-afterclass">After class, before leaving (min)<input type="number" id="s-afterclass" min="0" max="120"></label>
+        </div>
+        <div class="row"><button class="primary" id="saveSettings">Save rules</button><span class="empty" id="setStatus"></span></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="takeover" class="takeover" role="alertdialog" aria-modal="true" aria-labelledby="toTitle" hidden>
+  <div class="to-inner">
+    <span class="to-eyebrow" id="toWhen">Starting now</span>
+    <h2 id="toTitle">Block</h2>
+    <p id="toTime" class="to-time"></p>
+    <div class="to-next"><span class="to-eyebrow">Up next</span><ol id="toNext"></ol></div>
+    <button id="toClose" class="to-btn">Got it, let's go</button>
+  </div>
+</div>
+<button id="pill" class="pill" hidden aria-label="Show what's on now"><span class="pill-dot"></span><span id="pillTxt"></span></button>
+<dialog id="dlgCame">
+  <form method="dialog" id="formCame">
+    <h2>Something came up</h2>
+    <label for="c-title">What is it?<input id="c-title" required placeholder="e.g. Call with GMD, bank appointment"></label>
+    <div class="row">
+      <label for="c-start" style="flex:1">Starts<input type="time" id="c-start" required></label>
+      <label for="c-mins" style="flex:1">Minutes<input type="number" id="c-mins" min="5" step="5" value="60" required></label>
+    </div>
+    <div class="row"><button class="primary" value="ok">Block it out</button><button value="cancel" formnovalidate>Cancel</button></div>
+  </form>
+</dialog>
+
+
+<script type="module" src="/src/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,594 @@
+{
+ "tasks": {
+  "seed-w45-5": {
+   "area": "school",
+   "createdAt": 1793700005000,
+   "status": "todo",
+   "title": "Get the full UNIVPM timetable and add class times to the calendar",
+   "week": "2026-W45"
+  },
+  "seed-w45-3": {
+   "area": "website",
+   "createdAt": 1793700003000,
+   "status": "todo",
+   "title": "Pick up the AGN website build and set this week's next step",
+   "week": "2026-W45"
+  },
+  "seed-w45-2": {
+   "area": "staff",
+   "createdAt": 1793700002000,
+   "status": "todo",
+   "title": "Check each new staff member knows their role and can work on their own",
+   "week": "2026-W45"
+  },
+  "seed-w45-1": {
+   "area": "staff",
+   "createdAt": 1793700001000,
+   "doneAt": null,
+   "status": "todo",
+   "title": "Confirm working terms are agreed and signed for each new staff member",
+   "week": "2026-W45"
+  },
+  "seed-w45-4": {
+   "area": "gigs",
+   "createdAt": 1793700004000,
+   "status": "todo",
+   "title": "Shortlist 3 places to find paid website gigs",
+   "week": "2026-W45"
+  }
+ },
+ "routine": {
+  "v2-s60": {
+   "area": "fun",
+   "days": [
+    5
+   ],
+   "mins": 120,
+   "notBefore": "16:00",
+   "order": 260,
+   "title": "Try something new (reward time)"
+  },
+  "v2-u30": {
+   "area": "targets",
+   "days": [
+    6
+   ],
+   "mins": 30,
+   "notBefore": "18:30",
+   "order": 340,
+   "title": "Weekly review and plan next week"
+  },
+  "v2-r10": {
+   "area": "life",
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "mins": 60,
+   "notBefore": "06:00",
+   "order": 10,
+   "title": "Body care and get ready for the day"
+  },
+  "v2-r90": {
+   "area": "meal",
+   "days": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "mins": 60,
+   "notBefore": "19:00",
+   "order": 70,
+   "title": "Dinner"
+  },
+  "v2-r30b": {
+   "area": "staff",
+   "days": [
+    4
+   ],
+   "mins": 30,
+   "notBefore": "16:00",
+   "order": 35,
+   "title": "AGN staff check-in calls"
+  },
+  "v2-r30": {
+   "area": "staff",
+   "days": [
+    0,
+    1,
+    3
+   ],
+   "mins": 20,
+   "notBefore": "13:30",
+   "order": 110,
+   "title": "AGN staff check-in call (lunch break)"
+  },
+  "v2-s40": {
+   "area": "life",
+   "days": [
+    5
+   ],
+   "mins": 90,
+   "notBefore": "",
+   "order": 290,
+   "title": "Shopping and errands"
+  },
+  "v2-r50": {
+   "area": "targets",
+   "days": [
+    0,
+    2
+   ],
+   "mins": 45,
+   "notBefore": "13:00",
+   "order": 180,
+   "title": "AGN messages and reports"
+  },
+  "v2-r80": {
+   "area": "rest",
+   "days": [
+    2
+   ],
+   "mins": 30,
+   "notBefore": "16:00",
+   "order": 210,
+   "title": "Walk and fresh air"
+  },
+  "v2-r35": {
+   "area": "staff",
+   "days": [
+    2
+   ],
+   "mins": 90,
+   "notBefore": "10:00",
+   "order": 130,
+   "title": "Weekly check-in calls with each team"
+  },
+  "v2-u10": {
+   "area": "rest",
+   "days": [
+    6
+   ],
+   "mins": 180,
+   "notBefore": "06:45",
+   "order": 320,
+   "title": "Rest and a slow morning"
+  },
+  "v2-r10w": {
+   "area": "life",
+   "days": [
+    5,
+    6
+   ],
+   "mins": 45,
+   "notBefore": "06:00",
+   "order": 20,
+   "title": "Morning routine"
+  },
+  "v2-r60": {
+   "area": "school",
+   "days": [
+    3
+   ],
+   "mins": 60,
+   "notBefore": "",
+   "order": 170,
+   "title": "Study and readings"
+  },
+  "v2-rdw": {
+   "area": "read",
+   "days": [
+    5,
+    6
+   ],
+   "mins": 15,
+   "notBefore": "09:00",
+   "order": 250,
+   "title": "Motivational reading with coffee"
+  },
+  "v2-r40f": {
+   "area": "meal",
+   "days": [
+    4
+   ],
+   "mins": 30,
+   "notBefore": "12:30",
+   "order": 40,
+   "title": "Lunch (late, after the ride home)"
+  },
+  "v2-u20": {
+   "area": "rest",
+   "days": [
+    6
+   ],
+   "mins": 60,
+   "notBefore": "15:00",
+   "order": 330,
+   "title": "Call home and family time"
+  },
+  "v2-r70": {
+   "area": "website",
+   "days": [
+    2
+   ],
+   "mins": 90,
+   "notBefore": "",
+   "order": 190,
+   "title": "AGN website: round-up work"
+  },
+  "v2-r100": {
+   "area": "staff",
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "mins": 30,
+   "notBefore": "20:00",
+   "order": 100,
+   "title": "Evening AGN check"
+  },
+  "v2-r40b": {
+   "area": "meal",
+   "days": [
+    2
+   ],
+   "mins": 45,
+   "notBefore": "12:30",
+   "order": 60,
+   "title": "Lunch"
+  },
+  "v2-s20": {
+   "area": "gigs",
+   "days": [
+    5
+   ],
+   "mins": 120,
+   "notBefore": "08:30",
+   "order": 280,
+   "title": "Online gigs: polish portfolio and apply"
+  },
+  "v2-r30w": {
+   "area": "staff",
+   "days": [
+    2
+   ],
+   "mins": 30,
+   "notBefore": "09:00",
+   "order": 120,
+   "title": "AGN staff check-in calls"
+  },
+  "v2-mv1": {
+   "area": "fun",
+   "days": [
+    5
+   ],
+   "mins": 120,
+   "notBefore": "20:30",
+   "order": 270,
+   "title": "Movie night"
+  },
+  "v2-rd": {
+   "area": "read",
+   "days": [
+    2
+   ],
+   "mins": 15,
+   "notBefore": "08:15",
+   "order": 150,
+   "title": "Motivational reading"
+  },
+  "v2-s45": {
+   "area": "website",
+   "days": [
+    5
+   ],
+   "mins": 90,
+   "notBefore": "",
+   "order": 300,
+   "title": "AGN website: round-up work"
+  },
+  "v2-r61": {
+   "area": "school",
+   "days": [
+    2
+   ],
+   "mins": 90,
+   "notBefore": "",
+   "order": 200,
+   "title": "Deep study: notes and assignments"
+  },
+  "v2-mv2": {
+   "area": "fun",
+   "days": [
+    6
+   ],
+   "mins": 150,
+   "notBefore": "16:00",
+   "order": 310,
+   "title": "Movie afternoon"
+  },
+  "v2-r90f": {
+   "area": "meal",
+   "days": [
+    4
+   ],
+   "mins": 60,
+   "notBefore": "19:30",
+   "order": 80,
+   "title": "Dinner"
+  },
+  "v2-r120": {
+   "area": "rest",
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "mins": 30,
+   "notBefore": "22:30",
+   "order": 90,
+   "title": "Plan tomorrow and wind down"
+  },
+  "v2-r40": {
+   "area": "meal",
+   "days": [
+    0,
+    1,
+    3
+   ],
+   "mins": 30,
+   "notBefore": "12:30",
+   "order": 30,
+   "title": "Lunch"
+  },
+  "v2-s70": {
+   "area": "meal",
+   "days": [
+    5,
+    6
+   ],
+   "mins": 60,
+   "notBefore": "19:30",
+   "order": 240,
+   "title": "Dinner"
+  },
+  "v2-s30": {
+   "area": "meal",
+   "days": [
+    5,
+    6
+   ],
+   "mins": 60,
+   "notBefore": "13:00",
+   "order": 230,
+   "title": "Lunch"
+  },
+  "v2-cx": {
+   "area": "cmax",
+   "days": [
+    2,
+    4
+   ],
+   "mins": 120,
+   "notBefore": "",
+   "order": 140,
+   "title": "CMAX: design updates, then send to the team"
+  },
+  "v2-r20": {
+   "area": "gigs",
+   "days": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "mins": 50,
+   "notBefore": "07:00",
+   "order": 160,
+   "title": "Online gigs: find and apply"
+  },
+  "v2-s10": {
+   "area": "rest",
+   "days": [
+    5
+   ],
+   "mins": 90,
+   "notBefore": "06:45",
+   "order": 220,
+   "title": "Slow morning"
+  }
+ },
+ "days": {
+  "2027-02-03": {
+   "date": "2027-02-03",
+   "events": [
+    {
+     "id": "mtg-2027-02",
+     "mins": 90,
+     "start": "15:00",
+     "title": "AGN monthly staff meeting"
+    }
+   ]
+  },
+  "2026-12-04": {
+   "date": "2026-12-04",
+   "events": []
+  },
+  "2026-12-02": {
+   "date": "2026-12-02",
+   "events": [
+    {
+     "id": "mtg-2026-12",
+     "mins": 90,
+     "start": "15:00",
+     "title": "AGN monthly staff meeting"
+    }
+   ]
+  },
+  "2027-01-08": {
+   "date": "2027-01-08",
+   "events": []
+  },
+  "2026-11-03": {
+   "date": "2026-11-03",
+   "done": [
+    "v2-r10"
+   ],
+   "from": 895,
+   "order": [
+    "v2-r40",
+    "v2-r90",
+    "v2-r10",
+    "v2-r120",
+    "v2-r100",
+    "v2-r30",
+    "v2-r20"
+   ],
+   "updatedAt": 1793713888876
+  },
+  "2026-11-04": {
+   "date": "2026-11-04",
+   "events": [
+    {
+     "id": "mtg-2026-11",
+     "mins": 90,
+     "start": "15:00",
+     "title": "AGN monthly staff meeting"
+    }
+   ]
+  },
+  "2027-02-05": {
+   "date": "2027-02-05",
+   "events": []
+  },
+  "2027-01-06": {
+   "date": "2027-01-06",
+   "events": [
+    {
+     "id": "mtg-2027-01",
+     "mins": 90,
+     "start": "15:00",
+     "title": "AGN monthly staff meeting"
+    }
+   ]
+  }
+ },
+ "settings": {
+  "main": {
+   "after": 90,
+   "afterclass": 20,
+   "commute": 45,
+   "early": 15,
+   "long": 20,
+   "short": 10,
+   "sleep": "23:00",
+   "wake": "06:00",
+   "walkwait": 25
+  }
+ },
+ "classes": {
+  "chem-mon": {
+   "day": 0,
+   "end": "17:30",
+   "room": "B12",
+   "start": "14:30",
+   "title": "Chemical and Industrial Risk"
+  },
+  "ren-fri": {
+   "day": 4,
+   "end": "10:30",
+   "room": "B12",
+   "start": "08:30",
+   "title": "Renewables and Innovative Energy Systems"
+  },
+  "es-mon": {
+   "day": 0,
+   "end": "13:30",
+   "room": "B12",
+   "start": "11:30",
+   "title": "Environmental Sustainability"
+  },
+  "es-tue": {
+   "day": 1,
+   "end": "16:30",
+   "room": "S6",
+   "start": "14:30",
+   "title": "Environmental Sustainability"
+  },
+  "bio-mon": {
+   "day": 0,
+   "end": "11:30",
+   "room": "B12",
+   "start": "08:30",
+   "title": "Biological and Ecological Risk"
+  },
+  "clim-tue": {
+   "day": 1,
+   "end": "18:30",
+   "room": "S6",
+   "start": "16:30",
+   "title": "Climatic Risk"
+  },
+  "clim-thu": {
+   "day": 3,
+   "end": "13:30",
+   "room": "B12",
+   "start": "11:30",
+   "title": "Climatic Risk"
+  },
+  "bio-tue": {
+   "day": 1,
+   "end": "13:30",
+   "room": "B12",
+   "start": "10:30",
+   "title": "Biological and Ecological Risk"
+  },
+  "geo-fri": {
+   "day": 4,
+   "end": "12:30",
+   "room": "B12",
+   "start": "10:30",
+   "title": "Geological Risk"
+  },
+  "chem-thu": {
+   "day": 3,
+   "end": "17:30",
+   "room": "B12",
+   "start": "14:30",
+   "title": "Chemical and Industrial Risk"
+  },
+  "eq-fri": {
+   "day": 4,
+   "end": "14:30",
+   "room": "B12",
+   "start": "12:30",
+   "title": "Earthquake Risk Mitigation"
+  },
+  "ren-tue": {
+   "day": 1,
+   "end": "10:30",
+   "room": "B12",
+   "start": "08:30",
+   "title": "Renewables and Innovative Energy Systems"
+  },
+  "geo-thu": {
+   "day": 3,
+   "end": "11:30",
+   "room": "B12",
+   "start": "09:30",
+   "title": "Geological Risk"
+  }
+ }
+}

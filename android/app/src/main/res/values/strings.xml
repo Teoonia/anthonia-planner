@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Weekly Board</string>
+    <string name="title_activity_main">Weekly Board</string>
+    <string name="package_name">com.anthonia.planner</string>
+    <string name="custom_url_scheme">com.anthonia.planner</string>
+    <string name="widget_description">What\'s on now and your next 3 tasks</string>
+</resources>
