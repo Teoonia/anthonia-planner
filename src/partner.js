@@ -4,7 +4,8 @@ import { app } from "./firebase.js";
 /* Mini Mi: chat partner powered by Gemini through Firebase AI Logic (free tier).
    Turn it on once in Firebase console → Build → AI Logic → Get started → Gemini Developer API. */
 
-const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"];
+// Fast "lite" models first (no thinking step, quick replies); bigger ones only as backup
+const MODELS = ["gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
 export const AREA_IDS = ["gigs", "staff", "targets", "cmax", "website", "school", "life"];
 
 const replySchema = Schema.object({
@@ -85,8 +86,8 @@ export async function askPartner({ system, history, message }) {
         const gm = getGenerativeModel(aiInstance(), {
           model,
           systemInstruction: system,
-          generationConfig: { responseMimeType: "application/json", responseSchema: replySchema, temperature: 0.9 }
-        });
+          generationConfig: { responseMimeType: "application/json", responseSchema: replySchema, temperature: 0.9, maxOutputTokens: 900 }
+        }, { timeout: 25000 });
         const r = await gm.startChat({ history: hist }).sendMessage(message);
         const out = JSON.parse(r.response.text());
         return { reply: String(out.reply || ""), suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
@@ -94,7 +95,7 @@ export async function askPartner({ system, history, message }) {
         console.warn("Mini Mi error", model, e);
         lastErr = e;
         if (missing(e)) break;                          // try the next model
-        if (busy(e)) { if (attempt === 0) { await wait(1500); continue; } break; } // retry once, then next model
+        if (busy(e) || /timeout|abort/i.test(String(e?.message))) { if (attempt === 0 && busy(e)) { await wait(800); continue; } break; } // retry once, then next model
         throw e;                                        // anything else: show it
       }
     }

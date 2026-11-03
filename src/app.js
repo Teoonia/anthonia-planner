@@ -485,7 +485,7 @@ const QUICK={
 async function sendToPartner(text){
   text=(text||"").trim();if(!text||chatBusy||!db)return;
   chatBusy=true;const tk=todayKey();
-  const prev=allMessages().slice(-16).map(m=>({role:m.role==="me"?"user":"model",text:m.role==="me"?m.text:JSON.stringify({reply:m.text,suggestions:[]})}));
+  const prev=allMessages().filter(m=>!m.error).slice(-10).map(m=>({role:m.role==="me"?"user":"model",text:m.role==="me"?m.text:JSON.stringify({reply:m.text,suggestions:[]})}));
   const msgs=[...((chatDays[tk]||{}).messages||[]),{role:"me",text,ts:Date.now()}];
   chatDays[tk]={...(chatDays[tk]||{}),messages:msgs};renderPartner(true);
   await safe(db.collection("chat").doc(tk).set({date:tk,messages:msgs}),"save your message");
