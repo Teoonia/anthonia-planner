@@ -127,6 +127,11 @@
         <p class="empty" style="margin:0">Flexible blocks. Higher in the list means higher priority: each takes the earliest free slot around classes. "Not before" keeps a block from starting too early, e.g. lunch.</p>
         <div class="tbl"><table><thead><tr><th>Order</th><th>Block</th><th>Area</th><th>Minutes</th><th>Not before</th><th>Days</th><th></th></tr></thead><tbody id="routineRows"></tbody></table></div>
       </div>
+      <div class="panel" id="laptopPanel" hidden>
+        <h2>Computer notifications</h2>
+        <p class="empty" style="margin:0">A pop-up in the corner of your screen when each block starts, even with Weekly Board minimized. Keep the app running in the background (don't close its window).</p>
+        <div class="row"><span id="laptopState" class="empty"></span><button class="primary" id="laptopOn">Turn on notifications</button><button id="laptopTest">Send a test</button></div>
+      </div>
       <div class="panel" id="phonePanel" hidden>
         <h2>Phone alerts</h2>
         <p class="empty" style="margin:0">Turn each of these on once. Samsung phones also need the app set to "Unrestricted" battery use, or alerts can arrive late.</p>

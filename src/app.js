@@ -337,12 +337,32 @@ function checkAlert(){
   if(!loaded||isNative)return;
   const {cur,next}=nowAndNext();
   const k=cur?dkey(dayDate(0))+"|"+cur.s+"|"+cur.title:null;
-  if(k&&k!==lastAlert&&document.visibilityState==="visible"){
+  if(k&&k!==lastAlert){
     lastAlert=k;try{localStorage.setItem("lastAlert",k)}catch(e){}
-    showTakeover(cur,next);try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+    systemNotify(cur,next);
+    if(document.visibilityState==="visible")showTakeover(cur,next);
   }
   updatePill(cur,next);
 }
+/* laptop notifications (Windows/Mac corner pop-ups) while the app is running */
+const canNotify=()=>!isNative&&"Notification" in window;
+async function systemNotify(cur,next){
+  if(!canNotify()||Notification.permission!=="granted")return;
+  const body=toHM(cur.s)+" – "+toHM(cur.e)+(cur.meta?"\n"+cur.meta:"")+(next.length?"\nNext: "+next.map(x=>toHM(x.s)+" "+x.title).join(" · "):"");
+  const opts={body,tag:"weekly-board-block",renotify:true,requireInteraction:true,icon:"/icon-192.png",badge:"/icon-192.png"};
+  try{const reg=await navigator.serviceWorker?.getRegistration();if(reg){await reg.showNotification(cur.title,opts);return}}catch(e){}
+  try{new Notification(cur.title,opts)}catch(e){}
+}
+function renderLaptop(){
+  if(!canNotify())return;
+  $("#laptopPanel").hidden=false;
+  const p=Notification.permission;
+  $("#laptopState").textContent=p==="granted"?"✓ Notifications are on":p==="denied"?"Notifications are blocked. Allow them in the browser's site settings (the icon left of the address).":"○ Notifications are off";
+  $("#laptopOn").hidden=p!=="default";$("#laptopTest").hidden=p!=="granted";
+}
+$("#laptopOn").onclick=async()=>{try{await Notification.requestPermission()}catch(e){}renderLaptop()};
+$("#laptopTest").onclick=()=>{const n=nowMin();systemNotify({title:"This is how your alerts will look",s:n,e:n+30,meta:""},[])};
+renderLaptop();
 $("#toClose").onclick=()=>{$("#takeover").hidden=true;const {cur,next}=nowAndNext();updatePill(cur,next)};
 $("#pill").onclick=()=>{const {cur,next}=nowAndNext();showTakeover(cur,next)};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#takeover").hidden)$("#toClose").click()});
