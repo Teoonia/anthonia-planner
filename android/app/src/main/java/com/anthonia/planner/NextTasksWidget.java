@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.view.View;
 import android.widget.RemoteViews;
 
@@ -22,6 +23,11 @@ public class NextTasksWidget extends AppWidgetProvider {
         for (int id : ids) update(context, manager, id);
     }
 
+    @Override
+    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager, int id, Bundle newOptions) {
+        update(context, manager, id);
+    }
+
     static void refreshAll(Context c) {
         AppWidgetManager m = AppWidgetManager.getInstance(c);
         if (m == null) return;
@@ -31,6 +37,10 @@ public class NextTasksWidget extends AppWidgetProvider {
 
     static void update(Context c, AppWidgetManager m, int id) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_next);
+        // how tall the widget is right now decides how many rows fit
+        int h = m.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110);
+        int maxRows = h < 75 ? 1 : h < 110 ? 2 : 3;
+        v.setViewVisibility(R.id.w_head, h < 75 ? View.GONE : View.VISIBLE);
         JSONArray arr = Planner.items(c);
         long now = System.currentTimeMillis();
         JSONObject cur = Planner.current(arr, now);
@@ -41,7 +51,7 @@ public class NextTasksWidget extends AppWidgetProvider {
                 : "Nothing on right now");
         int[] rows = {R.id.w_1, R.id.w_2, R.id.w_3};
         for (int k = 0; k < rows.length; k++) {
-            if (k < nx.size()) {
+            if (k < nx.size() && k < maxRows) {
                 JSONObject o = nx.get(k);
                 v.setTextViewText(rows[k], Planner.hm(o.optLong("start")) + "   " + o.optString("title"));
                 v.setViewVisibility(rows[k], View.VISIBLE);
