@@ -2,7 +2,7 @@ import "./style.css";
 import seed from "./seed.json";
 import { configured, watchUser, signIn, signUp, resetPassword, logOut, makeDb } from "./firebase.js";
 import { askPartner, systemPrompt, friendlyError } from "./partner.js";
-import { isNative, syncSchedule, alertStatus, askNotifications, openPhoneSetting, testAlert } from "./native.js";
+import { isNative, syncSchedule, alertStatus, askNotifications, openPhoneSetting, testAlert, setBubble } from "./native.js";
 
 
 const AREAS=[
@@ -432,12 +432,15 @@ async function renderPhone(){
     ["exact","Alerts on the exact minute",()=>openPhoneSetting("exact")],
     ["fullScreen","Full-screen alerts when the phone is locked",()=>openPhoneSetting("fullScreen")],
     ["overlay","Full-screen alerts while you're using the phone",()=>openPhoneSetting("overlay")],
-    ["battery","Unrestricted battery (Samsung)",()=>openPhoneSetting("battery")]
+    ["battery","Unrestricted battery (Samsung)",()=>openPhoneSetting("battery")],
+    ["bubble","Floating ball on screen (shows now and next over any app)",()=>setBubble(true).then(()=>setTimeout(renderPhone,800))]
   ];
   const ul=$("#phoneList");ul.innerHTML="";
   rows.forEach(([k,label,fn])=>{const li=document.createElement("li");const s=document.createElement("span");
     const on=k==="battery"?st.battery:st[k];s.textContent=(on?"✓ ":"○ ")+label;if(on)s.style.color="var(--accent)";
-    li.append(s);if(!on)li.append(btn("Turn on",fn,"Turn on "+label));ul.append(li)});
+    li.append(s);if(!on)li.append(btn("Turn on",fn,"Turn on "+label));
+    else if(k==="bubble")li.append(btn("Turn off",()=>setBubble(false).then(()=>setTimeout(renderPhone,500)),"Turn off the floating ball"));
+    ul.append(li)});
 }
 $("#testAlertBtn").onclick=()=>testAlert();
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")renderPhone()});

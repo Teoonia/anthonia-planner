@@ -11,5 +11,6 @@ public class BootReceiver extends BroadcastReceiver {
         Planner.schedule(context);
         Planner.updateOngoing(context);
         NextTasksWidget.refreshAll(context);
+        BubbleService.start(context);
     }
 }

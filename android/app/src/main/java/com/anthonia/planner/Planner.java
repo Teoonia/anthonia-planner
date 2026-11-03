@@ -220,42 +220,56 @@ public final class Planner {
         NextTasksWidget.refreshAll(c);
     }
 
-    /** The pinned "Now / Next" notification that stays after the alert is closed. */
-    static void updateOngoing(Context c) {
+    /** The pinned "Now / Next" notification that stays after the alert is closed.
+     *  Returns null when there's nothing left today (unless the floating ball needs it). */
+    static android.app.Notification buildOngoing(Context c, boolean always) {
         ensureChannels(c);
         JSONArray arr = items(c);
         long now = System.currentTimeMillis();
         JSONObject cur = current(arr, now);
         List<JSONObject> nx = upcoming(arr, now, 3);
-        NotificationManagerCompat nm = NotificationManagerCompat.from(c);
+        String title, body, shortText;
         if (cur == null && nx.isEmpty()) {
-            nm.cancel(NOTIF_NOW);
-            return;
-        }
-        String title;
-        List<JSONObject> rest;
-        if (cur != null) {
-            title = "Now: " + cur.optString("title") + " · until " + hm(cur.optLong("end"));
-            rest = nx;
+            if (!always) return null;
+            title = "All done for today";
+            body = "Your floating reminder is on";
+            shortText = body;
         } else {
-            title = "Next " + hm(nx.get(0).optLong("start")) + ": " + nx.get(0).optString("title");
-            rest = nx.subList(1, nx.size());
+            List<JSONObject> rest;
+            if (cur != null) {
+                title = "Now: " + cur.optString("title") + " · until " + hm(cur.optLong("end"));
+                rest = nx;
+            } else {
+                title = "Next " + hm(nx.get(0).optLong("start")) + ": " + nx.get(0).optString("title");
+                rest = nx.subList(1, nx.size());
+            }
+            String lines = nextLines(rest);
+            body = lines.isEmpty() ? "Last one for today" : "Then:\n" + lines;
+            shortText = lines.isEmpty() ? "Last one for today" : "Then " + lines.split("\n")[0];
         }
-        String lines = nextLines(rest);
-        NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_NOW)
+        return new NotificationCompat.Builder(c, CH_NOW)
                 .setSmallIcon(R.drawable.ic_stat_planner)
                 .setColor(PURPLE)
                 .setContentTitle(title)
-                .setContentText(lines.isEmpty() ? "Last one for today" : "Then " + lines.split("\n")[0])
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(lines.isEmpty() ? "Last one for today" : "Then:\n" + lines))
+                .setContentText(shortText)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setSilent(true)
                 .setShowWhen(false)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
-                .setContentIntent(openApp(c, 8));
+                .setContentIntent(openApp(c, 8))
+                .build();
+    }
+
+    static void updateOngoing(Context c) {
+        boolean bubble = BubbleService.isEnabled(c);
+        android.app.Notification n = buildOngoing(c, bubble);
+        NotificationManagerCompat nm = NotificationManagerCompat.from(c);
         try {
-            if (canPost(c)) nm.notify(NOTIF_NOW, b.build());
+            if (n == null) nm.cancel(NOTIF_NOW);
+            else if (canPost(c)) nm.notify(NOTIF_NOW, n);
         } catch (SecurityException ignored) { }
+        BubbleService.refresh(c);
     }
 }

@@ -52,6 +52,8 @@ public class PlannerBridgePlugin extends Plugin {
         r.put("overlay", Settings.canDrawOverlays(c));
         r.put("exact", Build.VERSION.SDK_INT < 31 || (am != null && am.canScheduleExactAlarms()));
         r.put("battery", pm != null && pm.isIgnoringBatteryOptimizations(c.getPackageName()));
+        r.put("bubble", BubbleService.isEnabled(c) && Settings.canDrawOverlays(c));
+        BubbleService.start(c); // turns the ball on after the "Appear on top" permission is granted
         call.resolve(r);
     }
 
@@ -102,6 +104,22 @@ public class PlannerBridgePlugin extends Plugin {
             Intent f = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             c.startActivity(f);
         }
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setBubble(PluginCall call) {
+        Context c = getContext();
+        boolean on = Boolean.TRUE.equals(call.getBoolean("enabled", true));
+        if (on && !Settings.canDrawOverlays(c)) {
+            Planner.prefs(c).edit().putBoolean("bubble", true).apply();
+            Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + c.getPackageName()))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            c.startActivity(i);
+            call.resolve();
+            return;
+        }
+        BubbleService.setEnabled(c, on);
         call.resolve();
     }
 

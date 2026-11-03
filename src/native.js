@@ -26,3 +26,4 @@ export async function alertStatus() {
 export async function askNotifications() { if (isNative) await Bridge.requestNotifications(); }
 export async function openPhoneSetting(which) { if (isNative) await Bridge.openSettings({ which }); }
 export async function testAlert() { if (isNative) await Bridge.testAlert(); }
+export async function setBubble(enabled) { if (isNative) await Bridge.setBubble({ enabled }); }
