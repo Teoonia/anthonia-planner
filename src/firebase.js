@@ -4,7 +4,7 @@ import {
   createUserWithEmailAndPassword, sendPasswordResetEmail, signOut
 } from "firebase/auth";
 import {
-  initializeFirestore, persistentLocalCache, collection, doc, onSnapshot,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot,
   addDoc, setDoc, updateDoc, deleteDoc, writeBatch
 } from "firebase/firestore";
 import { firebaseConfig } from "./firebase-config.js";
@@ -17,7 +17,8 @@ if (configured) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   // offline cache: the plan keeps working on the train without signal
-  fs = initializeFirestore(app, { localCache: persistentLocalCache() });
+  // multi-tab: the installed app window and a browser tab can be open at the same time
+  fs = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
 }
 
 export function watchUser(cb) {
