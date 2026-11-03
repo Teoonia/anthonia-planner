@@ -1,5 +1,10 @@
 {
   "appId": "com.anthonia.planner",
   "appName": "Weekly Board",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "url": "https://anthonia-board.netlify.app",
+    "androidScheme": "https",
+    "cleartext": false
+  }
 }

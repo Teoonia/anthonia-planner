@@ -414,7 +414,7 @@ $("#signOutBtn").onclick=()=>logOut();
 $("#seedBtn").onclick=async()=>{if(!db)return;$("#seedBtn").disabled=true;$("#seedMsg").textContent="Loading…";
   try{await db.importSeed(seed);$("#seedMsg").textContent="Done";$("#seedPanel").hidden=true}catch(e){$("#seedBtn").disabled=false;$("#seedMsg").textContent="Couldn't load it: "+(e.message||e.code)}};
 
-if(!isNative&&"serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))}
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("/sw.js").catch(()=>{}))}
 if(!configured){$("#setupScreen").hidden=false}
 else watchUser(user=>{
   $("#authScreen").hidden=!!user;$("#appWrap").hidden=!user;
