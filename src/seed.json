@@ -495,100 +495,87 @@
    "short": 10,
    "sleep": "23:00",
    "wake": "06:00",
-   "walkwait": 25
+   "walkwait": 25,
+   "timetableVersion": "2026-11-09"
   }
  },
  "classes": {
-  "chem-mon": {
+  "bio-mon": {
+   "title": "Biological and Ecological Risk",
    "day": 0,
-   "end": "17:30",
-   "room": "B12",
-   "start": "14:30",
-   "title": "Chemical and Industrial Risk"
-  },
-  "ren-fri": {
-   "day": 4,
-   "end": "10:30",
-   "room": "B12",
    "start": "08:30",
-   "title": "Renewables and Innovative Energy Systems"
+   "end": "11:30",
+   "room": "B12"
   },
   "es-mon": {
+   "title": "Environmental Sustainability",
    "day": 0,
-   "end": "13:30",
-   "room": "B12",
    "start": "11:30",
-   "title": "Environmental Sustainability"
+   "end": "13:30",
+   "room": "B12"
   },
-  "es-tue": {
-   "day": 1,
-   "end": "16:30",
-   "room": "S6",
+  "chem-mon": {
+   "title": "Chemical and Industrial Risk",
+   "day": 0,
    "start": "14:30",
-   "title": "Environmental Sustainability"
-  },
-  "bio-mon": {
-   "day": 0,
-   "end": "11:30",
-   "room": "B12",
-   "start": "08:30",
-   "title": "Biological and Ecological Risk"
-  },
-  "clim-tue": {
-   "day": 1,
-   "end": "18:30",
-   "room": "S6",
-   "start": "16:30",
-   "title": "Climatic Risk"
-  },
-  "clim-thu": {
-   "day": 3,
-   "end": "13:30",
-   "room": "B12",
-   "start": "11:30",
-   "title": "Climatic Risk"
-  },
-  "bio-tue": {
-   "day": 1,
-   "end": "13:30",
-   "room": "B12",
-   "start": "10:30",
-   "title": "Biological and Ecological Risk"
-  },
-  "geo-fri": {
-   "day": 4,
-   "end": "12:30",
-   "room": "B12",
-   "start": "10:30",
-   "title": "Geological Risk"
-  },
-  "chem-thu": {
-   "day": 3,
    "end": "17:30",
-   "room": "B12",
-   "start": "14:30",
-   "title": "Chemical and Industrial Risk"
-  },
-  "eq-fri": {
-   "day": 4,
-   "end": "14:30",
-   "room": "B12",
-   "start": "12:30",
-   "title": "Earthquake Risk Mitigation"
+   "room": "Aula Azzurra (Scienze 3)"
   },
   "ren-tue": {
+   "title": "Renewables and Innovative Energy Systems",
    "day": 1,
-   "end": "10:30",
-   "room": "B12",
    "start": "08:30",
-   "title": "Renewables and Innovative Energy Systems"
+   "end": "10:30",
+   "room": "B12"
+  },
+  "bio-tue": {
+   "title": "Biological and Ecological Risk",
+   "day": 1,
+   "start": "10:30",
+   "end": "13:30",
+   "room": "B12"
+  },
+  "es-tue": {
+   "title": "Environmental Sustainability",
+   "day": 1,
+   "start": "14:30",
+   "end": "16:30",
+   "room": "S6 (Scienze 1)"
   },
   "geo-thu": {
+   "title": "Geological Hazard in a Changing Climate",
    "day": 3,
-   "end": "11:30",
-   "room": "B12",
-   "start": "09:30",
-   "title": "Geological Risk"
+   "start": "10:30",
+   "end": "12:30",
+   "room": "B12"
+  },
+  "chem-thu": {
+   "title": "Chemical and Industrial Risk",
+   "day": 3,
+   "start": "14:30",
+   "end": "17:30",
+   "room": "B12"
+  },
+  "ren-fri": {
+   "title": "Renewables and Innovative Energy Systems",
+   "day": 4,
+   "start": "08:30",
+   "end": "10:30",
+   "room": "B12"
+  },
+  "geo-fri": {
+   "title": "Geological Hazard in a Changing Climate",
+   "day": 4,
+   "start": "10:30",
+   "end": "12:30",
+   "room": "B12"
+  },
+  "eq-fri": {
+   "title": "Earthquake Risk Mitigation",
+   "day": 4,
+   "start": "12:30",
+   "end": "14:30",
+   "room": "B12"
   }
  }
 }

@@ -1,5 +1,6 @@
 import "./style.css";
 import seed from "./seed.json";
+import { TIMETABLE } from "./timetable.js";
 import { configured, watchUser, signIn, signUp, resetPassword, logOut, makeDb } from "./firebase.js";
 import { askPartner, systemPrompt, friendlyError } from "./partner.js";
 import { isNative, syncSchedule, alertStatus, askNotifications, openPhoneSetting, testAlert, setBubble } from "./native.js";
@@ -377,15 +378,27 @@ function startData(store){
   const ok=s=>{if(!s.metadata.fromCache){clearTimeout(timer);if($("#note").textContent.startsWith("Your plan can't"))note("")}};
   const err=e=>{clearTimeout(timer);loaded=true;note("Couldn't load part of your plan ("+e.code+").");renderAll()};
   const docs=s=>s.docs.map(d=>({id:d.id,...d.data()}));
-  let gotClasses=false,gotRoutine=false;
-  const maybeSeed=()=>{if(gotClasses&&gotRoutine)$("#seedPanel").hidden=!(classes.length===0&&routine.length===0)};
+  let gotClasses=false,gotRoutine=false,gotSettings=false,applying=false;
+  const maybeSeed=()=>{if(gotClasses&&gotRoutine)$("#seedPanel").hidden=!(classes.length===0&&routine.length===0);maybeTimetable()};
+  /* swap in a newer class timetable once (see timetable.js) */
+  const maybeTimetable=async()=>{
+    if(applying||!gotClasses||!gotRoutine||!gotSettings||!routine.length)return;
+    if((settings.timetableVersion||"")>=TIMETABLE.version)return;
+    applying=true;
+    try{
+      for(const c of classes)if(!TIMETABLE.classes[c.id])await db.collection("classes").doc(c.id).delete();
+      for(const [id,c] of Object.entries(TIMETABLE.classes))await db.collection("classes").doc(id).set(c);
+      await db.collection("settings").doc("main").set({...settings,timetableVersion:TIMETABLE.version});
+      note("Your class timetable is updated for the "+TIMETABLE.label+".");
+    }catch(e){applying=false;note("Couldn't update your timetable: "+(e.message||e.code))}
+  };
   unsubs=[
     db.collection("tasks").onSnapshot(s=>{tasks=docs(s);loaded=true;ok(s);renderBoard()},err),
     db.collection("reviews").onSnapshot(s=>{reviews=Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));renderBoard()},err),
     db.collection("classes").onSnapshot(s=>{classes=docs(s);loaded=true;ok(s);if(!s.metadata.fromCache)gotClasses=true;maybeSeed();renderToday();renderSetup()},err),
     db.collection("routine").onSnapshot(s=>{routine=docs(s);loaded=true;if(!s.metadata.fromCache)gotRoutine=true;maybeSeed();renderToday();renderSetup();checkAlert()},err),
     db.collection("days").onSnapshot(s=>{days=Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));renderToday()},err),
-    db.doc("settings/main").onSnapshot(s=>{settings={...DEFAULT_SET,...(s.exists?s.data():{})};renderToday();renderSetup();renderPartner()},err),
+    db.doc("settings/main").onSnapshot(s=>{settings={...DEFAULT_SET,...(s.exists?s.data():{})};if(!s.metadata.fromCache)gotSettings=true;maybeTimetable();renderToday();renderSetup();renderPartner()},err),
     db.collection("chat").onSnapshot(s=>{chatDays=Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));renderPartner()},err)
   ];
 }
