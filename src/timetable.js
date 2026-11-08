@@ -2,7 +2,7 @@
    Anthonia's class timetable (UNIVPM, EHDRM). Bump `version` whenever it changes:
    the app replaces the classes in Firestore once, on the next open, on every device. */
 export const TIMETABLE = {
-  version: "2026-11-09c",
+  version: "2026-11-09d",
   label: "week of 9 November",
   classes: {
     "bio-mon":  { title: "Biological and Ecological Risk", day: 0, start: "08:30", end: "11:30", room: "B12" },
@@ -39,10 +39,11 @@ export const TIMETABLE = {
     "v2-mv2":  { notBefore: "14:00" },                    // Sunday movie before the meeting
     "v2-u30":  { notBefore: "16:45", title: "Weekly review, then brief Ms Mercy" }
   },
-  // monthly staff meeting moved off Wednesday afternoon (Climate Change class from 16 Nov)
+  // Ms Mercy now runs the monthly staff meeting and reports back on Sundays,
+  // so those meetings come off Anthonia's plan
   days: {
-    "2026-12-02": { events: [{ id: "mtg-2026-12", title: "AGN monthly staff meeting", start: "09:00", mins: 90 }] },
-    "2027-01-06": { events: [{ id: "mtg-2027-01", title: "AGN monthly staff meeting", start: "09:00", mins: 90 }] },
-    "2027-02-03": { events: [{ id: "mtg-2027-02", title: "AGN monthly staff meeting", start: "09:00", mins: 90 }] }
+    "2026-12-02": { events: [] },
+    "2027-01-06": { events: [] },
+    "2027-02-03": { events: [] }
   }
 };

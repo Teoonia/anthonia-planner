@@ -411,41 +411,7 @@
    "title": "Slow morning"
   }
  },
- "days": {
-  "2027-02-03": {
-   "date": "2027-02-03",
-   "events": [
-    {
-     "id": "mtg-2027-02",
-     "title": "AGN monthly staff meeting",
-     "start": "09:00",
-     "mins": 90
-    }
-   ]
-  },
-  "2026-12-02": {
-   "date": "2026-12-02",
-   "events": [
-    {
-     "id": "mtg-2026-12",
-     "title": "AGN monthly staff meeting",
-     "start": "09:00",
-     "mins": 90
-    }
-   ]
-  },
-  "2027-01-06": {
-   "date": "2027-01-06",
-   "events": [
-    {
-     "id": "mtg-2027-01",
-     "title": "AGN monthly staff meeting",
-     "start": "09:00",
-     "mins": 90
-    }
-   ]
-  }
- },
+ "days": {},
  "settings": {
   "main": {
    "after": 90,
@@ -457,7 +423,7 @@
    "sleep": "23:00",
    "wake": "06:00",
    "walkwait": 25,
-   "timetableVersion": "2026-11-09c"
+   "timetableVersion": "2026-11-09d"
   }
  },
  "classes": {

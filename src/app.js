@@ -393,7 +393,7 @@ function startData(store){
       for(const [id,patch] of Object.entries(TIMETABLE.routine||{})){const r=routine.find(x=>x.id===id);if(r){const{id:_,...rest}=r;await db.collection("routine").doc(id).set({...rest,...patch})}}
       for(const [k,patch] of Object.entries(TIMETABLE.days||{}))await db.collection("days").doc(k).set({...(days[k]||{}),date:k,...patch});
       await db.collection("settings").doc("main").set({...settings,timetableVersion:TIMETABLE.version});
-      note("Your timetable is updated: classes for the "+TIMETABLE.label+", calls kept to 9:00-17:00, and Sunday's meeting with Ms Mercy.");
+      note("Your timetable is updated: classes for the "+TIMETABLE.label+", calls kept to 9:00-17:00, and Sunday's meeting with Ms Mercy (she now runs the monthly staff meeting).");
     }catch(e){applying=false;note("Couldn't update your timetable: "+(e.message||e.code))}
   };
   unsubs=[
