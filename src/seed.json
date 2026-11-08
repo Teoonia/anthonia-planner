@@ -54,9 +54,9 @@
     6
    ],
    "mins": 30,
-   "notBefore": "18:30",
+   "notBefore": "16:45",
    "order": 340,
-   "title": "Weekly review and plan next week"
+   "title": "Weekly review, then brief Ms Mercy"
   },
   "v2-r10": {
    "area": "life",
@@ -93,7 +93,8 @@
    "mins": 30,
    "notBefore": "16:00",
    "order": 35,
-   "title": "AGN staff check-in calls"
+   "title": "AGN staff check-in calls",
+   "notAfter": "17:00"
   },
   "v2-r30": {
    "area": "staff",
@@ -105,7 +106,8 @@
    "mins": 20,
    "notBefore": "13:30",
    "order": 110,
-   "title": "AGN staff check-in call (lunch break)"
+   "title": "AGN staff check-in call (lunch break)",
+   "notAfter": "17:00"
   },
   "v2-s40": {
    "area": "life",
@@ -120,8 +122,7 @@
   "v2-r50": {
    "area": "targets",
    "days": [
-    0,
-    2
+    0
    ],
    "mins": 45,
    "notBefore": "13:00",
@@ -130,9 +131,7 @@
   },
   "v2-r80": {
    "area": "rest",
-   "days": [
-    2
-   ],
+   "days": [],
    "mins": 30,
    "notBefore": "16:00",
    "order": 210,
@@ -146,7 +145,8 @@
    "mins": 90,
    "notBefore": "10:00",
    "order": 130,
-   "title": "Weekly check-in calls with each team"
+   "title": "Weekly check-in calls with each team",
+   "notAfter": "17:00"
   },
   "v2-u10": {
    "area": "rest",
@@ -172,12 +172,13 @@
   "v2-r60": {
    "area": "school",
    "days": [
+    1,
     3
    ],
    "mins": 60,
-   "notBefore": "",
-   "order": 170,
-   "title": "Study and readings"
+   "notBefore": "17:00",
+   "order": 66,
+   "title": "Study: review today's lectures"
   },
   "v2-rdw": {
    "area": "read",
@@ -186,7 +187,7 @@
     6
    ],
    "mins": 15,
-   "notBefore": "09:00",
+   "notBefore": "08:30",
    "order": 250,
    "title": "Motivational reading with coffee"
   },
@@ -206,7 +207,7 @@
     6
    ],
    "mins": 60,
-   "notBefore": "15:00",
+   "notBefore": "11:00",
    "order": 330,
    "title": "Call home and family time"
   },
@@ -232,7 +233,7 @@
    "mins": 30,
    "notBefore": "20:00",
    "order": 100,
-   "title": "Evening AGN check"
+   "title": "Evening AGN check (messages only, no calls)"
   },
   "v2-r40b": {
    "area": "meal",
@@ -240,7 +241,7 @@
     2
    ],
    "mins": 45,
-   "notBefore": "12:30",
+   "notBefore": "12:00",
    "order": 60,
    "title": "Lunch"
   },
@@ -262,7 +263,8 @@
    "mins": 30,
    "notBefore": "09:00",
    "order": 120,
-   "title": "AGN staff check-in calls"
+   "title": "AGN staff check-in calls",
+   "notAfter": "17:00"
   },
   "v2-mv1": {
    "area": "fun",
@@ -297,10 +299,10 @@
   "v2-r61": {
    "area": "school",
    "days": [
-    2
+    5
    ],
    "mins": 90,
-   "notBefore": "",
+   "notBefore": "10:30",
    "order": 200,
    "title": "Deep study: notes and assignments"
   },
@@ -310,7 +312,7 @@
     6
    ],
    "mins": 150,
-   "notBefore": "16:00",
+   "notBefore": "14:00",
    "order": 310,
    "title": "Movie afternoon"
   },
@@ -382,7 +384,7 @@
    ],
    "mins": 120,
    "notBefore": "",
-   "order": 140,
+   "order": 65,
    "title": "CMAX: design updates, then send to the team"
   },
   "v2-r20": {
@@ -391,7 +393,6 @@
     0,
     1,
     2,
-    3,
     4
    ],
    "mins": 50,
@@ -416,71 +417,31 @@
    "events": [
     {
      "id": "mtg-2027-02",
-     "mins": 90,
-     "start": "15:00",
-     "title": "AGN monthly staff meeting"
+     "title": "AGN monthly staff meeting",
+     "start": "09:00",
+     "mins": 90
     }
    ]
-  },
-  "2026-12-04": {
-   "date": "2026-12-04",
-   "events": []
   },
   "2026-12-02": {
    "date": "2026-12-02",
    "events": [
     {
      "id": "mtg-2026-12",
-     "mins": 90,
-     "start": "15:00",
-     "title": "AGN monthly staff meeting"
+     "title": "AGN monthly staff meeting",
+     "start": "09:00",
+     "mins": 90
     }
    ]
-  },
-  "2027-01-08": {
-   "date": "2027-01-08",
-   "events": []
-  },
-  "2026-11-03": {
-   "date": "2026-11-03",
-   "done": [
-    "v2-r10"
-   ],
-   "from": 895,
-   "order": [
-    "v2-r40",
-    "v2-r90",
-    "v2-r10",
-    "v2-r120",
-    "v2-r100",
-    "v2-r30",
-    "v2-r20"
-   ],
-   "updatedAt": 1793713888876
-  },
-  "2026-11-04": {
-   "date": "2026-11-04",
-   "events": [
-    {
-     "id": "mtg-2026-11",
-     "mins": 90,
-     "start": "15:00",
-     "title": "AGN monthly staff meeting"
-    }
-   ]
-  },
-  "2027-02-05": {
-   "date": "2027-02-05",
-   "events": []
   },
   "2027-01-06": {
    "date": "2027-01-06",
    "events": [
     {
      "id": "mtg-2027-01",
-     "mins": 90,
-     "start": "15:00",
-     "title": "AGN monthly staff meeting"
+     "title": "AGN monthly staff meeting",
+     "start": "09:00",
+     "mins": 90
     }
    ]
   }
@@ -496,7 +457,7 @@
    "sleep": "23:00",
    "wake": "06:00",
    "walkwait": 25,
-   "timetableVersion": "2026-11-09"
+   "timetableVersion": "2026-11-09c"
   }
  },
  "classes": {
@@ -576,6 +537,30 @@
    "start": "12:30",
    "end": "14:30",
    "room": "B12"
+  },
+  "clim-wed": {
+   "title": "Climate Change and Natural Hazard",
+   "day": 2,
+   "start": "14:30",
+   "end": "16:30",
+   "room": "A5",
+   "from": "2026-11-16"
+  },
+  "clim-thu": {
+   "title": "Climate Change and Natural Hazard",
+   "day": 3,
+   "start": "08:30",
+   "end": "10:30",
+   "room": "B12",
+   "from": "2026-11-16"
+  },
+  "mercy-sun": {
+   "title": "Weekly meeting with Ms Mercy (assistant)",
+   "day": 6,
+   "start": "17:30",
+   "end": "18:30",
+   "room": "",
+   "kind": "meeting"
   }
  }
 }

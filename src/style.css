@@ -57,6 +57,7 @@ input,select,textarea{border:1px solid var(--line);border-radius:8px;background:
 .blk .ctl{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end}
 .blk.class{border-left:4px solid var(--gold);background:var(--gold-soft)}
 .blk.event{border-left:4px solid var(--alert)}
+.blk.meeting{border-left:4px solid var(--gold);background:var(--gold-soft)}
 .blk.ride{border-left:4px solid var(--accent);background:var(--accent-soft)}
 .blk.break,.blk.free{background:var(--rest);border-style:dashed;padding:5px 12px}
 .blk.break .ti,.blk.free .ti{font-weight:400;color:var(--muted);font-size:13px}

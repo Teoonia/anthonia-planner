@@ -45,7 +45,7 @@ function planDay(date){
   const wake=toMin(settings.wake)||450, sleep=toMin(settings.sleep)||1350;
   const sb=+settings.short||0, lb=+settings.long||0, after=+settings.after||120;
   const fixed=[
-    ...classes.filter(c=>+c.day===w&&toMin(c.start)!=null&&toMin(c.end)>toMin(c.start)).map(c=>({id:"c-"+c.id,kind:"class",title:c.title,room:c.room,s:toMin(c.start),e:toMin(c.end)})),
+    ...classes.filter(c=>+c.day===w&&(!c.from||key>=c.from)&&toMin(c.start)!=null&&toMin(c.end)>toMin(c.start)).map(c=>({id:"c-"+c.id,kind:c.kind==="meeting"?"meeting":"class",title:c.title,room:c.room,s:toMin(c.start),e:toMin(c.end)})),
     ...(dd.events||[]).map(e=>({id:e.id,kind:"event",title:e.title,s:toMin(e.start),e:toMin(e.start)+(+e.mins||30)}))
   ].sort((a,b)=>a.s-b.s);
   // train rides around the school day
@@ -69,7 +69,7 @@ function planDay(date){
     fixed.sort((a,b)=>a.s-b.s);
   }
   const done=new Set(dd.done||[]), skip=new Set(dd.skip||[]);
-  let queue=routine.filter(r=>(r.days||[]).includes(w)).sort((a,b)=>(a.order||0)-(b.order||0)).map(r=>({id:r.id,title:r.title,area:r.area,mins:+r.mins||30,nb:toMin(r.notBefore)}));
+  let queue=routine.filter(r=>(r.days||[]).includes(w)).sort((a,b)=>(a.order||0)-(b.order||0)).map(r=>({id:r.id,title:r.title,area:r.area,mins:+r.mins||30,nb:toMin(r.notBefore),na:toMin(r.notAfter)}));
   const extra=(dd.extra||[]).map(x=>({...x,mins:+x.mins||30,carried:true}));
   queue.splice(Math.min(1,queue.length),0,...extra);
   if(dd.order&&dd.order.length){const pos=Object.fromEntries(dd.order.map((id,i)=>[id,i]));queue.sort((a,b)=>(pos[a.id]??999)-(pos[b.id]??999))}
@@ -80,9 +80,10 @@ function planDay(date){
   // busy intervals: classes keep a short buffer after them for walking/settling
   const busy=fixed.map(f=>({s:f.s,e:f.e+(f.kind==="class"?sb:0)}));
   const free=(s,e)=>!busy.some(b=>s<b.e&&e>b.s);
-  function earliest(start,m){
+  function earliest(start,m,endBy){
+    const limit=Math.min(sleep,endBy??sleep);
     let t=start,guard=0;
-    while(t+m<=sleep&&guard++<500){
+    while(t+m<=limit&&guard++<500){
       const hit=busy.filter(b=>t<b.e&&t+m>b.s);
       if(!hit.length)return t;
       t=Math.max(...hit.map(b=>b.e));
@@ -92,7 +93,7 @@ function planDay(date){
   // priority order = routine order; each block takes the earliest free slot at or after its "not before" time
   for(const q of queue){
     if(dd.from!=null&&done.has(q.id)){doneItems.push(q);continue}
-    const t=earliest(Math.max(from,q.nb??0),q.mins);
+    const t=earliest(Math.max(from,q.nb??0),q.mins,q.na);
     if(t==null){over.push(q);continue}
     placed.push({...q,kind:q.area==="meal"?"meal":"flex",s:t,e:t+q.mins,done:done.has(q.id)});
     busy.push({s:t,e:t+q.mins});
@@ -131,6 +132,7 @@ function renderToday(){
     const ti=document.createElement("div");ti.className="ti";
     if(b.kind==="class"){const c=document.createElement("span");c.className="chip gold";c.textContent="Class";ti.append(c)}
     else if(b.kind==="event"){const c=document.createElement("span");c.className="chip gold";c.textContent="Came up";ti.append(c)}
+    else if(b.kind==="meeting"){const c=document.createElement("span");c.className="chip gold";c.textContent="Meeting";ti.append(c)}
     else if(b.kind==="ride"){const c=document.createElement("span");c.className="chip";c.textContent="On the way";ti.append(c)}
     else if(b.kind==="flex"||b.kind==="meal"){const c=document.createElement("span");c.className="chip";c.textContent=AREA_NAME[b.area]||b.area;ti.append(c)}
     ti.append(document.createTextNode(b.title));
@@ -291,13 +293,13 @@ function renderSetup(){
     if(!sorted.length)rr.innerHTML='<tr><td colspan="7" class="empty">No routine blocks yet.</td></tr>';
     sorted.forEach((r,i)=>{
       const tr=document.createElement("tr");
-      const t=inp("text",r.title,"rt-"+r.id),a=areaSelect(r.area,"ra-"+r.id),m=inp("number",r.mins,"rm-"+r.id,"n"),nb=inp("time",r.notBefore,"rn-"+r.id);
+      const t=inp("text",r.title,"rt-"+r.id),a=areaSelect(r.area,"ra-"+r.id),m=inp("number",r.mins,"rm-"+r.id,"n"),nb=inp("time",r.notBefore,"rn-"+r.id),na=inp("time",r.notAfter,"rx-"+r.id);
       const dw=document.createElement("div");dw.className="days";
       const boxes=DAYS.map((n,k)=>{const l=document.createElement("label");const c=document.createElement("input");c.type="checkbox";c.id="rd-"+r.id+"-"+k;c.checked=(r.days||[]).includes(k);l.append(c,document.createTextNode(n[0]));dw.append(l);return c});
-      const save=()=>{const b={title:t.value,area:a.value,mins:+m.value||30,notBefore:nb.value,days:boxes.map((c,k)=>c.checked?k:-1).filter(k=>k>=0),order:r.order||0};Object.assign(r,b);saveLater("routine",r.id,b)};
-      [t,a,m,nb,...boxes].forEach(x=>x.addEventListener("input",save));
+      const save=()=>{const b={title:t.value,area:a.value,mins:+m.value||30,notBefore:nb.value,notAfter:na.value,days:boxes.map((c,k)=>c.checked?k:-1).filter(k=>k>=0),order:r.order||0};Object.assign(r,b);saveLater("routine",r.id,b)};
+      [t,a,m,nb,na,...boxes].forEach(x=>x.addEventListener("input",save));
       const up=btn("↑",()=>swapOrder(sorted,i,-1),"Move up"),dn=btn("↓",()=>swapOrder(sorted,i,1),"Move down");
-      tr.append(td(up,dn),td(t),td(a),td(m),td(nb),td(dw),td(btn("Delete",()=>needDb()&&safe(db.collection("routine").doc(r.id).delete(),"delete it"),"Delete block")));rr.append(tr)})}
+      tr.append(td(up,dn),td(t),td(a),td(m),td(nb),td(na),td(dw),td(btn("Delete",()=>needDb()&&safe(db.collection("routine").doc(r.id).delete(),"delete it"),"Delete block")));rr.append(tr)})}
   ["wake","sleep","short","long","after","commute","walkwait","early","afterclass"].forEach(k=>{const el=$("#s-"+k);if(document.activeElement!==el)el.value=settings[k]??DEFAULT_SET[k]});
 }
 async function swapOrder(sorted,i,dir){const j=i+dir;if(j<0||j>=sorted.length||!needDb())return;const a=sorted[i],b=sorted[j];const oa=a.order||i,ob=b.order||j;
@@ -378,18 +380,20 @@ function startData(store){
   const ok=s=>{if(!s.metadata.fromCache){clearTimeout(timer);if($("#note").textContent.startsWith("Your plan can't"))note("")}};
   const err=e=>{clearTimeout(timer);loaded=true;note("Couldn't load part of your plan ("+e.code+").");renderAll()};
   const docs=s=>s.docs.map(d=>({id:d.id,...d.data()}));
-  let gotClasses=false,gotRoutine=false,gotSettings=false,applying=false;
+  let gotClasses=false,gotRoutine=false,gotSettings=false,gotDays=false,applying=false;
   const maybeSeed=()=>{if(gotClasses&&gotRoutine)$("#seedPanel").hidden=!(classes.length===0&&routine.length===0);maybeTimetable()};
   /* swap in a newer class timetable once (see timetable.js) */
   const maybeTimetable=async()=>{
-    if(applying||!gotClasses||!gotRoutine||!gotSettings||!routine.length)return;
+    if(applying||!gotClasses||!gotRoutine||!gotSettings||!gotDays||!routine.length)return;
     if((settings.timetableVersion||"")>=TIMETABLE.version)return;
     applying=true;
     try{
       for(const c of classes)if(!TIMETABLE.classes[c.id])await db.collection("classes").doc(c.id).delete();
       for(const [id,c] of Object.entries(TIMETABLE.classes))await db.collection("classes").doc(id).set(c);
+      for(const [id,patch] of Object.entries(TIMETABLE.routine||{})){const r=routine.find(x=>x.id===id);if(r){const{id:_,...rest}=r;await db.collection("routine").doc(id).set({...rest,...patch})}}
+      for(const [k,patch] of Object.entries(TIMETABLE.days||{}))await db.collection("days").doc(k).set({...(days[k]||{}),date:k,...patch});
       await db.collection("settings").doc("main").set({...settings,timetableVersion:TIMETABLE.version});
-      note("Your class timetable is updated for the "+TIMETABLE.label+".");
+      note("Your timetable is updated: classes for the "+TIMETABLE.label+", calls kept to 9:00-17:00, and Sunday's meeting with Ms Mercy.");
     }catch(e){applying=false;note("Couldn't update your timetable: "+(e.message||e.code))}
   };
   unsubs=[
@@ -397,7 +401,7 @@ function startData(store){
     db.collection("reviews").onSnapshot(s=>{reviews=Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));renderBoard()},err),
     db.collection("classes").onSnapshot(s=>{classes=docs(s);loaded=true;ok(s);if(!s.metadata.fromCache)gotClasses=true;maybeSeed();renderToday();renderSetup()},err),
     db.collection("routine").onSnapshot(s=>{routine=docs(s);loaded=true;if(!s.metadata.fromCache)gotRoutine=true;maybeSeed();renderToday();renderSetup();checkAlert()},err),
-    db.collection("days").onSnapshot(s=>{days=Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));renderToday()},err),
+    db.collection("days").onSnapshot(s=>{days=Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));if(!s.metadata.fromCache)gotDays=true;maybeTimetable();renderToday()},err),
     db.doc("settings/main").onSnapshot(s=>{settings={...DEFAULT_SET,...(s.exists?s.data():{})};if(!s.metadata.fromCache)gotSettings=true;maybeTimetable();renderToday();renderSetup();renderPartner()},err),
     db.collection("chat").onSnapshot(s=>{chatDays=Object.fromEntries(s.docs.map(d=>[d.id,d.data()]));renderPartner()},err)
   ];
