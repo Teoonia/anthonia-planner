@@ -22,8 +22,12 @@ Italian lessons A1→B1, AI conversation partner (text or voice-only), live help
 listens to people (e.g. the cashier) and answers out loud, spaced-repetition words,
 and a timed weekly test.
 
-- Open `<site>/parla/` on the phone → browser menu → **Add to Home Screen** to install it.
+- **Android app**: built by GitHub Actions (`parla-app/`, workflow *Build Parla! Android app*) whenever `parla-app/` changes.
+  Download `parla.apk` from the newest **Parla!** release. It loads https://anthonia-board.netlify.app/parla/,
+  so web changes reach the app without reinstalling. Uses the phone's own microphone and Italian voice.
+- Or open https://anthonia-board.netlify.app/parla/ in the browser → **Add to Home Screen**.
 - Speaking uses the browser's speech recognition (Chrome on Android, Safari on iPhone).
 - The AI coach needs a key: Settings ⚙️ → paste a free Gemini key from
-  https://aistudio.google.com/apikey (or a Claude API key). It is saved only on that phone.
+  https://aistudio.google.com/apikey (or a Claude API key) → **Save & connect**. The app checks the key
+  and picks the newest Gemini Flash model it offers. The key is saved only on that phone.
 - Progress is saved on the device (localStorage).

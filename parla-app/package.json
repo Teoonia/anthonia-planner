@@ -1,0 +1,15 @@
+{
+  "name": "parla-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Android shell for the Parla! Italian coach (loads anthonia-board.netlify.app/parla/)",
+  "dependencies": {
+    "@capacitor-community/speech-recognition": "7.0.1",
+    "@capacitor-community/text-to-speech": "6.1.0",
+    "@capacitor/android": "7.6.10",
+    "@capacitor/core": "7.6.10"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.10"
+  }
+}

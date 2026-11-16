@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Parla!</string>
+    <string name="title_activity_main">Parla!</string>
+    <string name="package_name">com.anthonia.parla</string>
+    <string name="custom_url_scheme">com.anthonia.parla</string>
+</resources>

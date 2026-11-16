@@ -279,6 +279,7 @@ if("speechSynthesis" in window){pickVoice();try{speechSynthesis.onvoiceschanged=
 function browserSpeak(text,slow){if(!("speechSynthesis" in window)){toast("Audio isn't available here");return}
  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="it-IT";if(itVoice)u.voice=itVoice;u.rate=(slow?.7:.95)*(S.rate||1);speechSynthesis.speak(u)}catch(e){toast("Audio isn't available here")}}
 function speak(text,slow){if(!text)return;
+ const NT=NP("TextToSpeech");if(NT&&!tts){try{NT.stop().catch(()=>{})}catch(e){}NT.speak({text,lang:"it-IT",rate:(slow?.7:1)*(S.rate||1),pitch:1,volume:1}).catch(()=>toast("Install Italian voice: Settings → Text-to-speech"));return}
  if(tts){const rate=Math.max(.7,Math.min(1.5,(slow?.72:1)*(S.rate||1)));
   tts.speak(text,{language:"it",rate}).catch(e=>{const c=e&&e.code;if(c==="not_granted"){tts=null;browserSpeak(text,slow)}else if(c==="busy"){toast("Stop the mic first, then play")}else if(c&&!/stop|replac|interrupt|cancel/i.test(c)&&c!=="rate_limited"){browserSpeak(text,slow)}});
  }else browserSpeak(text,slow)}
@@ -418,7 +419,7 @@ function vHelp(){const h=help;const pl=PLACES.find(p=>p[0]===h.place)||PLACES[0]
  <div class="card">${dict?`<div style="text-align:center"><div class="mute" style="font-size:14px">${h.mode==="heard"?"Tap, hold the phone towards the person, tap again when they finish":"Tap and say it in English (or broken Italian)"}</div>${micBtn("helpIn",true,"hgo")}</div>`:""}
  <textarea id="helpIn" rows="3" data-in placeholder="${h.mode==="heard"?"What did they say? Type or dictate the Italian you heard…":"What do you want to say? English is fine…"}">${esc(inputs.helpIn||"")}</textarea>${dict?"":kbTip()}
  <button class="btn pri full" style="margin-top:10px" data-a="hgo" ${h.busy?"disabled":""}>${h.mode==="heard"?"Help me understand & reply":"Translate & say it"}</button>
- <div class="mute" style="font-size:12.5px;margin-top:8px">${pl[1]} Context: ${esc(pl[2])}. Tap 🔊 to play your answer out loud, or 🖥 to show it full-screen to the person.</div></div>${res}`}
+ <div class="mute" style="font-size:12.5px;margin-top:8px">${pl[1]} Context: ${esc(pl[2])}. Tap 🔊 to play your answer out loud, or 🖥 to show it full-screen to the person.</div></div><div id="hres">${res}</div>`}
 function optCard(o){return`<div class="opt"><div class="it">${esc(o.it||"")}</div>${o.say?`<div class="pron">🗣 ${esc(o.say)}</div>`:""}<div class="en">${esc(o.en||o.en_back||"")}${o.note?" · "+esc(o.note):""}</div>
  <div class="row wrapx" style="margin-top:10px"><button class="btn sm ol" data-a="sayfor" data-t="${esc(o.it||"")}">🔊 Say it for me</button><button class="btn sm" data-a="say" data-slow="1" data-t="${esc(o.it||"")}">🐢 Slow</button><button class="btn sm" data-a="showbig" data-t="${esc(o.it||"")}">🖥 Show</button><button class="btn sm" data-a="save" data-it="${esc(o.it||"")}" data-en="${esc(o.en||o.en_back||"")}">⭐</button></div></div>`}
 
@@ -501,6 +502,7 @@ function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" da
  <div class="toggle" style="margin-top:12px"><div><b>Auto-play coach replies</b><div class="mute" style="font-size:13.5px">Hear every reply in conversation practice</div></div><button class="sw ${S.autoplay?"on":""}" data-a="autoplay"></button></div>
  <div class="toggle"><div><b>🇮🇹 Immersion mode</b><div class="mute" style="font-size:13.5px">Switches this app's words to Italian only. Turn off any time.</div></div><button class="sw ${S.immersion?"on":""}" data-a="immersion"></button></div></div>
  ${STANDALONE?aiSettings():""}
+ ${NATIVE?"":`<div class="card"><b>📲 Android app</b><div class="mute" style="font-size:13.5px;margin-top:4px">Get Parla! as a real app with its own icon and microphone: open <a href="https://github.com/Teoonia/anthonia-planner/releases" target="_blank" rel="noopener">github.com/Teoonia/anthonia-planner/releases</a> on your phone, find the newest “Parla!” build and download <b>parla.apk</b>.</div></div>`}
  <div class="card gold"><b>📱 Put your whole phone in Italian</b><div style="font-size:14.5px;margin-top:6px">The app can't change your phone for you, but this is the best immersion trick there is — you already know where everything is, so you learn the words for free.</div>
  <div style="font-size:14.5px;margin-top:8px"><b>iPhone:</b> Settings → General → Language &amp; Region → add Italiano → move it to the top.<br><b>To switch back:</b> Impostazioni → Generali → Lingua e zona → drag English to the top.</div>
  <div style="font-size:14.5px;margin-top:8px"><b>Android:</b> Settings → System → Languages → add Italiano → drag to the top.<br><b>To switch back:</b> Impostazioni → Sistema → Lingue → drag English to the top.</div>
@@ -511,7 +513,7 @@ function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" da
 function aiSettings(){const c=KEYS.p;return`<div class="card"><b>🤖 AI coach key</b><div class="mute" style="font-size:13.5px;margin:4px 0 8px">Outside Claude, the coach runs on your own key. It stays only on this phone. Get a free Gemini key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</div>
  <div class="seg"><button class="${c.provider!=="claude"?"on":""}" data-a="prov" data-p="gemini">Gemini (free)</button><button class="${c.provider==="claude"?"on":""}" data-a="prov" data-p="claude">Claude API</button></div>
  <input type="text" id="keyIn" style="margin-top:8px" placeholder="Paste your API key" value="${esc(c.key||"")}" autocomplete="off" spellcheck="false">
- <button class="btn sm ol" style="margin-top:8px" data-a="savekey">Save key</button> <span class="mute" style="font-size:12.5px">${c.key?"✓ key saved":""}</span></div>`}
+ <button class="btn sm ol" style="margin-top:8px" data-a="savekey">Save &amp; connect</button> <span style="font-size:12.5px;${c.status&&c.status!=="ok"?"color:var(--terra)":"color:var(--olive)"}">${c.status==="ok"?"✓ Connected · "+esc(c.model):c.status?esc(c.status):c.key?"key saved":""}</span></div>`}
 function closeOverlay(){const n=$("#nameIn");if(n&&n.value.trim()&&n.value.trim()!==S.name){S.name=n.value.trim();persist("progress")}$("#overlay").classList.remove("show");$("#overlay").innerHTML="";render()}
 
 /* ======================= RENDER / ROUTING ======================= */
@@ -558,11 +560,12 @@ async function chatTurn(){const c=chat;c.busy=true;c.err="";render();
 function sendChat(forced){const el=$("#chatIn");const t=(forced||(el&&el.value)||"").trim();if(!t||!chat||chat.busy)return;if(listening&&dict)dict.stop().catch(()=>{});
  chat.msgs.push({role:"me",it:t});chat.history.push({role:"user",content:`She says: "${t}"\nReply in role with the JSON object only.`});
  inputs.chatIn="";dictBase="";const n=chat.msgs.filter(m=>m.role==="me").length;activity("chat",n<=10?3:1);chatTurn()}
+async function hScroll(){setTimeout(()=>{const h=document.getElementById("hres");if(h)h.scrollIntoView({behavior:"smooth",block:"start"})},60)}
 async function helpGo(){const el=$("#helpIn");const t=(el&&el.value||"").trim();if(!t){toast("Type or say something first");return}if(help.busy)return;
  if(listening&&dict)dict.stop().catch(()=>{});
  const pl=(PLACES.find(p=>p[0]===help.place)||PLACES[0])[2];const mode=help.mode;
  const ctx=help.log.length?"Conversation so far:\n"+help.log.slice(-6).map(x=>(x.who==="they"?"Them: ":"Her: ")+x.it).join("\n")+"\n":"";
- help.busy=true;help.err="";help.res=null;render();
+ help.busy=true;help.err="";help.res=null;render();hScroll();
  const prompt=mode==="heard"?`You help ${who()} understand and answer people in real time. Her Italian level: ${LVL[S.level]}. Place: ${pl}.
 Her usual preferences (use them to pick the best reply): ${S.helpPrefs||"none given"}
 ${ctx}Someone just said this to her (from speech-to-text, so it may contain recognition errors or be partly English-spelled): "${t}"
@@ -574,13 +577,13 @@ ${ctx}She wants to say (in English or broken Italian): "${t}"
 Return ONLY JSON, no markdown:
 {"options":[{"it":"natural Italian sentence","en":"back-translation in English","say":"easy pronunciation guide for an English speaker, hyphenated syllables, stressed syllable in CAPS","note":"when to use it, e.g. polite / casual"}],"listen_for":[{"it":"something they will likely answer","en":"English"}],"tip":"one short practical or cultural tip, or empty"}
 Give 2–3 options; the first is the best polite version for staff/strangers (Lei). Give 2–3 likely answers in listen_for. Keep everything short and speakable.`;
- try{const r=await askJSON(prompt,"quick");help.res={kind:mode,data:r};help.busy=false;inputs.helpIn="";dictBase="";activity("help",5);
+ try{const r=await askJSON(prompt,"default");help.res={kind:mode,data:r};help.busy=false;inputs.helpIn="";dictBase="";activity("help",5);
   if(mode==="heard"&&r.heard)help.log.push({who:"they",it:r.heard,en:r.meaning});
   let auto=null;if(mode==="heard"&&S.autoAnswer){const reps=r.replies||[];const o=reps[+r.best]||reps[0];if(o&&o.it)auto=o.it}
   else if(mode==="want"){const o=r.options&&r.options[0];if(o&&o.it&&(S.autoplay||S.autoAnswer))auto=o.it}
   if(auto){help.log.push({who:"me",it:auto});help.res.spoke=auto}
-  render();if(auto)speak(auto);
- }catch(e){help.busy=false;help.err=aiErr(e);render()}}
+  render();hScroll();if(auto)speak(auto);
+ }catch(e){help.busy=false;help.err=aiErr(e);render();hScroll()}}
 async function moreDrill(){const u=U(drill.unit);drill.busy=true;drill.err="";render();
  try{const r=await askJSON(`Create 6 new practice items for ${who()}, level ${u.lvl}, for the unit "${u.title}" (${u.en}: ${u.goal}). Grammar focus: ${u.grammar}
 Each item is an English sentence she must say in Italian plus one natural Italian answer. Short, practical, set in daily life in Ancona. Vary them; don't repeat these: ${u.p.map(p=>p[0]).join(" | ")}
@@ -588,7 +591,7 @@ Return ONLY JSON: {"items":[{"en":"...","it":"..."}]}`,"default");
   const items=(r.items||[]).filter(x=>x&&x.en&&x.it);if(!items.length)throw{};drill.items=items;drill.i=0;drill.res=null;drill.scores=[];drill.why="";drill.busy=false;render()
  }catch(e){drill.busy=false;drill.err=aiErr(e);render()}}
 async function drillWhy(){const it=drill.items[drill.i],ans=drill.res&&drill.res.ans;drill.busy=true;render();
- try{const r=await askJSON(`An English-speaking learner of Italian (level ${S.level}) was asked to say "${it.en}". Expected answer: "${it.it}". She said: "${ans}". In 2–3 short English sentences: say whether her version is also correct/acceptable, and explain the key difference. Be encouraging. Ignore missing accents and capitals. Return ONLY JSON: {"ok":true,"explain":"..."}`,"quick");
+ try{const r=await askJSON(`An English-speaking learner of Italian (level ${S.level}) was asked to say "${it.en}". Expected answer: "${it.it}". She said: "${ans}". In 2–3 short English sentences: say whether her version is also correct/acceptable, and explain the key difference. Be encouraging. Ignore missing accents and capitals. Return ONLY JSON: {"ok":true,"explain":"..."}`,"default");
   drill.why=(r.ok?"✅ ":"")+(r.explain||"");}catch(e){drill.why=aiErr(e)}drill.busy=false;render()}
 function startReview(){const due=dueWords().slice(0,20);for(let i=due.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[due[i],due[j]]=[due[j],due[i]]}
  review={q:due,i:0,flip:false,n:0,dir:Math.random()<.5?"it":"en"};render()}
@@ -625,7 +628,8 @@ const A={
  usesug:t=>{inputs.chatIn=t.dataset.t;chat.showSug=false;render();const el=$("#chatIn");if(el){el.focus()}speak(t.dataset.t)},
  place:t=>{help.place=t.dataset.p;render()},
  prov:t=>{const c=KEYS.p;c.provider=t.dataset.p;delete c.model;LS.set("parla_ai",c);openSettings()},
- savekey:()=>{const c=KEYS.p;c.key=($("#keyIn").value||"").trim();delete c.model;LS.set("parla_ai",c);openSettings();toast(c.key?"Key saved ✓":"Key removed")},
+ savekey:async()=>{const c=KEYS.p;c.key=($("#keyIn").value||"").trim();delete c.model;c.status="";LS.set("parla_ai",c);if(!c.key){openSettings();toast("Key removed");return}
+  toast("Checking your key…");try{await setupAI(c);c.status="ok"}catch(e){c.status=e&&e.code==="bad_key"?"That key didn't work — check it and paste again.":"Couldn't check the key: "+((e&&e.message)||"network error")}LS.set("parla_ai",c);openSettings();toast(c.status==="ok"?"Connected ✓ using "+c.model:"Key problem")},
  autoanswer:()=>{S.autoAnswer=!S.autoAnswer;persist("progress");render();toast(S.autoAnswer?"Your phone will answer out loud 🤖":"Auto-answer off")},
  prefs:()=>{help.prefs=!help.prefs;render()},
  saveprefs:()=>{const p=$("#prefsIn");if(p){S.helpPrefs=p.value.trim();persist("progress")}help.prefs=false;render();toast("Saved")},
@@ -669,19 +673,41 @@ function makeWebDictation(){const SR=window.SpeechRecognition||window.webkitSpee
    rec.onend=()=>{cbP({text:""});cbS({state:"idle",reason});if(stopping){stopping();stopping=null}};
    rec.start()}catch(e){rej({code:"dismissed"})}})},
   stop(){return new Promise(r=>{if(!rec)return r();stopping=r;try{rec.stop()}catch(e){r()}})}}}
+const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==="function"&&window.Capacitor.isNativePlatform());
+const NP=n=>NATIVE&&window.Capacitor.Plugins?window.Capacitor.Plugins[n]:null;
+function makeNativeDictation(){const P=NP("SpeechRecognition");if(!P)return null;
+ let cbP=()=>{},cbF=()=>{},cbS=()=>{},cur="",active=false;
+ const end=()=>{if(!active)return;active=false;if(cur){cbF({text:cur});cur=""}cbP({text:""});cbS({state:"idle",reason:"stopped"})};
+ try{P.addListener("partialResults",d=>{cur=(d&&d.matches&&d.matches[0])||cur;if(active)cbP({text:cur})});
+  P.addListener("listeningState",d=>{if(d&&d.status==="stopped")end()})}catch(e){}
+ return{onPartial(f){cbP=f},onFinal(f){cbF=f},onState(f){cbS=f},
+  async start(){let p=await P.checkPermissions().catch(()=>({}));if(!p||p.speechRecognition!=="granted"){p=await P.requestPermissions().catch(()=>({}));if(!p||p.speechRecognition!=="granted")throw{code:"not_granted"}}
+   cur="";active=true;cbS({state:"listening"});
+   P.start({language:dictLang,partialResults:true,popup:false,maxResults:1}).then(r=>{if(r&&r.matches&&r.matches[0])cur=r.matches[0]}).catch(()=>end())},
+  async stop(){try{await P.stop()}catch(e){}setTimeout(end,700)}}}
 const KEYS={get p(){return(LS.get("parla_ai")||{})}};
 const GEM_MODELS=["gemini-flash-latest","gemini-3.6-flash","gemini-3.5-flash","gemini-2.5-flash"];
-async function webAI(input,opts){const cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"};
+function gemVer(n){const m=n.match(/^gemini-(\d+(?:\.\d+)?)-flash$/);return m?parseFloat(m[1]):-1}
+async function setupAI(cfg){if(!cfg.key)return cfg;
+ if(cfg.provider==="claude"){const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:10,messages:[{role:"user",content:"Say ok"}]})});
+  if(!r.ok){const j=await r.json().catch(()=>({}));throw{code:r.status===401?"bad_key":"api",message:j.error&&j.error.message}}cfg.model="claude-sonnet-5-5";return cfg}
+ const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key="+encodeURIComponent(cfg.key));const j=await r.json().catch(()=>({}));
+ if(!r.ok)throw{code:(r.status===400||r.status===403)?"bad_key":"api",message:j.error&&j.error.message};
+ const names=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent")).map(m=>m.name.replace(/^models\//,""));
+ const best=names.filter(n=>gemVer(n)>0).sort((a,b)=>gemVer(b)-gemVer(a))[0]||(names.includes("gemini-flash-latest")?"gemini-flash-latest":names.find(n=>/flash/.test(n)&&!/lite|tts|live|image|audio|embed/.test(n)));
+ if(!best)throw{code:"api",message:"No suitable Gemini model on this key"};cfg.model=best;return cfg}
+async function webAI(input,opts){let cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"};
+ if(!cfg.model){cfg=await setupAI(cfg);LS.set("parla_ai",cfg)}
  const msgs=typeof input==="string"?[{role:"user",content:input}]:input;
- if(cfg.provider==="claude"){const model=(opts&&opts.modelTier==="quick")?"claude-haiku-5-5":"claude-sonnet-5-5";
+ if(cfg.provider==="claude"){const model=cfg.model||"claude-sonnet-5-5";
   const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:1500,messages:msgs})});
   const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===429?"rate_limited":r.status===401?"bad_key":"api",message:j.error&&j.error.message};
   return{text:(j.content||[]).map(c=>c.text||"").join("")}}
  const contents=msgs.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
- const tryModels=cfg.model?[cfg.model]:GEM_MODELS;let last=null;
+ const tryModels=[cfg.model].concat(GEM_MODELS.filter(m=>m!==cfg.model));let last=null;
  for(const model of tryModels){const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(cfg.key),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contents,generationConfig:{responseMimeType:"application/json",temperature:.8}})});
   const j=await r.json().catch(()=>({}));
-  if(r.ok){if(!cfg.model){cfg.model=model;LS.set("parla_ai",cfg)}return{text:((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("")}}
+  if(r.ok){if(cfg.model!==model){cfg.model=model;LS.set("parla_ai",cfg)}return{text:((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("")}}
   last={code:r.status===429?"rate_limited":(r.status===400||r.status===403)&&/key/i.test(JSON.stringify(j))?"bad_key":"api",message:j.error&&j.error.message};
   if(r.status!==404)break}
  throw last||{code:"api"}}
@@ -692,7 +718,7 @@ if(STANDALONE&&location.protocol==="https:"&&"serviceWorker" in navigator){navig
 (async()=>{const use=n=>(window.claude&&typeof window.claude.use==="function")?window.claude.use(n).catch(()=>null):Promise.resolve(null);
  const [d,u,a,t,dc]=STANDALONE?[null,null,null,null,null]:await Promise.all(["db","user","sample","tts","dictation"].map(use));
  ai=a||null;tts=t||null;dict=dc||null;
- if(STANDALONE){dict=makeWebDictation();ai=webAI}
+ if(STANDALONE){dict=NATIVE?(makeNativeDictation()||makeWebDictation()):makeWebDictation();ai=webAI}
  setupDict();
  if(d&&u){try{uid=await u.id()}catch(e){uid=null}if(uid){db=d;try{subscribe("progress");subscribe("words")}catch(e){db=null}}}
  softRender();
