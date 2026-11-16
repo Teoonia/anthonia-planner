@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "parla-app/**"
+      - "public/parla/**"
       - ".github/workflows/parla-android.yml"
   workflow_dispatch:
 
@@ -27,6 +28,12 @@ jobs:
           cache-dependency-path: parla-app/package-lock.json
 
       - run: npm ci
+
+      - name: Put the Parla! app files inside the Android app
+        run: |
+          cp ../public/parla/index.html ../public/parla/manifest.json ../public/parla/icon-192.png ../public/parla/icon-512.png www/
+          echo "window.PARLA_BUILD=${{ github.run_number }};" > www/build.js
+
       - run: npx cap sync android
 
       - uses: actions/setup-java@v5

@@ -23,8 +23,9 @@ listens to people (e.g. the cashier) and answers out loud, spaced-repetition wor
 and a timed weekly test.
 
 - **Android app**: built by GitHub Actions (`parla-app/`, workflow *Build Parla! Android app*) whenever `parla-app/` changes.
-  Download `parla.apk` from the newest **Parla!** release. It loads https://anthonia-board.netlify.app/parla/,
-  so web changes reach the app without reinstalling. Uses the phone's own microphone and Italian voice.
+  Download `parla.apk` from the newest **Parla!** release. The app carries its own copy of `public/parla/`
+  (no Netlify needed) and shows a "New version is ready" card when a newer release exists.
+  Uses the phone's own microphone and Italian voice.
 - Or open https://anthonia-board.netlify.app/parla/ in the browser → **Add to Home Screen**.
 - Speaking uses the browser's speech recognition (Chrome on Android, Safari on iPhone).
 - The AI coach needs a key: Settings ⚙️ → paste a free Gemini key from

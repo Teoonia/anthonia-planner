@@ -3,8 +3,6 @@
   "appName": "Parla!",
   "webDir": "www",
   "server": {
-    "url": "https://anthonia-board.netlify.app/parla/",
-    "androidScheme": "https",
-    "cleartext": false
+    "androidScheme": "https"
   }
 }

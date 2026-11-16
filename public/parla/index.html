@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#C24E2D">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script src="build.js" onerror="void 0"></script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parla!">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -124,7 +125,7 @@ a{color:var(--terra)}
 <div id="toast"></div>
 
 <script>
-const APP_VERSION="8";
+const APP_VERSION="9";
 /* ======================= CURRICULUM ======================= */
 const STAGES=[
  {lvl:"A1",title:"Survive & connect",weeks:"Weeks 1–7",desc:"Sounds, greetings, numbers, ordering, shopping, getting around and uni life. Goal: handle everyday transactions in Ancona."},
@@ -218,7 +219,7 @@ const UNITS=[
  role:"You are a young Italian friend from Ancona chatting casually and using natural slang and fillers; explain any she doesn't get. Use 'tu'.",mission:"Use 3 local expressions in real conversations."}
 ];
 const PLACES=[["supermercato","🛒","Supermarket"],["bar","☕","Café / bar"],["farmacia","💊","Pharmacy"],["stazione","🚆","Station / bus"],["università","🎓","University"],["negozio","🏷️","Shop / work"],["medico","🩺","Doctor"],["casa","🏠","Landlord / home"],["altro","💬","Anywhere"]];
-const FREE={id:"free",e:"🗣️",title:"Chiacchierata libera",en:"Free chat",role:"You are Giulia, a warm Italian friend from Ancona having a relaxed chat about her life, studies, plans, food and Italy. Use 'tu'."};
+const FREE={id:"free",e:"🗣️",title:"Chiacchierata libera",en:"Free chat",role:"You are Giulia, a warm, patient Italian friend from Ancona chatting with her about everyday things she can talk about with the phrases she knows. Use 'tu'."};
 
 /* ======================= STATE & STORAGE ======================= */
 const dayStr=d=>{d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
@@ -324,7 +325,8 @@ const dots=()=>`<span style="display:inline-flex;gap:4px;vertical-align:middle">
 function quizCard(){if(!quizOpen()){const n=practiceDays(),t=last7()[6];return`<button class="card" style="width:100%;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center" data-a="quizlocked"><span style="font-size:30px">🔒</span><span style="flex:1"><b>${L("Test della settimana","Weekly test")}</b><br><span class="mute" style="font-size:14px">Practise on ${PRACTICE_DAYS} days this week to unlock · ${n}/${PRACTICE_DAYS}</span><br>${dots()} <span class="mute" style="font-size:12.5px">${t.ok?"today ✓":"today "+t.xp+"/"+PRACTICE_XP+" XP"}</span></span></button>`}const last=(S.quizzes||[]).slice(-1)[0];const wk=new Date().getDay();const weekend=wk===0||wk===5||wk===6;
  const recent=last&&(Date.now()-new Date(last.d+"T12:00:00").getTime())<6*864e5;
  return`<button class="card ${weekend&&!recent?"terra":""}" style="width:100%;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center" data-a="go" data-v="quiz"><span style="font-size:30px">⏱️</span><span style="flex:1"><b>${L("Test della settimana","Weekly test")}</b><br><span class="${weekend&&!recent?"":"mute"}" style="font-size:14px">${recent?"Last score: "+last.s+"/"+last.n+" ("+last.pct+"%) · retake any time":weekend?"Unlocked! 12 timed questions on this week":"Timed test on what you learnt this week"}</span></span><span>›</span></button>`}
-function vToday(){const h=new Date().getHours();const greet=h<5?"Buonanotte":h<13?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
+function vToday(){return updateCard()+vToday0()}
+function vToday0(){const h=new Date().getHours();const greet=h<5?"Buonanotte":h<13?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
  const t=today(),goal=40,pct=Math.min(100,Math.round(100*t.xp/goal)),nu=nextUnit(),due=dueWords().length,doneN=UNITS.filter(u=>S.units[u.id]&&S.units[u.id].done).length;
  const pool=UNITS.filter(u=>u.id<=nu.id).flatMap(u=>u.p);const seed=[...dayStr()].reduce((a,c)=>a+c.charCodeAt(0),0);const fd=pool[seed%pool.length];
  const plan=[["review","⭐","Ripassa le parole","Review your words",due?due+" due":"all caught up",'data-a="go" data-v="words"'],["lesson","📘","Una lezione","One lesson or drill","Unit "+nu.id,'data-a="unit" data-id="'+nu.id+'"'],["chat","🗣️","Conversazione (5 min)","Talk with the coach","role-play",'data-a="startchat" data-id="'+nu.id+'"'],["help","🛒","Missione reale","Use Italian out there",nu.mission,'data-a="go" data-v="help"']];
@@ -389,17 +391,18 @@ function vDrill(u){if(!drill||drill.unit!==u.id)initDrill(u);const d=drill;
 
 function vTalk(){if(!chat){const lv=S.level;const list=UNITS.filter(u=>u.id>0);
  return`<div style="margin-top:14px"><h1>${L("Parla con me","Conversation practice")}</h1><div class="mute" style="margin-top:4px">Real conversations with an AI coach who plays the other person, corrects you gently and helps you reply.</div></div>
- <div class="card"><div class="row"><b style="flex:1">Your level</b><div class="seg" style="width:180px">${["A1","A2","B1"].map(l=>`<button class="${lv===l?"on":""}" data-a="level" data-l="${l}">${l}</button>`).join("")}</div></div></div>
+ <div class="card olive" style="font-size:14.5px">🎯 The coach speaks at <b>your level (${curLevel()})</b> and only uses what you've studied up to <b>Unit ${nextUnit().id}</b>. Tap <b>😵 Too hard</b> any time and it slows down.</div>
  <button class="card terra" style="width:100%;text-align:left;cursor:pointer" data-a="startchat" data-id="free"><b style="font-size:18px">🗣️ ${L("Chiacchierata libera","Free chat")}</b><div class="mute" style="font-size:14px;margin-top:4px">Just talk about anything with Giulia, your Italian friend.</div></button>
  <div class="card"><b>✍️ ${L("La tua situazione","Your own situation")}</b><div class="mute" style="font-size:14px;margin:4px 0 8px">Describe any scene to rehearse — e.g. “opening a bank account at Intesa”.</div><div class="row"><input type="text" id="customScn" data-in placeholder="Describe a situation…" value="${esc(inputs.customScn||"")}"><button class="btn pri" data-a="startcustom">Go</button></div></div>
- <h3 style="margin:18px 0 8px">${L("Scenari","Scenarios")}</h3><div class="grid2">${list.map(u=>`<button class="scn" data-a="startchat" data-id="${u.id}"><b>${u.e}</b><span class="lv">${u.lvl}</span><div style="font-weight:600;font-size:14.5px">${esc(u.title)}</div><div class="mute" style="font-size:12.5px">${esc(u.en)}</div></button>`).join("")}</div>`}
+ <h3 style="margin:18px 0 8px">${L("Scenari","Scenarios")}</h3><div class="mute" style="font-size:13px;margin:-4px 0 8px">Unlocked as you reach each unit.</div><div class="grid2">${list.map(u=>u.id>nextUnit().id||!stageOpen(u.lvl)?`<button class="scn" style="opacity:.45" data-a="scnlocked" data-id="${u.id}"><b>🔒</b><span class="lv">${u.lvl}</span><div style="font-weight:600;font-size:14.5px">${esc(u.title)}</div><div class="mute" style="font-size:12.5px">${esc(u.en)}</div></button>`:`<button class="scn" data-a="startchat" data-id="${u.id}"><b>${u.e}</b><span class="lv">${u.lvl}</span><div style="font-weight:600;font-size:14.5px">${esc(u.title)}</div><div class="mute" style="font-size:12.5px">${esc(u.en)}</div></button>`).join("")}</div>`}
  const c=chat,vm=S.voiceMode;
  const tuBub=(m,i)=>{if(vm&&!m.reveal)return`<div class="bub tu vbub"><div class="row"><span class="wave">🎧</span><b style="flex:1;font-size:14.5px">${S.immersion?"Ascolta…":"Listen…"}</b><button class="say" style="width:34px;height:34px" data-a="say" data-t="${esc(m.it)}" aria-label="Replay">🔁</button><button class="say slow" style="width:34px;height:34px" data-a="say" data-slow="1" data-t="${esc(m.it)}" aria-label="Slower">🐢</button></div><button class="wchip" style="background:#eef2e8;color:var(--olive)" data-a="reveal" data-i="${i}">👁 Show text</button></div>`;
   return`<div class="bub tu"><div class="row" style="align-items:flex-start"><div style="flex:1;font-size:16.5px">${esc(m.it)}</div><button class="say" style="width:32px;height:32px" data-a="say" data-t="${esc(m.it)}">🔊</button></div>${m.show?`<div class="tr">${esc(m.en)}</div>`:""}<div><button class="wchip" style="background:#eef2e8;color:var(--olive)" data-a="tr" data-i="${i}">🇬🇧 ${m.show?"Hide":"English"}</button>${(m.words||[]).map(w=>`<button class="wchip" data-a="save" data-it="${esc(w.it)}" data-en="${esc(w.en)}">⭐ ${esc(w.it)}</button>`).join("")}</div></div>`};
  const fixCard=(m,i)=>!m.fix?"":(vm&&!m.fixShow)?`<button class="fix" style="cursor:pointer" data-a="showfix" data-i="${i}">✏️ ${S.immersion?"Correzione":"Tap to see a correction"}</button>`:`<div class="fix">✏️ <b>${esc(m.fix.better)}</b> <button class="say" style="width:30px;height:30px;display:inline-grid;vertical-align:middle" data-a="say" data-t="${esc(m.fix.better)}">🔊</button><div class="mute" style="font-size:13.5px;margin-top:3px">${esc(m.fix.why)}</div></div>`;
- return`<div class="row" style="margin-top:12px"><button class="btn sm" data-a="endchat">‹ End</button><div style="flex:1;min-width:0"><b>${c.e} ${esc(c.title)}</b><div class="mute" style="font-size:12.5px">${S.level} · ${vm?"listening mode":"tap 🇬🇧 for English"}</div></div>${vm?"":`<button class="btn sm" data-a="autoplay">${S.autoplay?"🔊 Auto":"🔇 Auto"}</button>`}</div>
+ return`<div class="row" style="margin-top:12px"><button class="btn sm" data-a="endchat">‹ End</button><div style="flex:1;min-width:0"><b>${c.e} ${esc(c.title)}</b><div class="mute" style="font-size:12.5px">${c.lvl||curLevel()} · your level · ${vm?"listening mode":"tap 🇬🇧 for English"}</div></div>${vm?"":`<button class="btn sm" data-a="autoplay">${S.autoplay?"🔊 Auto":"🔇 Auto"}</button>`}</div>
  <div class="seg" style="margin-top:10px"><button class="${vm?"":"on"}" data-a="vmode" data-m="0">💬 Text + audio</button><button class="${vm?"on":""}" data-a="vmode" data-m="1">🎧 Voice only</button></div>
- ${vm?`<div class="mute" style="font-size:13px;margin-top:8px;text-align:center">Just listen and answer out loud. Text stays hidden unless you tap 👁.</div>`:""}
+ <div class="row" style="justify-content:center;margin-top:8px;gap:8px"><button class="chip" data-a="toohard" ${c.busy?"disabled":""}>😵 Too hard — simpler please</button></div>
+ ${vm?`<div class="mute" style="font-size:13px;margin-top:6px;text-align:center">Just listen and answer out loud. Text stays hidden unless you tap 👁.</div>`:""}
  <div class="msgs" id="msgs">${c.msgs.map((m,i)=>m.role==="me"?`<div class="bub me">${vm&&!m.reveal?"🗣️ "+esc(m.it):esc(m.it)}</div>${fixCard(m,i)}${m.praise?`<div class="praise">${esc(m.praise)} ✓</div>`:""}`:tuBub(m,i)).join("")}
  ${c.busy?`<div class="bub tu"><span class="dots"><span></span><span></span><span></span></span></div>`:""}${c.err?`<div class="mute" style="text-align:center">${esc(c.err)} <button class="btn sm" data-a="chatretry">Retry</button></div>`:""}</div>`}
 function vTalkBar(){if(view!=="talk"||!chat)return"";const last=[...chat.msgs].reverse().find(m=>m.role==="tu");const sug=chat.showSug&&last&&last.suggestions||[];
@@ -629,7 +632,7 @@ function vExam(){const z=exam;if(!z)return vCourse();const E=EXAMS[z.l];
 /* ======================= SETTINGS SHEET ======================= */
 function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" data-stop><div class="in"><div class="row"><h2 style="flex:1">${L("Impostazioni","Settings")}</h2><button class="icon" data-a="close">✕</button></div>
  <div class="card"><b>Your name</b><input type="text" id="nameIn" value="${esc(S.name)}" style="margin-top:8px"></div>
- <div class="card"><div class="row"><b style="flex:1">Conversation level</b><div class="seg" style="width:180px">${["A1","A2","B1"].map(l=>`<button class="${S.level===l?"on":""}" data-a="level" data-l="${l}">${l}</button>`).join("")}</div></div>
+ <div class="card"><div class="mute" style="font-size:13.5px">🎯 Your level: <b>${curLevel()}</b> — set by your course and exams.</div>
  <div class="row" style="margin-top:14px"><b style="flex:1">Voice speed</b><div class="seg" style="width:200px">${[[.8,"Slow"],[1,"Normal"],[1.15,"Fast"]].map(r=>`<button class="${S.rate===r[0]?"on":""}" data-a="rate" data-r="${r[0]}">${r[1]}</button>`).join("")}</div></div>
  <div class="toggle" style="margin-top:12px"><div><b>Auto-play coach replies</b><div class="mute" style="font-size:13.5px">Hear every reply in conversation practice</div></div><button class="sw ${S.autoplay?"on":""}" data-a="autoplay"></button></div>
  <div class="toggle"><div><b>🇮🇹 Immersion mode</b><div class="mute" style="font-size:13.5px">Switches this app's words to Italian only. Turn off any time.</div></div><button class="sw ${S.immersion?"on":""}" data-a="immersion"></button></div></div>
@@ -641,7 +644,7 @@ function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" da
  <div class="mute" style="font-size:13px;margin-top:8px">Easier start: set just WhatsApp, Instagram or TikTok to Italian. Add Italian as a keyboard too, so voice typing understands you.</div></div>
  <div class="mute" style="font-size:12.5px;text-align:center">${cloud==="cloud"?"☁️ Progress synced to your Claude account":"📱 Progress saved on this device"} · ${STANDALONE?(KEYS.p.key?"AI coach ready":"Add a key for the AI coach"):ai?"AI coach ready":"AI coach unavailable here"}</div>
  <button class="btn pri full" style="margin-top:12px" data-a="close">Done</button>
- <div class="row" style="justify-content:center;margin-top:12px;gap:10px"><span class="mute" style="font-size:12.5px">Parla! version ${APP_VERSION}${NATIVE?" · app":""}</span><button class="btn sm" data-a="reloadapp">↻ Check for updates</button></div></div></div>`;
+ <div class="row" style="justify-content:center;margin-top:12px;gap:10px"><span class="mute" style="font-size:12.5px">Parla! version ${APP_VERSION}${NATIVE?" · app build "+BUILD:""}</span><button class="btn sm" data-a="${NATIVE?"checkupd":"reloadapp"}">↻ Check for updates</button></div>${updateCard()}<div></div></div></div>`;
  o.classList.add("show")}
 function aiSettings(){const c=KEYS.p;return`<div class="card"><b>🤖 AI coach key</b><div class="mute" style="font-size:13.5px;margin:4px 0 8px">Outside Claude, the coach runs on your own key. It stays only on this phone. Get a free Gemini key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</div>
  <div class="seg"><button class="${c.provider!=="claude"?"on":""}" data-a="prov" data-p="gemini">Gemini (free)</button><button class="${c.provider==="claude"?"on":""}" data-a="prov" data-p="claude">Claude API</button></div>
@@ -667,15 +670,38 @@ function go(v,id){if(v!=="quiz")stopQuizTimer();if(v!=="exam")stopExamTimer();vi
 function route(){const h=location.hash.slice(1);const m=h.match(/^unit-(\d+)$/);if(m&&U(m[1])){view="unit";unitId=+m[1]}else if(["today","course","talk","help","words","quiz","exam"].includes(h))view=h;else view="today";if(view!=="quiz")stopQuizTimer()}
 window.addEventListener("hashchange",()=>{route();render()});
 
+/* ======================= WHAT SHE KNOWS (keeps the coach at her level) ======================= */
+function curLevel(){const nu=nextUnit();let l=nu.lvl;if(!stageOpen(l)){l=LEVELS.slice().reverse().find(x=>stageOpen(x))||"A1"}return l}
+function knownContext(focusId){const nu=nextUnit();const maxId=Math.max(focusId==null?nu.id:focusId,0);const cut=Date.now()-7*864e5;
+ const isWeek=u=>{const s=S.units[u.id]||{};return[s.seen,s.doneDay].some(d=>d&&new Date(d+"T12:00:00").getTime()>=cut)};
+ const taught=UNITS.filter(u=>u.id<=maxId&&stageOpen(u.lvl));const focus=U(maxId);
+ const order=[focus,...taught.filter(u=>u!==focus&&isWeek(u)).reverse(),...taught.filter(u=>u!==focus&&!isWeek(u)).reverse()].filter(Boolean);
+ const phrases=[];order.forEach(u=>u.p.forEach(p=>{if(phrases.length<60)phrases.push(p[0])}));
+ const words=W.list.slice(0,30).map(w=>w.it);
+ const early=maxId<=3;const lvl=focus?focus.lvl:"A1";
+ return{lvl,early,text:`HER PROGRESS: she is on unit ${maxId} of ${UNITS.length} of a gradual course (${lvl}).${early?" She is an ABSOLUTE BEGINNER — only days into Italian.":""}
+UNITS SHE HAS STUDIED: ${order.map(u=>u.title+" ("+u.en+")").join("; ")||"none yet"}
+PHRASES SHE KNOWS: ${phrases.join(" | ")}
+GRAMMAR SHE HAS COVERED: ${order.map(u=>u.grammar.split(". ")[0]).join(" / ")}
+${words.length?"WORDS SHE SAVED: "+words.join(", "):""}
+HOW TO SPEAK TO HER (most important rules):
+- Build every reply from the phrases and words above. She must be able to understand you.
+- ${early?"Very short: 1 sentence of max 6 words, or 2 tiny sentences. Present tense only. Use cognates (ciao, grazie, caffè, pizza).":lvl==="A1"?"1–2 short sentences, max 8 words each. Present tense only.":lvl==="A2"?"1–2 short sentences, max 12 words each. Present and passato prossimo only if covered above.":"2–3 natural sentences; only grammar listed above."}
+- At most ONE word she hasn't seen per reply, and list it in "words".
+- Go slowly and recycle the same phrases several times, like a patient teacher. Ask simple questions she can answer with the phrases above.
+- "suggestions" must use the phrases she knows, so she can copy them.
+- If she seems lost (English, '?', 'non capisco', very short answers), make the next reply even simpler.`}}
 /* ======================= ACTIONS ======================= */
 async function startChat(scn){if(listening&&dict)dict.stop().catch(()=>{});
- chat={scn,e:scn.e||"🗣️",title:scn.title,msgs:[],busy:true,err:"",history:[],showSug:false};view="talk";
+ const kc=knownContext(scn.unit);
+ chat={scn,e:scn.e||"🗣️",title:scn.title,msgs:[],busy:true,err:"",history:[],showSug:false,easier:0,lvl:kc.lvl};view="talk";
  try{history.replaceState(null,"","#talk")}catch(e){}render();
- const sys=`You are an Italian conversation partner and coach for ${who()}. Her level: ${LVL[S.level]}.
+ const sys=`You are a patient Italian conversation partner and coach for ${who()}.
 ROLE-PLAY: ${scn.role}
-Rules:
-- Stay in role. Speak natural, real-life Italian as people in Ancona would, simplified to her level.
-- Each reply: 1–3 short sentences, usually ending with a question or prompt so the conversation continues.
+${kc.text}
+Other rules:
+- Stay in role, as people in Ancona would speak — but always at HER level, as set out above.
+- Usually end with a simple question so the conversation continues.
 - If she writes English or mixes languages, reply in Italian and give the Italian for what she meant in "correction".
 - Correct only real mistakes (grammar, wrong word, gender/agreement, tu/Lei register). Ignore missing accents, capitals and small typos from voice typing. If her message is fine, "correction" is null and "praise" is a short Italian praise (2–4 words).
 Return ONLY a JSON object, no markdown, in this exact shape:
@@ -692,7 +718,7 @@ async function chatTurn(){const c=chat;c.busy=true;c.err="";render();
   if(S.autoplay||S.voiceMode)speak(msg.it);
  }catch(e){if(chat!==c)return;c.busy=false;c.err=aiErr(e);render()}}
 function sendChat(forced){const el=$("#chatIn");const t=(forced||(el&&el.value)||inputs.chatIn||"").trim();if(!t||!chat||chat.busy)return;if(listening&&dict)dict.stop().catch(()=>{});
- chat.msgs.push({role:"me",it:t});chat.history.push({role:"user",content:`She says: "${t}"\nReply in role with the JSON object only.`});
+ chat.msgs.push({role:"me",it:t});chat.history.push({role:"user",content:`She says: "${t}"\nReply in role with the JSON object only. Stay within the phrases and grammar she knows; short sentences.${chat.easier?" She has found it hard: keep it EXTRA simple and slow.":""}`});
  inputs.chatIn="";dictBase="";const n=chat.msgs.filter(m=>m.role==="me").length;activity("chat",n<=10?3:1);chatTurn()}
 async function hScroll(){setTimeout(()=>{const h=document.getElementById("hres");if(h)h.scrollIntoView({behavior:"smooth",block:"start"})},60)}
 async function helpGo(){const el=$("#helpIn");const t=(el&&el.value||"").trim();if(!t){toast("Type or say something first");return}if(help.busy)return;
@@ -700,13 +726,13 @@ async function helpGo(){const el=$("#helpIn");const t=(el&&el.value||"").trim();
  const pl=(PLACES.find(p=>p[0]===help.place)||PLACES[0])[2];const mode=help.mode;
  const ctx=help.log.length?"Conversation so far:\n"+help.log.slice(-6).map(x=>(x.who==="they"?"Them: ":"Her: ")+x.it).join("\n")+"\n":"";
  help.busy=true;help.err="";help.res=null;const gen=help.gen=(help.gen||0)+1;render();hScroll();
- const prompt=mode==="heard"?`You help ${who()} understand and answer people in real time. Her Italian level: ${LVL[S.level]}. Place: ${pl}.
+ const prompt=mode==="heard"?`You help ${who()} understand and answer people in real time. Her Italian level: ${LVL[curLevel()]}. Place: ${pl}.
 Her usual preferences (use them to pick the best reply): ${S.helpPrefs||"none given"}
 ${ctx}Someone just said this to her (from speech-to-text, so it may contain recognition errors or be partly English-spelled): "${t}"
 Return ONLY JSON, no markdown:
 {"heard":"the most likely intended Italian sentence, corrected","meaning":"clear natural English meaning","simple":"the same idea in very simple Italian (or empty if already simple)","replies":[{"it":"short natural reply she can say right now","en":"English meaning","say":"easy pronunciation guide for an English speaker, hyphenated syllables, stressed syllable in CAPS"}],"tip":"one short practical or cultural tip for this moment, or empty","best":0}
 "best" is the index of the reply that best fits her preferences and the conversation so far. Give exactly 3 replies covering the most likely answers (e.g. yes / no / please repeat, or the most useful options). Use Lei with staff and strangers.`
- :`You help ${who()} say things in Italian in real life, right now. Her level: ${LVL[S.level]}. Place: ${pl}.
+ :`You help ${who()} say things in Italian in real life, right now. Her level: ${LVL[curLevel()]}. Place: ${pl}.
 ${ctx}She wants to say (in English or broken Italian): "${t}"
 Return ONLY JSON, no markdown:
 {"options":[{"it":"natural Italian sentence","en":"back-translation in English","say":"easy pronunciation guide for an English speaker, hyphenated syllables, stressed syllable in CAPS","note":"when to use it, e.g. polite / casual"}],"listen_for":[{"it":"something they will likely answer","en":"English"}],"tip":"one short practical or cultural tip, or empty"}
@@ -725,7 +751,7 @@ Return ONLY JSON: {"items":[{"en":"...","it":"..."}]}`,"default");
   const items=(r.items||[]).filter(x=>x&&x.en&&x.it);if(!items.length)throw{};drill.items=items;drill.i=0;drill.res=null;drill.scores=[];drill.why="";drill.busy=false;render()
  }catch(e){drill.busy=false;drill.err=aiErr(e);render()}}
 async function drillWhy(){const it=drill.items[drill.i],ans=drill.res&&drill.res.ans;drill.busy=true;render();
- try{const r=await askJSON(`An English-speaking learner of Italian (level ${S.level}) was asked to say "${it.en}". Expected answer: "${it.it}". She said: "${ans}". In 2–3 short English sentences: say whether her version is also correct/acceptable, and explain the key difference. Be encouraging. Ignore missing accents and capitals. Return ONLY JSON: {"ok":true,"explain":"..."}`,"default");
+ try{const r=await askJSON(`An English-speaking learner of Italian (level ${curLevel()}) was asked to say "${it.en}". Expected answer: "${it.it}". She said: "${ans}". In 2–3 short English sentences: say whether her version is also correct/acceptable, and explain the key difference. Be encouraging. Ignore missing accents and capitals. Return ONLY JSON: {"ok":true,"explain":"..."}`,"default");
   drill.why=(r.ok?"✅ ":"")+(r.explain||"");}catch(e){drill.why=aiErr(e)}drill.busy=false;render()}
 function startReview(){const due=dueWords().slice(0,20);for(let i=due.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[due[i],due[j]]=[due[j],due[i]]}
  review={q:due,i:0,flip:false,n:0,dir:Math.random()<.5?"it":"en"};render()}
@@ -748,7 +774,7 @@ const A={
   if(listening){dict.stop().catch(()=>{});return}
   dictLang=t.dataset.lang||"it-IT";if(el.id==="helpIn"){el.value="";inputs.helpIn=""}dictTarget=el;dictTargetId=el.id;dictBase=el.value?el.value.replace(/\s*$/," "):"";const au=t.dataset.auto;dictAuto=au==="qtype"?()=>A.qtype():au==="hgo"?helpGo:au==="dcheck"?()=>A.dcheck():au==="send"?()=>sendChat():null;
   dict.start().catch(e=>{dictAuto=null;if(e&&e.code==="not_granted"){dict=null;render();toast("Microphone not allowed — use your keyboard's mic instead")}else if(e&&e.code==="timeout")toast("The microphone didn't respond — close and reopen the app");else toast("Couldn't start the mic — try again")})},
- startchat:t=>{const id=t.dataset.id;if(id==="free")startChat(FREE);else{const u=U(id);startChat({e:u.e,title:u.title,role:u.role})}},
+ startchat:t=>{const id=t.dataset.id;if(id==="free")startChat(FREE);else{const u=U(id);startChat({e:u.e,title:u.title,role:u.role,unit:u.id})}},
  startcustom:()=>{const v=(($("#customScn")||{}).value||"").trim();if(!v){toast("Describe a situation first");return}inputs.customScn="";startChat({e:"✍️",title:v.slice(0,40),role:`Act as the most natural Italian person for this situation she wants to rehearse: "${v}". Choose tu or Lei as an Italian would.`})},
  endchat:()=>{if(listening&&dict)dict.stop().catch(()=>{});chat=null;render()},
  send:()=>sendChat(),chatretry:()=>chatTurn(),
@@ -757,10 +783,14 @@ const A={
  showfix:t=>{const m=chat.msgs[+t.dataset.i];m.fixShow=true;render();if(m.fix)speak(m.fix.better)},
  vmode:t=>{S.voiceMode=t.dataset.m==="1";persist("progress");if(chat)chat.typing=false;render()},
  typing:()=>{if(listening&&dict)dict.stop().catch(()=>{});dictAuto=null;chat.typing=!chat.typing;render()},
+ scnlocked:t=>toast("🔒 Reach Unit "+t.dataset.id+" in the course first"),
+ toohard:()=>{if(!chat||chat.busy)return;chat.easier++;const last=chat.msgs[chat.msgs.length-1];
+  if(last&&last.role==="tu"){chat.msgs.push({role:"me",it:"Più semplice, per favore 🙏"});chat.history.push({role:"user",content:"(She did not understand. Say your last message again MUCH more simply: one very short sentence using only phrases she knows, then a very easy question. Keep it this simple from now on. Same JSON shape; correction null.)"});chatTurn()}else toast("Got it — the coach will keep it simpler")},
  notunderstood:()=>sendChat("Scusa, non ho capito. Puoi ripetere più lentamente?"),
  sug:()=>{if(!chat)return;chat.showSug=!chat.showSug;render()},
  usesug:t=>{inputs.chatIn=t.dataset.t;chat.showSug=false;render();const el=$("#chatIn");if(el){el.focus()}speak(t.dataset.t)},
  place:t=>{help.place=t.dataset.p;render()},
+ checkupd:()=>{toast("Checking…");checkUpdate(true).then(()=>{if($("#overlay").classList.contains("show"))openSettings()})},
  fastmode:()=>{const c=KEYS.p;c.fast=!c.fast;delete c.model;LS.set("parla_ai",c);openSettings();toast(c.fast?"Fast mode on ⚡":"Best quality mode")},
  speedtest:async()=>{const out=$("#speedRes");if(out)out.textContent="Testing…";const t0=Date.now();
   try{const r=await webAI('Reply with ONLY this JSON: {"reply":"Ciao! Come stai?"}',{});const sec=((Date.now()-t0)/1000).toFixed(1);const c=KEYS.p;
@@ -886,16 +916,22 @@ async function webAI(input,opts){let cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"}
   if(r.status!==404)break}
  throw last||{code:"api"}}
 
+/* ======================= APP UPDATES (Android app checks GitHub releases) ======================= */
+let update=null;const BUILD=+(window.PARLA_BUILD||0);
+async function checkUpdate(manual){if(!NATIVE)return;try{const r=await tfetch("https://api.github.com/repos/Teoonia/anthonia-planner/releases?per_page=20",{},10000);const j=await r.json();
+ const best=(Array.isArray(j)?j:[]).map(x=>({n:+((x.tag_name||"").match(/^parla-(\d+)$/)||[])[1]||0,a:(x.assets||[]).find(a=>/\.apk$/.test(a.name))})).filter(x=>x.n&&x.a).sort((a,b)=>b.n-a.n)[0];
+ if(best&&best.n>BUILD){update={n:best.n,url:best.a.browser_download_url};softRender()}else if(manual)toast("✓ You have the latest version")}catch(e){if(manual)toast("Couldn't check for updates — no internet?")}}
+const updateCard=()=>update?`<a class="card terra" style="display:flex;gap:12px;align-items:center;text-decoration:none;color:#fff" href="${esc(update.url)}"><span style="font-size:28px">⬇️</span><span style="flex:1"><b>New version of Parla! is ready</b><br><span style="font-size:14px;color:#fbe0d6">Tap to download, then open the file to update. Your progress stays.</span></span></a>`:"";
 /* ======================= BOOT ======================= */
 route();render();
-if(STANDALONE&&location.protocol==="https:"&&"serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+if(STANDALONE&&!NATIVE&&location.protocol==="https:"&&"serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 (async()=>{const use=n=>(window.claude&&typeof window.claude.use==="function")?window.claude.use(n).catch(()=>null):Promise.resolve(null);
  const [d,u,a,t,dc]=STANDALONE?[null,null,null,null,null]:await Promise.all(["db","user","sample","tts","dictation"].map(use));
  ai=a||null;tts=t||null;dict=dc||null;
  if(STANDALONE){dict=NATIVE?makeNativeDictation():makeWebDictation();ai=webAI}
  setupDict();
  if(d&&u){try{uid=await u.id()}catch(e){uid=null}if(uid){db=d;try{subscribe("progress");subscribe("words")}catch(e){db=null}}}
- softRender();
+ softRender();checkUpdate(false);
 })();
 </script>
 </body>
