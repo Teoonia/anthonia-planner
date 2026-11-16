@@ -13,6 +13,7 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // Firebase, fonts etc. handle themselves
+  if (url.pathname.startsWith("/parla")) return; // Parla! Italian coach has its own service worker
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then((res) => {
       const copy = res.clone(); caches.open(CACHE).then((c) => c.put("/", copy)); return res;

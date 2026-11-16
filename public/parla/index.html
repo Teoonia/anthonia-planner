@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Parla! Italian Coach</title>
+<meta name="theme-color" content="#C24E2D">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Parla!">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBF6EE;--card:#fff;--ink:#1E2621;--mute:#6A6E64;--line:#EADFCF;--terra:#C24E2D;--terra2:#F7E3DA;--olive:#4C6B3C;--olive2:#E3ECDA;--gold:#D9982A;--gold2:#FBEFD5;--r:18px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Inter,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+h1,h2,h3,.serif{font-family:Fraunces,Georgia,serif;letter-spacing:-.01em;margin:0}
+h1{font-size:28px;line-height:1.15}h2{font-size:21px;line-height:1.2}h3{font-size:17px}
+small,.mute{color:var(--mute)}small{font-size:12.5px;font-family:Inter,sans-serif;font-weight:500}
+.top{position:sticky;top:0;z-index:20;background:rgba(251,246,238,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;border-bottom:1px solid var(--line)}
+.top .in{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.logo{font-family:Fraunces,serif;font-weight:700;font-size:22px;display:flex;align-items:center;gap:8px}
+.flag{display:inline-flex;width:18px;height:14px;border-radius:3px;overflow:hidden}.flag i{flex:1}.flag i:nth-child(1){background:#2E7D4F}.flag i:nth-child(2){background:#fff;border-top:1px solid #ddd;border-bottom:1px solid #ddd}.flag i:nth-child(3){background:#C9372C}
+.sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;background:var(--gold2);font-weight:600;font-size:14px}
+.icon{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;font-size:17px;flex:none}
+.wrap{max-width:560px;margin:0 auto;padding:6px 16px calc(120px + env(safe-area-inset-bottom))}
+.wrap.chatpad{padding-bottom:calc(230px + env(safe-area-inset-bottom))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:12px 0}
+.card.terra{background:var(--terra);color:#fff;border-color:var(--terra)}.card.terra small,.card.terra .mute{color:#fbe0d6}
+.card.olive{background:var(--olive2);border-color:#cfdcc1}.card.gold{background:var(--gold2);border-color:#f0dcae}
+.row{display:flex;align-items:center;gap:10px}.col{display:flex;flex-direction:column;gap:8px}.wrapx{flex-wrap:wrap}
+.btn{border:0;border-radius:14px;padding:12px 16px;font-weight:600;cursor:pointer;background:#fff;border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px}
+.btn.pri{background:var(--terra);border-color:var(--terra);color:#fff}.btn.ol{background:var(--olive);border-color:var(--olive);color:#fff}
+.btn.wh{background:#fff;color:var(--terra);border-color:#fff}.btn.full{width:100%}.btn.sm{min-height:36px;padding:7px 12px;font-size:14px;border-radius:11px}
+.btn:disabled{opacity:.5}
+.chip{border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 13px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.sugs .chip{flex:none;white-space:nowrap}.seg button{white-space:nowrap}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.say{border:0;background:var(--olive2);color:var(--olive);width:38px;height:38px;border-radius:12px;cursor:pointer;font-size:16px;flex:none;display:grid;place-items:center}
+.say.slow{background:var(--gold2);color:#8a5d0b}
+.say.save{background:var(--terra2);color:var(--terra)}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;cursor:pointer;color:var(--mute);font-size:11.5px;font-weight:600;border-radius:12px}
+.tab b{font-size:20px;line-height:1}.tab.on{color:var(--terra);background:var(--terra2)}
+.tab span small{display:block;font-size:9.5px;font-weight:500;color:inherit;opacity:.8}
+.bar{height:9px;border-radius:9px;background:#efe6d6;overflow:hidden}.bar i{display:block;height:100%;background:var(--olive);border-radius:9px}
+.phrase{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}.phrase:first-child{border-top:0}
+.phrase .t{flex:1}.it{font-weight:600;font-size:17px}.en{color:var(--mute);font-size:14.5px}.note{font-size:13px;color:#8a5d0b;background:var(--gold2);border-radius:8px;padding:3px 8px;display:inline-block;margin-top:4px}
+.stage{margin-top:22px}.stage h2{display:flex;align-items:baseline;gap:8px}
+.unit{display:flex;gap:12px;align-items:center;padding:13px;border:1px solid var(--line);border-radius:16px;background:#fff;margin:8px 0;cursor:pointer;width:100%;text-align:left}
+.num{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:700;background:var(--terra2);color:var(--terra);flex:none;font-family:Fraunces,serif}
+.unit.done .num{background:var(--olive);color:#fff}.unit.next{border-color:var(--terra);box-shadow:0 0 0 3px var(--terra2)}
+textarea,input[type=text]{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;outline:none;resize:none}
+textarea:focus,input[type=text]:focus{border-color:var(--terra)}
+.mic{border:0;width:46px;height:46px;border-radius:14px;background:var(--ink);color:#fff;font-size:19px;cursor:pointer;flex:none}
+.mic.live{background:#d93a2b;animation:pulse 1.2s infinite}
+.bigmic{width:84px;height:84px;border-radius:50%;font-size:32px;margin:6px auto;display:block}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(217,58,43,.5)}70%{box-shadow:0 0 0 14px rgba(217,58,43,0)}100%{box-shadow:0 0 0 0 rgba(217,58,43,0)}}
+.kbtip{font-size:12.5px;color:var(--mute);background:#fff;border:1px dashed var(--line);border-radius:10px;padding:7px 10px;margin-top:8px}
+.msgs{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.bub{max-width:88%;padding:11px 14px;border-radius:18px;background:#fff;border:1px solid var(--line)}
+.bub.me{align-self:flex-end;background:var(--ink);color:#fff;border-color:var(--ink);border-bottom-right-radius:6px}
+.bub.tu{align-self:flex-start;border-bottom-left-radius:6px}
+.bub .tr{color:var(--mute);font-size:14px;margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
+.fix{align-self:flex-end;max-width:88%;background:var(--gold2);border:1px solid #f0dcae;border-radius:14px;padding:9px 12px;font-size:14.5px}
+.praise{align-self:flex-end;font-size:13px;color:var(--olive);font-weight:600}
+.wchip{font-size:13px;padding:5px 9px;border-radius:99px;background:var(--terra2);color:var(--terra);border:0;cursor:pointer;font-weight:600;margin:6px 4px 0 0}
+.inputbar{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));z-index:25;background:linear-gradient(to top,var(--bg) 82%,rgba(251,246,238,0));padding:14px 16px 8px}
+.inputbar .in{max-width:560px;margin:0 auto}
+.sugs{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}.sugs::-webkit-scrollbar{display:none}
+.sug{flex:none;max-width:260px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:8px 11px;font-size:14px;cursor:pointer}
+.sug small{display:block}
+.dots span{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mute);margin:0 2px;animation:b 1s infinite}.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,100%{opacity:.25}50%{opacity:1}}
+.opt{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+.opt .it{font-size:19px}.pron{font-size:13.5px;color:var(--olive);font-weight:600;margin-top:2px}
+.flash{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+.flash .it{font-size:26px;font-family:Fraunces,serif}
+.score{font-family:Fraunces,serif;font-size:34px;font-weight:700}
+.w-ok{color:var(--olive);font-weight:600}.w-miss{color:var(--terra);font-weight:700;text-decoration:underline wavy}
+.check{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.check:first-child{border-top:0}
+.tick{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex:none;font-size:14px}
+.tick.on{background:var(--olive);border-color:var(--olive);color:#fff}
+#overlay{position:fixed;inset:0;z-index:60;display:none;background:rgba(30,38,33,.45)}
+#overlay.show{display:block}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:90vh;overflow:auto;background:var(--bg);border-radius:24px 24px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom))}
+.sheet .in{max-width:560px;margin:0 auto}
+.showbig{position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;cursor:pointer}
+.showbig .it{font-family:Fraunces,serif;font-size:clamp(32px,9vw,60px);line-height:1.15}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:70;background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+.seg{display:flex;background:#efe6d6;border-radius:13px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:none;border-radius:10px;padding:9px 6px;font-weight:600;cursor:pointer;font-size:14px}
+.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.scn{border:1px solid var(--line);background:#fff;border-radius:16px;padding:12px;text-align:left;cursor:pointer}
+.scn b{display:block;font-size:22px;margin-bottom:4px}.scn .lv{font-size:11px;font-weight:700;color:var(--olive)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.sw{width:50px;height:30px;border-radius:30px;background:#ddd2bf;position:relative;border:0;cursor:pointer;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:var(--olive)}.sw.on::after{left:23px}
+.gram{background:var(--olive2);border-radius:14px;padding:12px 14px;font-size:15px}
+details summary{cursor:pointer;font-weight:600}
+.empty{text-align:center;padding:26px 10px;color:var(--mute)}
+a{color:var(--terra)}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div class="logo"><span class="flag"><i></i><i></i><i></i></span>Parla!</div>
+  <div class="sp"></div>
+  <span class="pill" id="streakPill">🔥 0</span>
+  <button class="icon" data-a="settings" aria-label="Settings">⚙️</button>
+</div></header>
+<main class="wrap" id="main"></main>
+<div id="inputbar"></div>
+<nav class="tabs"><div class="in" id="tabs"></div></nav>
+<div id="overlay"></div>
+<div id="toast"></div>
+
+<script>
+/* ======================= CURRICULUM ======================= */
+const STAGES=[
+ {lvl:"A1",title:"Survive & connect",weeks:"Weeks 1–7",desc:"Sounds, greetings, numbers, ordering, shopping, getting around and uni life. Goal: handle everyday transactions in Ancona."},
+ {lvl:"A2",title:"Live & work",weeks:"Weeks 8–15",desc:"Talk about your day and past, pharmacy, shopping, working in a shop, job interviews, phone calls. Goal: get a part-time job and handle it in Italian."},
+ {lvl:"B1",title:"Express yourself",weeks:"Weeks 16–24",desc:"Opinions, stories, solving problems, presenting, your field (environment & risk) and sounding like a local. Goal: real conversations with confidence."}
+];
+const UNITS=[
+{id:0,lvl:"A1",e:"🔤",title:"I suoni dell'italiano",en:"The sounds of Italian",goal:"Pronounce Italian correctly from day one.",
+ grammar:"Italian is read exactly as written. Key rules: C/G are soft before E/I (ciao = 'chow', gelato = 'jeh-'), hard before A/O/U and when followed by H (che = 'keh', spaghetti). GN = 'ny', GLI = 'ly', SCI/SCE = 'sh', Z/ZZ = 'ts'. Double consonants are held longer — it changes meaning (nono = ninth, nonno = grandpa). Every vowel is pronounced clearly.",
+ p:[["Ciao","Hi / Bye","CI = 'ch'"],["Che cosa?","What?","CH = 'k'"],["Gelato","Ice cream","GE = 'je'"],["Spaghetti","Spaghetti","GH = hard 'g'"],["Gnocchi","Gnocchi","GN = 'ny'"],["Famiglia","Family","GLI = 'ly'"],["Pizza","Pizza","ZZ = 'ts'"],["Nono, nonno","Ninth, grandfather","Hold the double N"],["Scusi","Excuse me (formal)","SCU = 'sku'"],["Pesce","Fish","SCE = 'sheh'"]],
+ role:"You are a friendly Italian teacher doing a playful pronunciation warm-up: ask her to type or say simple words and short greetings, and react kindly.",mission:"Read 5 shop signs or menu items out loud on your way to class."},
+{id:1,lvl:"A1",e:"👋",title:"Ciao! Presentarsi",en:"Introducing yourself",goal:"Greet people and introduce yourself, formally and informally.",
+ grammar:"ESSERE (to be): io sono, tu sei, lei/Lei è. Name: mi chiamo… Use TU with friends/peers, LEI (formal 'you', with the 3rd-person verb) with strangers, staff, older people. Adjectives match gender: nigeriano (m) / nigeriana (f).",
+ p:[["Ciao, mi chiamo Anthonia.","Hi, my name is Anthonia."],["Piacere!","Nice to meet you!"],["Sono nigeriana.","I'm Nigerian. (f)"],["Vivo ad Ancona.","I live in Ancona."],["Come stai? / Come sta?","How are you? (informal / formal)"],["Sto bene, grazie. E tu?","I'm fine, thanks. And you?"],["Non parlo bene l'italiano, ma sto imparando.","I don't speak Italian well, but I'm learning."],["Può parlare più lentamente, per favore?","Can you speak more slowly, please?"],["Buongiorno! Buonasera!","Good morning! Good evening!","Buonasera from ~5pm"]],
+ role:"You are Marco, a friendly Italian classmate meeting her for the first time before a lecture at Università Politecnica delle Marche. Use 'tu'.",mission:"Introduce yourself to one classmate or neighbour in Italian."},
+{id:2,lvl:"A1",e:"💶",title:"Numeri e prezzi",en:"Numbers, prices & paying",goal:"Understand prices and pay at any till.",
+ grammar:"Numbers: uno, due, tre, quattro, cinque, sei, sette, otto, nove, dieci… venti, trenta, cinquanta, cento. Prices: 'dieci euro e cinquanta' (€10.50). Quanto costa? (one item) / Quanto costano? (several).",
+ p:[["Quanto costa?","How much is it?"],["Quanto costano queste?","How much are these?"],["Sono dieci euro e cinquanta.","It's ten euros fifty."],["Posso pagare con la carta?","Can I pay by card?"],["Pago in contanti.","I'll pay in cash."],["Le serve una busta?","Do you need a bag?","Cashiers ask this a lot"],["No, grazie, ce l'ho.","No thanks, I have one."],["Vuole lo scontrino?","Do you want the receipt?"]],
+ role:"You are a cashier at a small shop in Ancona. Tell her prices, ask about bag, card or cash, receipt. Use 'Lei'.",mission:"Pay at a shop speaking only Italian."},
+{id:3,lvl:"A1",e:"☕",title:"Al bar",en:"At the café",goal:"Order drinks and snacks like a local.",
+ grammar:"VORREI = I would like (polite). Articles: un caffè / un cornetto (m), una brioche (f), un'acqua (f before vowel). PRENDO = I'll have.",
+ p:[["Un caffè, per favore.","An espresso, please.","'Caffè' = espresso"],["Vorrei un cappuccino e un cornetto.","I'd like a cappuccino and a croissant."],["Prendo un'acqua naturale.","I'll have a still water."],["Frizzante o naturale?","Sparkling or still?"],["Da portare via.","To take away."],["Pago alla cassa?","Do I pay at the till?","Often you pay first"],["Dov'è il bagno, per favore?","Where's the toilet, please?"],["Il conto, per favore.","The bill, please."]],
+ role:"You are a barista at a busy bar in Ancona in the morning. Take her order, ask follow-up questions (sparkling or still, here or take away), tell her the total. Use 'Lei' but be warm.",mission:"Order breakfast at a bar in Ancona."},
+{id:4,lvl:"A1",e:"🛒",title:"Supermercato e mercato",en:"Supermarket & market",goal:"Find things, ask for amounts, and get through checkout.",
+ grammar:"'Some' = del/della/dei/delle (del pane, della frutta). Amounts: un etto = 100 g, mezzo chilo = 500 g, un chilo. Dove trovo…? = Where do I find…?",
+ p:[["Scusi, dove trovo il latte?","Excuse me, where can I find milk?"],["È in fondo, a destra.","It's at the back, on the right."],["Vorrei mezzo chilo di pomodori.","I'd like half a kilo of tomatoes."],["Due etti di prosciutto, per favore.","200 grams of ham, please."],["Devo pesare la frutta?","Do I have to weigh the fruit?","You weigh fruit yourself, with gloves"],["Ha la tessera?","Do you have the loyalty card?"],["È in offerta?","Is it on offer?"],["Altro? — Basta così, grazie.","Anything else? — That's all, thanks."]],
+ role:"You are a supermarket employee and then the deli-counter worker at a Conad in Ancona. Help her find products, serve her at the counter (etti, chili), ask 'Altro?'. Use 'Lei'.",mission:"Ask a staff member where something is, and buy something at the deli counter."},
+{id:5,lvl:"A1",e:"🚌",title:"Muoversi ad Ancona",en:"Getting around",goal:"Buy tickets, catch buses and trains, follow directions.",
+ grammar:"ANDARE (to go): vado, vai, va. C'è…? = Is there…? Dov'è…? = Where is…? Directions: a destra (right), a sinistra (left), sempre dritto (straight on).",
+ p:[["Scusi, dov'è la fermata dell'autobus?","Excuse me, where's the bus stop?"],["Quale autobus va in centro?","Which bus goes to the centre?"],["Un biglietto per Pesaro, per favore.","A ticket to Pesaro, please."],["Andata e ritorno.","Return ticket."],["A che ora parte il treno?","What time does the train leave?"],["Da quale binario?","From which platform?"],["Devo scendere qui?","Do I get off here?"],["Sempre dritto, poi a sinistra.","Straight on, then left."]],
+ role:"You are a ticket clerk at Ancona station, then a helpful passer-by giving directions. Use 'Lei'.",mission:"Buy a bus or train ticket at the counter, in Italian."},
+{id:6,lvl:"A1",e:"🎓",title:"All'università",en:"University life",goal:"Manage classes, offices and classmates.",
+ grammar:"Regular -ARE verbs: studiare → studio, studi, studia, studiamo. AVERE (to have): ho, hai, ha. Non ho capito = I didn't understand.",
+ p:[["Faccio un master in gestione dei rischi ambientali.","I'm doing a master's in environmental risk management."],["Dov'è la segreteria studenti?","Where's the student office?"],["A che ora inizia la lezione?","What time does the class start?"],["Ho una domanda.","I have a question."],["Non ho capito, può ripetere?","I didn't understand, can you repeat?"],["Mi mandi gli appunti?","Can you send me the notes? (informal)"],["Ci vediamo in biblioteca.","See you in the library."],["Quando è l'esame?","When is the exam?"]],
+ role:"You are Sara, an Italian classmate in her master's programme at UNIVPM, chatting after class about lessons, notes and the exam. Use 'tu'.",mission:"Ask a classmate or the segreteria one question in Italian."},
+{id:7,lvl:"A2",e:"⏰",title:"La mia giornata",en:"My daily routine",goal:"Describe your day and habits.",
+ grammar:"Reflexive verbs: mi sveglio (I wake up), mi preparo, mi riposo. Time: alle sette (at 7), Che ore sono? Sono le tre e mezza. Di solito = usually.",
+ p:[["Mi sveglio alle sette.","I wake up at seven."],["Faccio colazione e poi vado a lezione.","I have breakfast and then go to class."],["Il pomeriggio studio in biblioteca.","In the afternoon I study in the library."],["La sera cucino e chiamo la mia famiglia.","In the evening I cook and call my family."],["Di solito vado a letto a mezzanotte.","I usually go to bed at midnight."],["Che ore sono? Sono le tre e mezza.","What time is it? Half past three."],["Nel fine settimana mi riposo.","At the weekend I rest."]],
+ role:"You are a curious Italian friend asking her about her typical day, habits and weekends. Use 'tu'.",mission:"Describe your day out loud in 5 sentences."},
+{id:8,lvl:"A2",e:"💊",title:"Farmacia e medico",en:"Pharmacy & doctor",goal:"Explain how you feel and get what you need.",
+ grammar:"Ho mal di testa / di gola / di pancia. Mi fa male (one thing) / mi fanno male (several). Ho la febbre. Allergic: sono allergica a…",
+ p:[["Ho mal di testa.","I have a headache."],["Ho la febbre e la tosse.","I have a fever and a cough."],["Mi fa male la gola.","My throat hurts."],["Ha qualcosa per il raffreddore?","Do you have something for a cold?"],["Serve la ricetta?","Do I need a prescription?"],["Vorrei prenotare una visita.","I'd like to book an appointment."],["Quante volte al giorno?","How many times a day?"],["Sono allergica alla penicillina.","I'm allergic to penicillin. (example)"]],
+ role:"You are a pharmacist in Ancona. Ask about symptoms, suggest something simple, explain how often to take it. Use 'Lei'.",mission:"Find your nearest farmacia and note its opening hours."},
+{id:9,lvl:"A2",e:"👗",title:"Fare shopping",en:"Shopping as a customer",goal:"Try on, ask for sizes and colours, return things.",
+ grammar:"Colours agree: nero/nera, rosso/rossa (but blu, beige never change). Ce l'avete in…? = Do you have it in…? Lo/la prendo = I'll take it.",
+ p:[["Sto solo guardando, grazie.","I'm just looking, thanks."],["Posso provarlo?","Can I try it on?"],["Dove sono i camerini?","Where are the fitting rooms?"],["Avete una taglia più grande?","Do you have a bigger size?"],["Ce l'avete in nero?","Do you have it in black?"],["È un po' stretto.","It's a bit tight."],["Lo prendo.","I'll take it."],["Posso cambiarlo se non va bene?","Can I exchange it if it doesn't fit?"]],
+ role:"You are a shop assistant in a clothes shop on Corso Garibaldi in Ancona. Help her find a size and colour, offer the fitting room. Use 'Lei'.",mission:"Try something on in a shop, speaking Italian."},
+{id:10,lvl:"A2",e:"🏷️",title:"Lavorare in negozio",en:"Working in a shop",goal:"Serve customers confidently as a sales assistant.",
+ grammar:"Serving customers uses LEI: Posso aiutarLa? Desidera? Cerca qualcosa? Glielo prendo = I'll get it for you. Mi dispiace = I'm sorry.",
+ p:[["Buongiorno, posso aiutarLa?","Good morning, can I help you?"],["Cerca qualcosa in particolare?","Are you looking for anything in particular?"],["Che taglia porta?","What size do you wear?"],["Glielo prendo subito.","I'll get it for you right away."],["Mi dispiace, è esaurito.","I'm sorry, it's sold out."],["Dovrebbe arrivare la prossima settimana.","It should arrive next week."],["La cassa è da questa parte.","The till is this way."],["Grazie e buona giornata!","Thank you and have a nice day!"]],
+ role:"Reverse role-play: SHE is the shop assistant in a clothes/retail shop in Ancona and YOU are an Italian customer looking for something, asking about sizes, colours, prices, returns. Speak naturally as a customer, using 'Lei' with her as Italian customers do with shop staff.",mission:"Do this role-play 3 times before handing in CVs."},
+{id:11,lvl:"A2",e:"📅",title:"Ieri… il passato",en:"Talking about the past",goal:"Say what you did yesterday and at the weekend.",
+ grammar:"PASSATO PROSSIMO = avere/essere + participle. Most verbs use AVERE: ho mangiato, ho comprato. Movement/change verbs use ESSERE and agree: sono andata (f), sono uscita.",
+ p:[["Ieri sono andata al mercato.","Yesterday I went to the market."],["Ho comprato frutta e verdura.","I bought fruit and vegetables."],["Ho studiato tutto il pomeriggio.","I studied all afternoon."],["Sabato sono uscita con degli amici.","On Saturday I went out with some friends."],["Abbiamo mangiato una pizza.","We ate a pizza."],["Non ho dormito bene.","I didn't sleep well."],["Che cosa hai fatto nel fine settimana?","What did you do at the weekend?"]],
+ role:"You are an Italian friend on Monday morning asking what she did at the weekend; share what you did too. Use 'tu' and the passato prossimo.",mission:"Tell the coach (or a friend) about your weekend."},
+{id:12,lvl:"A2",e:"🍕",title:"Fare programmi",en:"Making plans",goal:"Invite, accept, decline and plan.",
+ grammar:"Ti va di + verb? = Do you fancy…? Future: andrò, farò, sarò. Present for near future: Domani vado al mare.",
+ p:[["Ti va di prendere un caffè?","Do you fancy getting a coffee?"],["Che fai stasera?","What are you doing tonight?"],["Domani ho lezione, ma sabato sono libera.","Tomorrow I have class, but Saturday I'm free."],["Ci vediamo alle sei davanti alla stazione.","Let's meet at six in front of the station."],["Volentieri!","Gladly!"],["Mi dispiace, non posso.","Sorry, I can't."],["La prossima estate andrò al mare.","Next summer I'll go to the seaside."]],
+ role:"You are an Italian friend trying to arrange to meet up this week. Suggest plans, negotiate days and times. Use 'tu'.",mission:"Invite someone for a coffee in Italian."},
+{id:13,lvl:"A2",e:"💼",title:"Il colloquio di lavoro",en:"The job interview",goal:"Present your experience and availability for a part-time job.",
+ grammar:"Formal LEI throughout. Conditional for politeness: vorrei, potrei, sarei disponibile. Ho esperienza in/nel… = I have experience in…",
+ p:[["Ho esperienza nelle vendite e nel servizio clienti.","I have experience in sales and customer service."],["Sono disponibile il pomeriggio e nel fine settimana.","I'm available afternoons and weekends."],["Studio all'Università Politecnica delle Marche.","I study at the Polytechnic University of Marche."],["Mi piace lavorare con le persone.","I like working with people."],["Sono una persona precisa e affidabile.","I'm a precise and reliable person."],["Parlo inglese fluentemente e sto migliorando l'italiano.","I speak fluent English and I'm improving my Italian."],["Quando potrei iniziare?","When could I start?"],["Le lascio il mio curriculum.","I'll leave you my CV."]],
+ role:"You are the manager of a retail shop in Ancona interviewing her for a part-time sales assistant job. Ask about experience, availability, languages, why this job. Use 'Lei'. Be realistic but kind.",mission:"Hand your CV to a shop in person, saying 2 sentences in Italian."},
+{id:14,lvl:"A2",e:"📞",title:"Telefono ed email",en:"Phone calls & emails",goal:"Handle formal calls and write polite emails.",
+ grammar:"Phone: Pronto? Formal email: Gentile Signora/Signor…, Le scrivo per…, Cordiali saluti. Spell with city names: A come Ancona, B come Bologna…",
+ p:[["Pronto, buongiorno. Sono Anthonia.","Hello (on the phone), good morning. It's Anthonia."],["Chiamo per l'annuncio di lavoro.","I'm calling about the job advert."],["Posso parlare con il responsabile?","Can I speak to the manager?"],["Può richiamarmi più tardi?","Can you call me back later?"],["Gentile Signora Rossi,","Dear Mrs Rossi,"],["Le scrivo per chiedere informazioni.","I'm writing to ask for information."],["Resto in attesa di un Suo riscontro.","I look forward to your reply."],["Cordiali saluti","Kind regards"]],
+ role:"You are a recruiter at a temp agency (like Adecco) in Ancona answering her phone call. Ask her name, spelling, what job she wants, availability. Use 'Lei'.",mission:"Call a shop or agency and ask one question in Italian."},
+{id:15,lvl:"B1",e:"💬",title:"Dire la tua",en:"Giving opinions",goal:"Agree, disagree and explain why.",
+ grammar:"Secondo me + indicative. Penso che / credo che / mi sembra che + CONGIUNTIVO: sia (is), abbia (has), faccia. Però = but, perché = because.",
+ p:[["Secondo me, Ancona è una città molto vivibile.","In my opinion, Ancona is a very liveable city."],["Penso che sia una buona idea.","I think it's a good idea."],["Non sono d'accordo, perché…","I don't agree, because…"],["Hai ragione, però…","You're right, but…"],["Mi sembra che costi troppo.","It seems to me it costs too much."],["Dipende.","It depends."]],
+ role:"You are an Italian friend debating light topics (food, city life, social media, Italian vs Nigerian habits). Ask for her opinion and gently disagree sometimes. Use 'tu'.",mission:"Share an opinion in a real conversation this week."},
+{id:16,lvl:"B1",e:"📖",title:"Raccontare storie",en:"Telling stories",goal:"Tell stories about your life with the right past tenses.",
+ grammar:"IMPERFETTO for background, habits, descriptions (ero, vivevo, faceva freddo). PASSATO PROSSIMO for single completed events (è successo, ho visto). 'Mentre studiavo, è squillato il telefono.'",
+ p:[["Quando ero piccola, vivevo in Nigeria.","When I was little, I lived in Nigeria."],["Mentre studiavo, è squillato il telefono.","While I was studying, the phone rang."],["Faceva freddo e pioveva.","It was cold and raining."],["All'improvviso ho visto un amico.","Suddenly I saw a friend."],["Da bambina giocavo sempre fuori.","As a child I always played outside."],["È stata un'esperienza incredibile.","It was an incredible experience."]],
+ role:"You are an Italian friend asking her to tell stories about growing up in Nigeria and her first days in Italy. React and ask follow-up questions. Use 'tu'.",mission:"Tell one story about Nigeria to an Italian friend."},
+{id:17,lvl:"B1",e:"🛠️",title:"Risolvere problemi",en:"Solving problems",goal:"Make complaints, returns and requests politely but firmly.",
+ grammar:"Polite conditional: potrebbe…? vorrei… Combined pronouns: me lo, glielo. Mi scusi per il disturbo = sorry to bother you.",
+ p:[["Vorrei fare un reso.","I'd like to return this."],["Il prodotto è difettoso.","The product is faulty."],["Mi può fare un rimborso?","Can you give me a refund?"],["C'è un problema con il riscaldamento.","There's a problem with the heating."],["Potrebbe mandare qualcuno a controllare?","Could you send someone to check?"],["Mi scusi per il disturbo.","Sorry to bother you."]],
+ role:"You are first a shop employee handling a return, then her landlord about a heating problem in her flat. Be a little resistant so she has to insist politely. Use 'Lei'.",mission:"Handle one real problem (return, bill, landlord) in Italian."},
+{id:18,lvl:"B1",e:"🎤",title:"Parlare in pubblico",en:"Public speaking",goal:"Present an idea clearly to a group.",
+ grammar:"Connectors: innanzitutto (first of all), inoltre (moreover), per esempio, quindi (so), tuttavia (however), in conclusione.",
+ p:[["Buongiorno a tutti, grazie per essere qui.","Good morning everyone, thank you for being here."],["Oggi vorrei parlarvi di…","Today I'd like to talk to you about…"],["Innanzitutto…","First of all…"],["Inoltre…","Moreover…"],["In conclusione…","In conclusion…"],["Ci sono domande?","Are there any questions?"]],
+ role:"You are her audience/teacher. Ask her to give a short presentation (e.g. about her country, her company AGN, or her master's), then ask 2 questions and give feedback. Use 'Lei'.",mission:"Give a 1-minute talk in Italian (to the coach or a friend)."},
+{id:19,lvl:"B1",e:"🌍",title:"Ambiente e rischi",en:"Environment & disaster risk",goal:"Discuss your field of study in Italian.",
+ grammar:"SI impersonale: si dice che (it's said), si deve (one must). Passive with VENIRE: il piano viene aggiornato. Bisogna + verb = it's necessary to.",
+ p:[["Il cambiamento climatico aumenta il rischio di alluvioni.","Climate change increases flood risk."],["Le Marche sono una zona sismica.","Marche is an earthquake-prone area."],["Bisogna ridurre la vulnerabilità delle comunità.","We need to reduce communities' vulnerability."],["La prevenzione è fondamentale.","Prevention is essential."],["Il piano di emergenza viene aggiornato ogni anno.","The emergency plan is updated every year."],["Si dice che…","It's said that…"]],
+ role:"You are an Italian civil-protection officer (Protezione Civile) chatting with her about floods, earthquakes in Marche and her master's research. Use 'Lei'.",mission:"Explain your master's topic in Italian in 3 sentences."},
+{id:20,lvl:"B1",e:"😎",title:"Parlare come un locale",en:"Sound like a local",goal:"Use everyday expressions and fillers naturally.",
+ grammar:"Fillers and expressions: allora (so/well), dai (come on), magari (I wish/maybe), boh (dunno), ci sta (fair enough). Answer 'In bocca al lupo' with 'Crepi!'.",
+ p:[["Allora, che si dice?","So, what's new?"],["Dai, andiamo!","Come on, let's go!"],["Magari!","I wish!"],["Boh, non lo so.","Dunno."],["Che figata!","How cool!"],["Non vedo l'ora!","I can't wait!"],["Ci sta.","Fair enough / makes sense."],["In bocca al lupo! — Crepi!","Good luck! — Thanks!"]],
+ role:"You are a young Italian friend from Ancona chatting casually and using natural slang and fillers; explain any she doesn't get. Use 'tu'.",mission:"Use 3 local expressions in real conversations."}
+];
+const PLACES=[["supermercato","🛒","Supermarket"],["bar","☕","Café / bar"],["farmacia","💊","Pharmacy"],["stazione","🚆","Station / bus"],["università","🎓","University"],["negozio","🏷️","Shop / work"],["medico","🩺","Doctor"],["casa","🏠","Landlord / home"],["altro","💬","Anywhere"]];
+const FREE={id:"free",e:"🗣️",title:"Chiacchierata libera",en:"Free chat",role:"You are Giulia, a warm Italian friend from Ancona having a relaxed chat about her life, studies, plans, food and Italy. Use 'tu'."};
+
+/* ======================= STATE & STORAGE ======================= */
+const dayStr=d=>{d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const defS=()=>({v:1,name:"Anthonia",level:"A1",rate:1,autoplay:true,immersion:false,xp:0,streak:0,lastDay:"",days:{},units:{},quizzes:[],voiceMode:false,autoAnswer:false,helpPrefs:"I usually pay by card. I don't have the loyalty card (tessera). I have my own bag. I don't need the receipt.",updatedAt:0});
+const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let S=Object.assign(defS(),LS.get("parla_progress")||{});
+let W=LS.get("parla_words")||{list:[],updatedAt:0};if(!Array.isArray(W.list))W={list:[],updatedAt:0};
+let db=null,uid=null,cloud="local",ai=null,tts=null,dict=null;
+const remote={progress:{w:false,d:false},words:{w:false,d:false}};const wt={};
+function persist(which){const o=which==="progress"?S:W;o.updatedAt=Date.now();LS.set("parla_"+which,o);if(db&&uid){clearTimeout(wt[which]);wt[which]=setTimeout(()=>flush(which),1200)}}
+async function flush(which){const r=remote[which];if(!db)return;if(r.w){r.d=true;return}r.w=true;
+ try{await db.doc("data/users/"+uid+"/"+which).set(JSON.parse(JSON.stringify(which==="progress"?S:W)))}catch(e){if(e&&e.code==="invalid_argument"){db=null;cloud="local"}else if(e&&e.code==="unavailable"){r.d=true}}
+ r.w=false;if(r.d){r.d=false;setTimeout(()=>flush(which),800)}}
+function subscribe(which){const ref=db.doc("data/users/"+uid+"/"+which);let settled=false;
+ const timer=setTimeout(()=>{if(!settled){cloud="local"}},10000);
+ ref.onSnapshot(snap=>{if(snap.metadata.hasPendingWrites)return;
+  const local=which==="progress"?S:W;
+  if(snap.exists){const d=JSON.parse(JSON.stringify(snap.data()||{}));
+   if((d.updatedAt||0)>(local.updatedAt||0)){if(which==="progress")S=Object.assign(defS(),d);else W={list:Array.isArray(d.list)?d.list:[],updatedAt:d.updatedAt};LS.set("parla_"+which,which==="progress"?S:W);softRender()}
+   else if(!snap.metadata.fromCache&&!settled&&(d.updatedAt||0)<(local.updatedAt||0))flush(which);
+  }else if(!snap.metadata.fromCache&&!settled&&(local.updatedAt||0)>0)flush(which);
+  if(!snap.metadata.fromCache){settled=true;clearTimeout(timer);cloud="cloud"}
+ },()=>{clearTimeout(timer);cloud="local"});
+}
+function activity(kind,xp){const t=dayStr();if(S.lastDay!==t){const y=new Date();y.setDate(y.getDate()-1);S.streak=S.lastDay===dayStr(y)?S.streak+1:1;S.lastDay=t}
+ S.days[t]=S.days[t]||{xp:0};S.days[t][kind]=true;S.days[t].xp+=xp||0;S.xp+=xp||0;
+ const keys=Object.keys(S.days).sort();while(keys.length>60)delete S.days[keys.shift()];
+ persist("progress");updatePill()}
+const today=()=>S.days[dayStr()]||{xp:0};
+function liveStreak(){if(!S.lastDay)return 0;const y=new Date();y.setDate(y.getDate()-1);return(S.lastDay===dayStr()||S.lastDay===dayStr(y))?S.streak:0}
+function updatePill(){document.getElementById("streakPill").textContent="🔥 "+liveStreak()}
+
+/* words / SRS */
+const INTERVALS=[0,1,3,7,14,30,60];
+const nkey=s=>norm(s).replace(/ /g,"");
+function addWord(it,en){it=(it||"").trim();en=(en||"").trim();if(!it)return;if(W.list.some(w=>nkey(w.it)===nkey(it))){toast("Already in your words ⭐");return}
+ W.list.unshift({it,en,box:0,due:Date.now(),added:Date.now()});persist("words");toast("Saved to your words ⭐")}
+const dueWords=()=>W.list.filter(w=>(w.due||0)<=Date.now());
+
+/* ======================= HELPERS ======================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const L=(it,en)=>S.immersion?esc(it):esc(it)+' <small>· '+esc(en)+'</small>';
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("show"),2200)}
+function norm(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[’'`]/g," ").replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim()}
+function compare(ans,target){const tt=target.split(/\s+/).filter(Boolean),tk=tt.map(nkey),ak=String(ans).split(/\s+/).map(nkey).filter(Boolean);
+ const n=tk.length,m=ak.length,dp=Array.from({length:n+1},()=>new Array(m+1).fill(0));
+ for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)dp[i][j]=tk[i]&&tk[i]===ak[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+ const hit=new Array(n).fill(false);let i=0,j=0;while(i<n&&j<m){if(tk[i]&&tk[i]===ak[j]){hit[i]=true;i++;j++}else if(dp[i+1][j]>=dp[i][j+1])i++;else j++}
+ tk.forEach((k,x)=>{if(!k)hit[x]=true});
+ const real=tk.filter(Boolean).length;const score=real+m?Math.round(200*dp[0][0]/(real+m)):0;
+ return{score,html:tt.map((w,x)=>'<span class="'+(hit[x]?"w-ok":"w-miss")+'">'+esc(w)+"</span>").join(" ")}}
+const sayBtns=(t,save)=>'<button class="say" data-a="say" data-t="'+esc(t)+'" aria-label="Play">🔊</button><button class="say slow" data-a="say" data-slow="1" data-t="'+esc(t)+'" aria-label="Play slowly">🐢</button>'+(save?'<button class="say save" data-a="save" data-it="'+esc(t)+'" data-en="'+esc(save)+'" aria-label="Save word">⭐</button>':"");
+
+/* ======================= AUDIO ======================= */
+let itVoice=null;
+function pickVoice(){try{const vs=speechSynthesis.getVoices();itVoice=vs.find(v=>/it[-_]IT/i.test(v.lang)&&/google|alice|federica|luca|elsa|natural/i.test(v.name))||vs.find(v=>/^it/i.test(v.lang))||null}catch(e){}}
+if("speechSynthesis" in window){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice}catch(e){}}
+function browserSpeak(text,slow){if(!("speechSynthesis" in window)){toast("Audio isn't available here");return}
+ try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang="it-IT";if(itVoice)u.voice=itVoice;u.rate=(slow?.7:.95)*(S.rate||1);speechSynthesis.speak(u)}catch(e){toast("Audio isn't available here")}}
+function speak(text,slow){if(!text)return;
+ if(tts){const rate=Math.max(.7,Math.min(1.5,(slow?.72:1)*(S.rate||1)));
+  tts.speak(text,{language:"it",rate}).catch(e=>{const c=e&&e.code;if(c==="not_granted"){tts=null;browserSpeak(text,slow)}else if(c==="busy"){toast("Stop the mic first, then play")}else if(c&&!/stop|replac|interrupt|cancel/i.test(c)&&c!=="rate_limited"){browserSpeak(text,slow)}});
+ }else browserSpeak(text,slow)}
+
+/* ======================= DICTATION ======================= */
+let dictTarget=null,dictBase="",listening=false,dictAuto=null;
+function liveEcho(){const l=document.getElementById("liveText");if(l&&dictTarget)l.textContent=dictTarget.value?"“"+dictTarget.value.trim()+"”":""}
+function setupDict(){if(!dict)return;
+ dict.onPartial(({text})=>{if(dictTarget){dictTarget.value=dictBase+text;inputs[dictTarget.id]=dictTarget.value;liveEcho()}});
+ dict.onFinal(({text})=>{if(dictTarget){dictBase=dictBase+text+" ";dictTarget.value=dictBase;inputs[dictTarget.id]=dictTarget.value;liveEcho()}});
+ dict.onState(({state,reason})=>{listening=state==="listening";document.querySelectorAll(".mic").forEach(b=>b.classList.toggle("live",listening&&b.dataset.target===(dictTarget&&dictTarget.id)));
+  if(!listening&&dictAuto&&reason!=="hidden"){const f=dictAuto;dictAuto=null;setTimeout(f,150)}});
+}
+function micBtn(id,big,auto){if(!dict)return"";return'<button class="mic'+(big?" bigmic":"")+'" data-a="mic" data-lang="'+(id==="helpIn"&&help.mode==="want"?"en-US":"it-IT")+'" data-target="'+id+'"'+(auto?' data-auto="'+auto+'"':"")+' aria-label="Speak">🎙️</button>'}
+const kbTip=()=>dict?(STANDALONE?'<div class="kbtip">🎙️ Tap the mic, speak, tap again to stop.</div>':'<div class="kbtip">🎙️ Tap the mic, speak, tap again to stop. If it writes English, use your keyboard\'s mic set to Italian instead.</div>'):'<div class="kbtip">🎙️ To speak instead of type: tap the box, then the <b>microphone on your keyboard</b> (add Italian as a keyboard language and switch to it). On a computer in Chrome, a mic button appears here.</div>';
+
+/* ======================= AI ======================= */
+function parseLoose(t){t=String(t||"");const a=t.indexOf("{"),b=t.lastIndexOf("}");if(a<0||b<a)throw{code:"bad_json"};return JSON.parse(t.slice(a,b+1))}
+async function askJSON(input,tier){if(!ai)throw{code:"no_ai"};const opts={modelTier:tier||"default",cache:false};
+ if(typeof ai.json==="function"){try{const v=await ai.json(input,opts);if(v&&typeof v==="object")return v}catch(e){if(e&&(e.code==="not_granted"||e.code==="rate_limited"))throw e}}
+ const r=await ai(input,opts);return parseLoose(r&&r.text)}
+function aiErr(e){const c=e&&e.code;if(c==="no_key")return"Add your free AI key in Settings ⚙️ to use the coach.";if(c==="bad_key")return"Your AI key didn't work — check it in Settings ⚙️.";if(c==="api")return"The AI service said: "+((e&&e.message)||"error")+". Try again.";if(c==="no_ai")return"The AI coach needs this page opened in Claude while signed in.";if(c==="not_granted"){ai=null;return"AI access was declined. Reload the page to allow it."}if(c==="rate_limited")return"The coach needs a short break — try again in a minute.";return"Something went wrong — please try again."}
+const who=()=>esc(S.name||"the learner")+", a Nigerian woman (English speaker) living in Ancona, Italy, doing a master's in Environmental Hazard and Disaster Risk Management at Università Politecnica delle Marche";
+const LVL={A1:"A1 (beginner: very short simple sentences, present tense, common words)",A2:"A2 (elementary: short sentences, present and passato prossimo, everyday topics)",B1:"B1 (intermediate: natural sentences, mix of tenses, some idioms)"};
+
+/* ======================= VIEW STATE ======================= */
+let view="today",unitId=null,inputs={},lessonTab="learn";
+let drill=null,chat=null,help={place:"supermercato",mode:"heard",busy:false,res:null,err:"",log:[],prefs:false},review=null;
+const nextUnit=()=>UNITS.find(u=>!(S.units[u.id]&&S.units[u.id].done))||UNITS[UNITS.length-1];
+const U=id=>UNITS.find(u=>u.id===+id);
+
+/* ======================= VIEWS ======================= */
+function quizCard(){const last=(S.quizzes||[]).slice(-1)[0];const wk=new Date().getDay();const weekend=wk===0||wk===5||wk===6;
+ const recent=last&&(Date.now()-new Date(last.d+"T12:00:00").getTime())<6*864e5;
+ return`<button class="card ${weekend&&!recent?"terra":""}" style="width:100%;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center" data-a="go" data-v="quiz"><span style="font-size:30px">⏱️</span><span style="flex:1"><b>${L("Test della settimana","Weekly test")}</b><br><span class="${weekend&&!recent?"":"mute"}" style="font-size:14px">${recent?"Last score: "+last.s+"/"+last.n+" ("+last.pct+"%) · retake any time":weekend?"It's test time! 12 timed questions on this week":"Timed test on what you learnt this week"}</span></span><span>›</span></button>`}
+function vToday(){const h=new Date().getHours();const greet=h<5?"Buonanotte":h<13?"Buongiorno":h<18?"Buon pomeriggio":"Buonasera";
+ const t=today(),goal=40,pct=Math.min(100,Math.round(100*t.xp/goal)),nu=nextUnit(),due=dueWords().length,doneN=UNITS.filter(u=>S.units[u.id]&&S.units[u.id].done).length;
+ const pool=UNITS.filter(u=>u.id<=nu.id).flatMap(u=>u.p);const seed=[...dayStr()].reduce((a,c)=>a+c.charCodeAt(0),0);const fd=pool[seed%pool.length];
+ const plan=[["review","⭐","Ripassa le parole","Review your words",due?due+" due":"all caught up",'data-a="go" data-v="words"'],["lesson","📘","Una lezione","One lesson or drill","Unit "+nu.id,'data-a="unit" data-id="'+nu.id+'"'],["chat","🗣️","Conversazione (5 min)","Talk with the coach","role-play",'data-a="startchat" data-id="'+nu.id+'"'],["help","🛒","Missione reale","Use Italian out there",nu.mission,'data-a="go" data-v="help"']];
+ return`<div style="margin-top:14px"><h1>${greet}, ${esc(S.name||"")}!</h1><div class="mute" style="margin-top:4px">${S.immersion?"Pronta per parlare oggi?":"Ready to speak some Italian today?"}</div></div>
+ <div class="card"><div class="row"><div style="flex:1"><b>${L("Obiettivo di oggi","Today's goal")}</b><div class="mute" style="font-size:14px">${t.xp} / ${goal} XP · 🔥 ${liveStreak()} ${S.immersion?"giorni":"day streak"} · ⭐ ${S.xp} XP</div></div><div class="serif" style="font-size:26px">${pct}%</div></div><div class="bar" style="margin-top:10px"><i style="width:${pct}%"></i></div></div>
+ <div class="card terra"><small>${S.immersion?"CONTINUA":"CONTINUE"} · ${nu.lvl} · Unit ${nu.id}</small><h2 style="margin:6px 0 4px">${nu.e} ${esc(nu.title)}</h2><div class="mute">${esc(nu.en)} — ${esc(nu.goal)}</div>
+ <div class="row" style="margin-top:14px"><button class="btn wh" data-a="unit" data-id="${nu.id}">${S.immersion?"Inizia":"Start lesson"}</button><button class="btn" style="background:transparent;color:#fff;border-color:#e9a690" data-a="startchat" data-id="${nu.id}">🗣️ Role-play</button></div></div>
+ <button class="card gold" style="width:100%;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center" data-a="go" data-v="help"><span style="font-size:30px">🆘</span><span style="flex:1"><b>${L("Aiuto dal vivo","Live helper")}</b><br><span class="mute" style="font-size:14px">At the supermarket and stuck? Hear it, understand it, answer it — out loud.</span></span><span>›</span></button>
+ ${quizCard()}
+ <div class="card"><b>${L("Il piano di oggi (20 min)","Today's 20-minute plan")}</b><div style="margin-top:6px">${plan.map(p=>`<div class="check" ${p[5]} style="cursor:pointer"><span class="tick ${t[p[0]]?"on":""}">${t[p[0]]?"✓":""}</span><span style="flex:1"><b>${p[1]} ${S.immersion?esc(p[2]):esc(p[3])}</b><br><span class="mute" style="font-size:13.5px">${esc(p[4])}</span></span><span class="mute">›</span></div>`).join("")}</div></div>
+ <div class="card olive"><small>${S.immersion?"FRASE DEL GIORNO":"PHRASE OF THE DAY"}</small><div class="row" style="margin-top:6px"><div style="flex:1"><div class="it">${esc(fd[0])}</div><div class="en">${esc(fd[1])}</div></div>${sayBtns(fd[0],fd[1])}</div></div>
+ <div class="card"><div class="row"><b style="flex:1">${L("Il tuo percorso","Your journey")}</b><span class="mute">${doneN}/${UNITS.length} units</span></div><div class="bar" style="margin-top:10px"><i style="width:${Math.round(100*doneN/UNITS.length)}%;background:var(--terra)"></i></div>
+ <div class="mute" style="font-size:13.5px;margin-top:8px">A1 → A2 → B1 in about 24 weeks at 20–30 minutes a day.</div><button class="btn sm" style="margin-top:10px" data-a="go" data-v="course">${S.immersion?"Vedi il corso":"See the full curriculum"} ›</button></div>`}
+
+function vCourse(){const nu=nextUnit();
+ return`<div style="margin-top:14px"><h1>${L("Il corso","Curriculum")}</h1><div class="mute" style="margin-top:4px">From zero to real conversations (B1) in ~24 weeks, built around your life in Ancona.</div></div>${quizCard()}
+ <div class="card"><details><summary>How each unit works</summary><div style="margin-top:10px;font-size:15px" class="col">
+ <div>📘 <b>Learn</b> — 6–10 key phrases with native-speed and slow audio, plus one short grammar idea.</div>
+ <div>🎯 <b>Drill</b> — see the English, say or type the Italian, get an instant score. The coach can make fresh drills and explain mistakes.</div>
+ <div>🗣️ <b>Role-play</b> — a real conversation with the AI coach in that situation, with gentle corrections and suggested replies.</div>
+ <div>🌍 <b>Mission</b> — one small real-world task in Ancona. This is where the language sticks.</div>
+ <div>⭐ <b>Review</b> — words you save come back on a spaced schedule (1, 3, 7, 14, 30 days) so you don't forget them.</div>
+ <div>⏱️ <b>Weekly test</b> — every Friday–Sunday, a timed test on everything from that week (listening included).</div>
+ <div class="mute" style="font-size:14px">Rhythm: ~1 unit a week. Daily: 5 min review · 10 min lesson or drill · 5 min conversation. Weekly: do the mission and the test. At the end of B1 you could sit the CILS or CELI B1 exam if you want a certificate.</div></div></details></div>
+ ${STAGES.map(st=>`<div class="stage"><h2>${st.lvl} <span class="serif" style="font-size:17px">${esc(st.title)}</span></h2><div class="mute" style="font-size:14px;margin:4px 0 6px">${esc(st.weeks)} · ${esc(st.desc)}</div>
+ ${UNITS.filter(u=>u.lvl===st.lvl).map(u=>{const s=S.units[u.id]||{};return`<button class="unit ${s.done?"done":""} ${u.id===nu.id&&!s.done?"next":""}" data-a="unit" data-id="${u.id}"><span class="num">${s.done?"✓":u.id}</span><span style="flex:1"><b>${u.e} ${esc(u.title)}</b><br><span class="mute" style="font-size:14px">${esc(u.en)}${s.mission?" · 🌍 mission done":""}</span></span><span class="mute">›</span></button>`}).join("")}</div>`).join("")}`}
+
+function vUnit(){const u=U(unitId);if(!u)return vCourse();const s=S.units[u.id]||{};
+ const tabs=[["learn","📘 Learn"],["drill","🎯 Drill"],["talk","🗣️ Talk"],["mission","🌍 Mission"]];
+ let body="";
+ if(lessonTab==="learn")body=`<div class="gram"><b>💡 ${S.immersion?"Grammatica":"Grammar"}</b><div style="margin-top:4px">${esc(u.grammar)}</div></div>
+  <div class="card" style="padding:6px 14px">${u.p.map(p=>`<div class="phrase"><div class="t"><div class="it">${esc(p[0])}</div><div class="en">${esc(p[1])}</div>${p[2]?`<div class="note">${esc(p[2])}</div>`:""}</div>${sayBtns(p[0],p[1])}</div>`).join("")}</div>
+  <button class="btn pri full" data-a="ltab" data-t="drill">Next: practise saying them ›</button>`;
+ if(lessonTab==="drill")body=vDrill(u);
+ if(lessonTab==="talk")body=`<div class="card"><h3>🗣️ Role-play</h3><div class="mute" style="margin:6px 0 12px">${esc(u.role.replace(/^You are /,"The coach plays: "))}</div><button class="btn pri full" data-a="startchat" data-id="${u.id}">Start the conversation</button></div>`;
+ if(lessonTab==="mission")body=`<div class="card gold"><h3>🌍 ${S.immersion?"La tua missione":"Your real-world mission"}</h3><div style="margin:8px 0 12px;font-size:17px">${esc(u.mission)}</div>
+  <div class="mute" style="font-size:14px;margin-bottom:12px">Nervous? Open the Live helper first and prepare what you'll say.</div>
+  <div class="row wrapx"><button class="btn ${s.mission?"ol":"pri"}" data-a="mission" data-id="${u.id}">${s.mission?"✓ Done!":"I did it! (+30 XP)"}</button><button class="btn" data-a="go" data-v="help">🆘 Live helper</button></div></div>
+  <button class="btn ${s.done?"ol":"pri"} full" data-a="complete" data-id="${u.id}">${s.done?"✓ Unit complete":"Mark unit complete (+50 XP)"}</button>`;
+ return`<button class="btn sm" style="margin-top:12px" data-a="go" data-v="course">‹ Curriculum</button>
+ <div style="margin-top:12px"><small>${u.lvl} · UNIT ${u.id}</small><h1 style="margin-top:2px">${u.e} ${esc(u.title)}</h1><div class="mute">${esc(u.en)} — ${esc(u.goal)}</div></div>
+ <div class="seg" style="margin:14px 0">${tabs.map(t=>`<button class="${lessonTab===t[0]?"on":""}" data-a="ltab" data-t="${t[0]}">${t[1]}</button>`).join("")}</div>${body}`}
+
+function initDrill(u){drill={unit:u.id,items:u.p.map(p=>({en:p[1],it:p[0]})),i:0,res:null,why:"",busy:false,scores:[]}}
+function vDrill(u){if(!drill||drill.unit!==u.id)initDrill(u);const d=drill;
+ if(d.i>=d.items.length){const avg=d.scores.length?Math.round(d.scores.reduce((a,b)=>a+b,0)/d.scores.length):0;
+  return`<div class="card" style="text-align:center"><div style="font-size:40px">🎉</div><h2>${S.immersion?"Fatto!":"Drill complete!"}</h2><div class="score" style="margin:8px 0">${avg}%</div><div class="mute">average accuracy</div>
+  <div class="col" style="margin-top:16px"><button class="btn pri" data-a="moredrill" ${d.busy?"disabled":""}>${d.busy?'<span class="dots"><span></span><span></span><span></span></span> Creating…':"✨ 6 new sentences from the coach"}</button><button class="btn" data-a="redrill">↺ Repeat this drill</button><button class="btn ol" data-a="ltab" data-t="talk">Next: role-play ›</button></div>${d.err?`<div class="mute" style="margin-top:8px">${esc(d.err)}</div>`:""}</div>`}
+ const it=d.items[d.i];const r=d.res;
+ return`<div class="card"><div class="row"><small style="flex:1">${d.i+1} / ${d.items.length} · SAY IT IN ITALIAN</small></div><div class="bar" style="margin:8px 0 14px"><i style="width:${Math.round(100*d.i/d.items.length)}%"></i></div>
+ <h2 style="margin-bottom:14px">${esc(it.en)}</h2>
+ ${r?`<div class="row"><div class="score" style="color:${r.score>=85?"var(--olive)":r.score>=60?"var(--gold)":"var(--terra)"}">${r.score}%</div><b>${r.score>=85?"Perfetto! 🎉":r.score>=60?"Quasi! Almost.":"Riprova — try again."}</b></div>
+  <div class="mute" style="font-size:14px;margin-top:8px">You said: “${esc(r.ans)}”</div>
+  <div class="row" style="margin-top:8px"><div style="flex:1;font-size:18px">${r.html}</div>${sayBtns(it.it,it.en)}</div>
+  ${d.why?`<div class="gram" style="margin-top:10px">${esc(d.why)}</div>`:""}
+  <div class="row wrapx" style="margin-top:14px"><button class="btn pri" data-a="dnext">Next ›</button><button class="btn" data-a="dretry">Try again</button>${r.score<100?`<button class="btn" data-a="dwhy" ${d.busy?"disabled":""}>${d.busy?"Thinking…":"🤔 Why?"}</button>`:""}</div>`
+ :`<div class="row"><textarea id="drillIn" rows="2" placeholder="Scrivi o parla in italiano…" data-in>${esc(inputs.drillIn||"")}</textarea>${micBtn("drillIn",false,"dcheck")}</div>${kbTip()}
+  <div class="row" style="margin-top:12px"><button class="btn pri" style="flex:1" data-a="dcheck">Check</button><button class="btn" data-a="dshow">Show answer</button></div>`}</div>`}
+
+function vTalk(){if(!chat){const lv=S.level;const list=UNITS.filter(u=>u.id>0);
+ return`<div style="margin-top:14px"><h1>${L("Parla con me","Conversation practice")}</h1><div class="mute" style="margin-top:4px">Real conversations with an AI coach who plays the other person, corrects you gently and helps you reply.</div></div>
+ <div class="card"><div class="row"><b style="flex:1">Your level</b><div class="seg" style="width:180px">${["A1","A2","B1"].map(l=>`<button class="${lv===l?"on":""}" data-a="level" data-l="${l}">${l}</button>`).join("")}</div></div></div>
+ <button class="card terra" style="width:100%;text-align:left;cursor:pointer" data-a="startchat" data-id="free"><b style="font-size:18px">🗣️ ${L("Chiacchierata libera","Free chat")}</b><div class="mute" style="font-size:14px;margin-top:4px">Just talk about anything with Giulia, your Italian friend.</div></button>
+ <div class="card"><b>✍️ ${L("La tua situazione","Your own situation")}</b><div class="mute" style="font-size:14px;margin:4px 0 8px">Describe any scene to rehearse — e.g. “opening a bank account at Intesa”.</div><div class="row"><input type="text" id="customScn" data-in placeholder="Describe a situation…" value="${esc(inputs.customScn||"")}"><button class="btn pri" data-a="startcustom">Go</button></div></div>
+ <h3 style="margin:18px 0 8px">${L("Scenari","Scenarios")}</h3><div class="grid2">${list.map(u=>`<button class="scn" data-a="startchat" data-id="${u.id}"><b>${u.e}</b><span class="lv">${u.lvl}</span><div style="font-weight:600;font-size:14.5px">${esc(u.title)}</div><div class="mute" style="font-size:12.5px">${esc(u.en)}</div></button>`).join("")}</div>`}
+ const c=chat,vm=S.voiceMode;
+ const tuBub=(m,i)=>{if(vm&&!m.reveal)return`<div class="bub tu vbub"><div class="row"><span class="wave">🎧</span><b style="flex:1;font-size:14.5px">${S.immersion?"Ascolta…":"Listen…"}</b><button class="say" style="width:34px;height:34px" data-a="say" data-t="${esc(m.it)}" aria-label="Replay">🔁</button><button class="say slow" style="width:34px;height:34px" data-a="say" data-slow="1" data-t="${esc(m.it)}" aria-label="Slower">🐢</button></div><button class="wchip" style="background:#eef2e8;color:var(--olive)" data-a="reveal" data-i="${i}">👁 Show text</button></div>`;
+  return`<div class="bub tu"><div class="row" style="align-items:flex-start"><div style="flex:1;font-size:16.5px">${esc(m.it)}</div><button class="say" style="width:32px;height:32px" data-a="say" data-t="${esc(m.it)}">🔊</button></div>${m.show?`<div class="tr">${esc(m.en)}</div>`:""}<div><button class="wchip" style="background:#eef2e8;color:var(--olive)" data-a="tr" data-i="${i}">🇬🇧 ${m.show?"Hide":"English"}</button>${(m.words||[]).map(w=>`<button class="wchip" data-a="save" data-it="${esc(w.it)}" data-en="${esc(w.en)}">⭐ ${esc(w.it)}</button>`).join("")}</div></div>`};
+ const fixCard=(m,i)=>!m.fix?"":(vm&&!m.fixShow)?`<button class="fix" style="cursor:pointer" data-a="showfix" data-i="${i}">✏️ ${S.immersion?"Correzione":"Tap to see a correction"}</button>`:`<div class="fix">✏️ <b>${esc(m.fix.better)}</b> <button class="say" style="width:30px;height:30px;display:inline-grid;vertical-align:middle" data-a="say" data-t="${esc(m.fix.better)}">🔊</button><div class="mute" style="font-size:13.5px;margin-top:3px">${esc(m.fix.why)}</div></div>`;
+ return`<div class="row" style="margin-top:12px"><button class="btn sm" data-a="endchat">‹ End</button><div style="flex:1;min-width:0"><b>${c.e} ${esc(c.title)}</b><div class="mute" style="font-size:12.5px">${S.level} · ${vm?"listening mode":"tap 🇬🇧 for English"}</div></div>${vm?"":`<button class="btn sm" data-a="autoplay">${S.autoplay?"🔊 Auto":"🔇 Auto"}</button>`}</div>
+ <div class="seg" style="margin-top:10px"><button class="${vm?"":"on"}" data-a="vmode" data-m="0">💬 Text + audio</button><button class="${vm?"on":""}" data-a="vmode" data-m="1">🎧 Voice only</button></div>
+ ${vm?`<div class="mute" style="font-size:13px;margin-top:8px;text-align:center">Just listen and answer out loud. Text stays hidden unless you tap 👁.</div>`:""}
+ <div class="msgs" id="msgs">${c.msgs.map((m,i)=>m.role==="me"?`<div class="bub me">${vm&&!m.reveal?"🗣️ "+esc(m.it):esc(m.it)}</div>${fixCard(m,i)}${m.praise?`<div class="praise">${esc(m.praise)} ✓</div>`:""}`:tuBub(m,i)).join("")}
+ ${c.busy?`<div class="bub tu"><span class="dots"><span></span><span></span><span></span></span></div>`:""}${c.err?`<div class="mute" style="text-align:center">${esc(c.err)} <button class="btn sm" data-a="chatretry">Retry</button></div>`:""}</div>`}
+function vTalkBar(){if(view!=="talk"||!chat)return"";const last=[...chat.msgs].reverse().find(m=>m.role==="tu");const sug=chat.showSug&&last&&last.suggestions||[];
+ const sugHtml=sug.length?`<div class="sugs">${sug.map(s=>`<button class="sug" data-a="usesug" data-t="${esc(s.it)}"><b>${esc(s.it)}</b><small>${esc(s.en)}</small></button>`).join("")}</div>`:"";
+ if(S.voiceMode&&dict&&!chat.typing)return`<div class="inputbar"><div class="in">${sugHtml}<div class="row" style="justify-content:center;gap:18px">
+  <button class="icon" data-a="sug" title="Help me reply">💡</button>${micBtn("chatIn",true,"send")}<button class="icon" data-a="typing" title="Type instead">⌨️</button></div>
+  <textarea id="chatIn" rows="1" data-in style="position:absolute;opacity:0;pointer-events:none;height:1px"></textarea>
+  <div id="liveText" class="mute" style="text-align:center;min-height:20px;font-size:14px;margin-top:4px"></div><div class="row" style="justify-content:center;margin-top:2px"><button class="chip" style="white-space:nowrap" data-a="notunderstood">🙋 Non ho capito</button></div><div class="mute" style="font-size:12px;text-align:center;margin-top:4px">Tap the mic, speak, tap again to send</div></div></div>`;
+ return`<div class="inputbar"><div class="in">${sugHtml}
+ <div class="row"><button class="icon" data-a="sug" aria-label="Help me reply" title="Help me reply">💡</button><textarea id="chatIn" rows="1" data-in placeholder="Rispondi in italiano…" style="min-height:46px">${esc(inputs.chatIn||"")}</textarea>${micBtn("chatIn")}<button class="mic" style="background:var(--terra)" data-a="send" aria-label="Send">➤</button></div>
+ <div class="row" style="justify-content:center;margin-top:5px;gap:8px">${S.voiceMode?`<button class="chip" style="padding:5px 10px;font-size:12.5px" data-a="notunderstood">🙋 Non ho capito</button>`:""}${dict&&S.voiceMode?`<button class="chip" style="padding:5px 10px;font-size:12.5px" data-a="typing">🎙️ Back to voice</button>`:""}${dict?"":'<span class="mute" style="font-size:11.5px">🎙️ Use your keyboard\'s mic (Italian) to speak · 💡 for reply ideas</span>'}</div></div></div>`}
+
+function vHelp(){const h=help;const pl=PLACES.find(p=>p[0]===h.place)||PLACES[0];
+ let res="";
+ if(h.busy)res=`<div class="card" style="text-align:center"><span class="dots"><span></span><span></span><span></span></span><div class="mute" style="margin-top:6px">Un attimo…</div></div>`;
+ else if(h.err)res=`<div class="card mute">${esc(h.err)}</div>`;
+ else if(h.res&&h.res.kind==="heard"){const r=h.res.data;
+  res=`${h.res.spoke?`<div class="card terra" style="padding:12px 14px"><small>🤖 YOUR PHONE SAID</small><div class="row" style="margin-top:4px"><b style="flex:1;font-size:18px">${esc(h.res.spoke)}</b><button class="btn sm wh" data-a="say" data-t="${esc(h.res.spoke)}">🔁</button></div></div>`:""}<div class="card olive"><small>THEY SAID</small><div class="row" style="margin-top:4px"><div class="it" style="flex:1">${esc(r.heard||"")}</div>${sayBtns(r.heard||"")}</div><div style="margin-top:8px;font-size:17px">🇬🇧 <b>${esc(r.meaning||"")}</b></div>${r.simple?`<div class="mute" style="font-size:14px;margin-top:6px">Simpler: ${esc(r.simple)}</div>`:""}</div>
+  <h3 style="margin-top:16px">${L("Puoi rispondere","You can answer")}</h3>${(r.replies||[]).map(o=>optCard(o)).join("")}${r.tip?`<div class="card gold" style="font-size:14.5px">💡 ${esc(r.tip)}</div>`:""}`}
+ else if(h.res&&h.res.kind==="want"){const r=h.res.data;
+  res=`<h3 style="margin-top:16px">${L("Dillo così","Say it like this")}</h3>${(r.options||[]).map(o=>optCard(o)).join("")}
+  ${(r.listen_for||[]).length?`<div class="card"><small>THEY MIGHT ANSWER</small>${r.listen_for.map(x=>`<div class="phrase"><div class="t"><div class="it" style="font-size:16px">${esc(x.it)}</div><div class="en">${esc(x.en)}</div></div>${sayBtns(x.it)}</div>`).join("")}</div>`:""}${r.tip?`<div class="card gold" style="font-size:14.5px">💡 ${esc(r.tip)}</div>`:""}`}
+ return`<div style="margin-top:14px"><h1>${L("Aiuto dal vivo","Live helper")}</h1><div class="mute" style="margin-top:4px">For real life, right now. Catch what someone said, understand it, and answer out loud — or let your phone say it for you.</div></div>
+ <div class="sugs" style="margin-top:12px">${PLACES.map(p=>`<button class="chip ${h.place===p[0]?"on":""}" data-a="place" data-p="${p[0]}">${p[1]} ${S.immersion?p[0]:p[2]}</button>`).join("")}</div>
+ <div class="card olive" style="padding:12px 14px"><div class="row"><div style="flex:1"><b>🤖 Answer for me out loud</b><div class="mute" style="font-size:13px">After they speak, your phone instantly says the best reply in Italian.</div></div><button class="sw ${S.autoAnswer?"on":""}" data-a="autoanswer"></button></div>
+ <button class="wchip" style="background:#fff;color:var(--olive)" data-a="prefs">⚙️ My usual answers ${h.prefs?"▴":"▾"}</button>${h.prefs?`<textarea id="prefsIn" rows="3" style="margin-top:8px;font-size:14px" placeholder="e.g. I pay by card. I don't have the loyalty card.">${esc(S.helpPrefs||"")}</textarea><button class="btn sm ol" style="margin-top:6px" data-a="saveprefs">Save</button>`:""}</div>
+ ${h.log.length?`<div class="card" style="padding:10px 14px"><div class="row"><small style="flex:1">THIS CONVERSATION</small><button class="btn sm" data-a="hnew">↺ New</button></div>${h.log.slice(-6).map(x=>`<div style="margin-top:6px;font-size:14.5px">${x.who==="they"?`👤 <b>${esc(x.it)}</b> <span class="mute">— ${esc(x.en||"")}</span>`:`🙋 <span style="color:var(--olive);font-weight:600">${esc(x.it)}</span>`}</div>`).join("")}</div>`:""}
+ <div class="seg" style="margin:6px 0 12px"><button class="${h.mode==="heard"?"on":""}" data-a="hmode" data-m="heard">👂 They said…</button><button class="${h.mode==="want"?"on":""}" data-a="hmode" data-m="want">💬 I want to say…</button></div>
+ <div class="card">${dict?`<div style="text-align:center"><div class="mute" style="font-size:14px">${h.mode==="heard"?"Tap, hold the phone towards the person, tap again when they finish":"Tap and say it in English (or broken Italian)"}</div>${micBtn("helpIn",true,"hgo")}</div>`:""}
+ <textarea id="helpIn" rows="3" data-in placeholder="${h.mode==="heard"?"What did they say? Type or dictate the Italian you heard…":"What do you want to say? English is fine…"}">${esc(inputs.helpIn||"")}</textarea>${dict?"":kbTip()}
+ <button class="btn pri full" style="margin-top:10px" data-a="hgo" ${h.busy?"disabled":""}>${h.mode==="heard"?"Help me understand & reply":"Translate & say it"}</button>
+ <div class="mute" style="font-size:12.5px;margin-top:8px">${pl[1]} Context: ${esc(pl[2])}. Tap 🔊 to play your answer out loud, or 🖥 to show it full-screen to the person.</div></div>${res}`}
+function optCard(o){return`<div class="opt"><div class="it">${esc(o.it||"")}</div>${o.say?`<div class="pron">🗣 ${esc(o.say)}</div>`:""}<div class="en">${esc(o.en||o.en_back||"")}${o.note?" · "+esc(o.note):""}</div>
+ <div class="row wrapx" style="margin-top:10px"><button class="btn sm ol" data-a="sayfor" data-t="${esc(o.it||"")}">🔊 Say it for me</button><button class="btn sm" data-a="say" data-slow="1" data-t="${esc(o.it||"")}">🐢 Slow</button><button class="btn sm" data-a="showbig" data-t="${esc(o.it||"")}">🖥 Show</button><button class="btn sm" data-a="save" data-it="${esc(o.it||"")}" data-en="${esc(o.en||o.en_back||"")}">⭐</button></div></div>`}
+
+function vWords(){const due=dueWords();
+ if(review){const w=review.q[review.i];if(!w){return`<div class="card" style="text-align:center;margin-top:20px"><div style="font-size:40px">🌟</div><h2>${S.immersion?"Ripasso finito!":"Review done!"}</h2><div class="mute">${review.n} cards reviewed</div><button class="btn pri" style="margin-top:14px" data-a="endreview">Back to words</button></div>`}
+  return`<div class="row" style="margin-top:12px"><button class="btn sm" data-a="endreview">‹ Stop</button><div class="sp"></div><span class="mute">${review.i+1} / ${review.q.length}</span></div>
+  <div class="card flash" data-a="flip">${review.flip?`<div class="it">${esc(w.it)}</div><div class="en" style="font-size:18px;margin-top:8px">${esc(w.en)}</div><div class="row" style="margin-top:14px">${sayBtns(w.it)}</div>`:`<div class="mute" style="font-size:13px;margin-bottom:8px">${review.dir==="en"?"Say it in Italian":"What does it mean?"}</div><div class="it">${esc(review.dir==="en"?w.en:w.it)}</div><div class="mute" style="margin-top:16px;font-size:13px">tap to flip</div>`}</div>
+  ${review.flip?`<div class="grid2" style="grid-template-columns:1fr 1fr 1fr"><button class="btn" data-a="grade" data-g="0">😕 Again</button><button class="btn ol" data-a="grade" data-g="1">🙂 Good</button><button class="btn pri" data-a="grade" data-g="2">😎 Easy</button></div>`:`<button class="btn full" data-a="flip">Show answer</button>`}`}
+ return`<div style="margin-top:14px"><h1>${L("Le mie parole","My words")}</h1><div class="mute" style="margin-top:4px">Tap ⭐ anywhere in the app to save a word or phrase. They come back right before you'd forget them.</div></div>
+ <div class="card terra"><div class="row"><div style="flex:1"><div class="serif" style="font-size:30px">${due.length}</div><div class="mute">${due.length===1?"word":"words"} due · ${W.list.length} saved</div></div><button class="btn wh" data-a="startreview" ${due.length?"":"disabled"}>${S.immersion?"Ripassa":"Review"}</button></div></div>
+ <div class="card"><b>➕ ${L("Aggiungi","Add a word")}</b><div class="col" style="margin-top:8px"><input type="text" id="addIt" data-in placeholder="Italiano (e.g. la cassa)" value="${esc(inputs.addIt||"")}"><input type="text" id="addEn" data-in placeholder="English (e.g. the till)" value="${esc(inputs.addEn||"")}"><button class="btn ol" data-a="addword">Save</button></div></div>
+ ${W.list.length?`<div class="card" style="padding:6px 14px">${W.list.map((w,i)=>`<div class="phrase"><div class="t"><div class="it" style="font-size:16px">${esc(w.it)}</div><div class="en">${esc(w.en)}</div><div class="mute" style="font-size:12px">${"●".repeat(Math.min(6,w.box||0))}${"○".repeat(6-Math.min(6,w.box||0))} ${(w.due||0)<=Date.now()?"· due":""}</div></div><button class="say" data-a="say" data-t="${esc(w.it)}">🔊</button><button class="say save" data-a="delword" data-i="${i}" aria-label="Delete">✕</button></div>`).join("")}</div>`:`<div class="empty">No words yet — start a lesson and tap ⭐.</div>`}
+ <div class="mute" style="font-size:12.5px;text-align:center">${cloud==="cloud"?"☁️ Synced to your account":"📱 Saved on this device"}</div>`}
+
+/* ======================= WEEKLY QUIZ ======================= */
+let quiz=null,qTimer=null;
+function stopQuizTimer(){if(qTimer){clearInterval(qTimer);qTimer=null}}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function weekUnits(){const cut=Date.now()-7*864e5;const ok=d=>d&&new Date(d+"T12:00:00").getTime()>=cut;
+ const us=UNITS.filter(u=>{const s=S.units[u.id]||{};return ok(s.seen)||ok(s.doneDay)});
+ if(us.length)return us;const nu=nextUnit();return UNITS.filter(u=>u.id<=nu.id).slice(-2)}
+const ALL=UNITS.flatMap(u=>u.p.map(p=>({it:p[0],en:p[1],lvl:u.lvl})));
+const cleanW=w=>w.replace(/[.,!?;:…—«»"()]/g,"");
+function buildQuiz(){const us=weekUnits();const cut=Date.now()-7*864e5;
+ let pool=us.flatMap(u=>u.p.map(p=>({it:p[0],en:p[1],lvl:u.lvl})));
+ W.list.filter(w=>(w.added||0)>=cut&&w.en).forEach(w=>pool.push({it:w.it,en:w.en}));
+ const seen=new Set();pool=pool.filter(x=>{const k=nkey(x.it);if(seen.has(k))return false;seen.add(k);return true});
+ pool=shuffle(pool.filter(x=>nkey(x.it)!==nkey(x.en))).slice(0,12);
+ const types=["listen","meaning","produce","gap","type","listen","produce","meaning","gap","type","listen","produce"];
+ const others=f=>{const c=ALL.filter(x=>nkey(x.it)!==nkey(f.it)&&nkey(x.en)!==nkey(f.en)&&nkey(x.it)!==nkey(x.en));const same=shuffle(c.filter(x=>x.lvl===(f.lvl||"A1")));return(same.length>=3?same:shuffle(c)).slice(0,3)};
+ const qs=pool.map((f,i)=>{let t=types[i%types.length];
+  if(t==="gap"){const ws=f.it.split(/\s+/).map(cleanW).filter(w=>w.length>=3&&!/'/.test(w));if(!ws.length)t="meaning";else{const w=ws[Math.floor(Math.random()*ws.length)];
+   const pool2=shuffle([...new Set(ALL.flatMap(x=>x.it.split(/\s+/).map(cleanW)).filter(x=>x.length>=3&&!/'/.test(x)&&x.toLowerCase()!==w.toLowerCase()))]).slice(0,3);
+   const re=new RegExp("(^|\\s)"+w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"(?=[\\s.,!?;:…]|$)");
+   return{t,f,shown:f.it.replace(re,"$1____"),opts:shuffle([w,...pool2]),ans:w,secs:20}}}
+  if(t==="listen"||t==="meaning")return{t,f,opts:shuffle([f.en,...others(f).map(x=>x.en)]),ans:f.en,secs:t==="listen"?25:20};
+  if(t==="produce")return{t,f,opts:shuffle([f.it,...others(f).map(x=>x.it)]),ans:f.it,secs:20};
+  return{t:"type",f,secs:40}});
+ return{qs,i:0,score:0,picked:null,res:null,left:0,started:false,units:us.map(u=>u.id)}}
+function startQ(){const q=quiz.qs[quiz.i];quiz.picked=null;quiz.res=null;quiz.left=q.secs;quiz.deadline=Date.now()+q.secs*1000;
+ stopQuizTimer();qTimer=setInterval(()=>{const left=Math.max(0,(quiz.deadline-Date.now())/1000);quiz.left=left;const b=document.getElementById("qbar");if(b)b.style.width=(100*left/q.secs)+"%";const n=document.getElementById("qsec");if(n)n.textContent=Math.ceil(left)+"s";if(left<=0){stopQuizTimer();answerQ(null)}},200);
+ render();if(q.t==="listen")speak(q.f.it)}
+function answerQ(v){const q=quiz.qs[quiz.i];if(quiz.res)return;stopQuizTimer();let ok=false,score=0;
+ if(q.t==="type"){if(v){const c=compare(v,q.f.it);score=c.score;ok=c.score>=70;quiz.res={ok,typed:v,html:c.html,score}}else quiz.res={ok:false,typed:"",html:esc(q.f.it),score:0}}
+ else{ok=v!=null&&v===q.ans;quiz.picked=v;quiz.res={ok}}
+ if(listening&&dict)dict.stop().catch(()=>{});
+ q.ok=ok;if(ok)quiz.score++;render();speak(q.f.it)}
+function finishQuiz(){stopQuizTimer();const n=quiz.qs.length,pct=Math.round(100*quiz.score/n);quiz.done=true;
+ S.quizzes=(S.quizzes||[]).concat([{d:dayStr(),s:quiz.score,n,pct}]).slice(-20);activity("quiz",20+quiz.score*2);render()}
+function vQuiz(){if(!quiz)quiz=buildQuiz();const z=quiz;
+ if(!z.started){const names=z.units.map(id=>U(id)).map(u=>u.e+" "+u.title).join(" · ");const past=(S.quizzes||[]).slice(-4).reverse();
+  return`<button class="btn sm" style="margin-top:12px" data-a="go" data-v="today">‹ Today</button>
+  <div style="margin-top:12px"><h1>⏱️ ${L("Test della settimana","Weekly test")}</h1><div class="mute" style="margin-top:4px">${z.qs.length} timed questions on everything you studied in the last 7 days.</div></div>
+  <div class="card"><small>COVERS</small><div style="margin-top:4px;font-weight:600">${esc(names)}</div><div class="mute" style="font-size:13.5px;margin-top:4px">+ words you saved this week</div></div>
+  <div class="card"><div class="col" style="font-size:15px"><div>🎧 <b>Listening</b> — hear it, pick the meaning (no text!)</div><div>📖 <b>Meaning</b> — read Italian, pick the English</div><div>🗣️ <b>Say it</b> — pick or type the right Italian</div><div>🧩 <b>Fill the gap</b> — choose the missing word</div><div class="mute" style="font-size:13.5px">20–40 seconds per question. Answers are read out after each one.</div></div></div>
+  <button class="btn pri full" data-a="qstart">Start the test</button>
+  ${past.length?`<div class="card"><small>PAST SCORES</small>${past.map(p=>`<div class="row" style="margin-top:8px"><span style="flex:1">${esc(p.d)}</span><b>${p.s}/${p.n}</b><span class="mute">${p.pct}%</span></div>`).join("")}</div>`:""}`}
+ if(z.done){const n=z.qs.length,pct=Math.round(100*z.score/n),wrong=z.qs.filter(q=>!q.ok);
+  return`<div class="card" style="text-align:center;margin-top:18px"><div style="font-size:44px">${pct>=80?"🏆":pct>=60?"👏":"💪"}</div><h2>${pct>=80?"Bravissima!":pct>=60?"Molto bene!":"Continua così!"}</h2><div class="score" style="margin:8px 0">${z.score}/${n}</div><div class="mute">${pct}% · +${20+z.score*2} XP</div></div>
+  ${wrong.length?`<div class="card"><div class="row"><b style="flex:1">Review these</b><button class="btn sm ol" data-a="qsaveall">⭐ Save all</button></div>${wrong.map(q=>`<div class="phrase"><div class="t"><div class="it" style="font-size:16px">${esc(q.f.it)}</div><div class="en">${esc(q.f.en)}</div></div>${sayBtns(q.f.it,q.f.en)}</div>`).join("")}</div>`:""}
+  <div class="col"><button class="btn pri" data-a="qagain">↺ New test</button><button class="btn" data-a="go" data-v="today">Done</button></div>`}
+ const q=z.qs[z.i],r=z.res;
+ const head=`<div class="row" style="margin-top:12px"><button class="btn sm" data-a="qquit">✕</button><div class="sp"></div><span class="mute">${z.i+1} / ${z.qs.length}</span><span class="pill" style="margin-left:8px">✓ ${z.score}</span></div>
+ <div class="row" style="margin-top:10px"><div class="bar" style="flex:1"><i id="qbar" style="width:${r?0:100*z.left/q.secs}%;background:${r?"#ccc":"var(--terra)"};transition:width .2s linear"></i></div><b id="qsec" style="width:34px;text-align:right">${r?"":Math.ceil(z.left)+"s"}</b></div>`;
+ let body="";const lab={listen:"🎧 Listen — what does it mean?",meaning:"📖 What does it mean?",produce:"🗣️ How do you say it in Italian?",gap:"🧩 Fill the gap",type:"✍️ Say or type it in Italian"}[q.t];
+ if(q.t==="listen")body=`<div style="text-align:center;margin:10px 0 6px"><button class="mic bigmic" style="background:var(--olive)" data-a="say" data-t="${esc(q.f.it)}">▶</button><button class="btn sm" data-a="say" data-slow="1" data-t="${esc(q.f.it)}">🐢 Slower</button>${r?`<div class="it" style="margin-top:10px">${esc(q.f.it)}</div>`:""}</div>`;
+ if(q.t==="meaning")body=`<h2 style="margin:10px 0">${esc(q.f.it)}</h2>`;
+ if(q.t==="produce")body=`<h2 style="margin:10px 0">${esc(q.f.en)}</h2>`;
+ if(q.t==="gap")body=`<h2 style="margin:10px 0">${esc(q.shown)}</h2><div class="mute">${esc(q.f.en)}</div>`;
+ if(q.t==="type")body=`<h2 style="margin:10px 0">${esc(q.f.en)}</h2>${r?`<div class="row"><div class="score" style="font-size:26px;color:${r.ok?"var(--olive)":"var(--terra)"}">${r.score}%</div></div><div class="mute" style="font-size:14px">You: “${esc(r.typed||"—")}”</div><div style="font-size:18px;margin-top:6px">${r.html}</div>`:`<div class="row"><textarea id="quizIn" rows="2" data-in placeholder="In italiano…">${esc(inputs.quizIn||"")}</textarea>${micBtn("quizIn",false,"qtype")}</div><button class="btn pri full" style="margin-top:10px" data-a="qtype">Check</button>`}`;
+ const opts=q.opts?`<div class="col" style="margin-top:12px">${q.opts.map(o=>{let st="";if(r){if(o===q.ans)st="background:var(--olive);color:#fff;border-color:var(--olive)";else if(o===z.picked)st="background:var(--terra2);border-color:var(--terra);color:var(--terra)"}return`<button class="btn full" style="justify-content:flex-start;text-align:left;${st}" data-a="qpick" data-v="${esc(o)}" ${r?"disabled":""}>${esc(o)}</button>`}).join("")}</div>`:"";
+ const fb=r?`<div class="card ${r.ok?"olive":"gold"}" style="margin-top:12px"><b>${r.ok?"✅ Giusto!":z.picked===null&&q.t!=="type"?"⏰ Time's up":"❌ Not quite"}</b><div class="row" style="margin-top:6px"><div style="flex:1"><div class="it" style="font-size:16px">${esc(q.f.it)}</div><div class="en">${esc(q.f.en)}</div></div>${sayBtns(q.f.it,q.f.en)}</div></div><button class="btn pri full" data-a="qnext">${z.i+1<z.qs.length?"Next ›":"See my score"}</button>`:"";
+ return head+`<div class="card"><small>${lab}</small>${body}${opts}</div>`+fb}
+
+/* ======================= SETTINGS SHEET ======================= */
+function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" data-stop><div class="in"><div class="row"><h2 style="flex:1">${L("Impostazioni","Settings")}</h2><button class="icon" data-a="close">✕</button></div>
+ <div class="card"><b>Your name</b><input type="text" id="nameIn" value="${esc(S.name)}" style="margin-top:8px"></div>
+ <div class="card"><div class="row"><b style="flex:1">Conversation level</b><div class="seg" style="width:180px">${["A1","A2","B1"].map(l=>`<button class="${S.level===l?"on":""}" data-a="level" data-l="${l}">${l}</button>`).join("")}</div></div>
+ <div class="row" style="margin-top:14px"><b style="flex:1">Voice speed</b><div class="seg" style="width:200px">${[[.8,"Slow"],[1,"Normal"],[1.15,"Fast"]].map(r=>`<button class="${S.rate===r[0]?"on":""}" data-a="rate" data-r="${r[0]}">${r[1]}</button>`).join("")}</div></div>
+ <div class="toggle" style="margin-top:12px"><div><b>Auto-play coach replies</b><div class="mute" style="font-size:13.5px">Hear every reply in conversation practice</div></div><button class="sw ${S.autoplay?"on":""}" data-a="autoplay"></button></div>
+ <div class="toggle"><div><b>🇮🇹 Immersion mode</b><div class="mute" style="font-size:13.5px">Switches this app's words to Italian only. Turn off any time.</div></div><button class="sw ${S.immersion?"on":""}" data-a="immersion"></button></div></div>
+ ${STANDALONE?aiSettings():""}
+ <div class="card gold"><b>📱 Put your whole phone in Italian</b><div style="font-size:14.5px;margin-top:6px">The app can't change your phone for you, but this is the best immersion trick there is — you already know where everything is, so you learn the words for free.</div>
+ <div style="font-size:14.5px;margin-top:8px"><b>iPhone:</b> Settings → General → Language &amp; Region → add Italiano → move it to the top.<br><b>To switch back:</b> Impostazioni → Generali → Lingua e zona → drag English to the top.</div>
+ <div style="font-size:14.5px;margin-top:8px"><b>Android:</b> Settings → System → Languages → add Italiano → drag to the top.<br><b>To switch back:</b> Impostazioni → Sistema → Lingue → drag English to the top.</div>
+ <div class="mute" style="font-size:13px;margin-top:8px">Easier start: set just WhatsApp, Instagram or TikTok to Italian. Add Italian as a keyboard too, so voice typing understands you.</div></div>
+ <div class="mute" style="font-size:12.5px;text-align:center">${cloud==="cloud"?"☁️ Progress synced to your Claude account":"📱 Progress saved on this device"} · ${STANDALONE?(KEYS.p.key?"AI coach ready":"Add a key for the AI coach"):ai?"AI coach ready":"AI coach unavailable here"}</div>
+ <button class="btn pri full" style="margin-top:12px" data-a="close">Done</button></div></div>`;
+ o.classList.add("show")}
+function aiSettings(){const c=KEYS.p;return`<div class="card"><b>🤖 AI coach key</b><div class="mute" style="font-size:13.5px;margin:4px 0 8px">Outside Claude, the coach runs on your own key. It stays only on this phone. Get a free Gemini key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</div>
+ <div class="seg"><button class="${c.provider!=="claude"?"on":""}" data-a="prov" data-p="gemini">Gemini (free)</button><button class="${c.provider==="claude"?"on":""}" data-a="prov" data-p="claude">Claude API</button></div>
+ <input type="text" id="keyIn" style="margin-top:8px" placeholder="Paste your API key" value="${esc(c.key||"")}" autocomplete="off" spellcheck="false">
+ <button class="btn sm ol" style="margin-top:8px" data-a="savekey">Save key</button> <span class="mute" style="font-size:12.5px">${c.key?"✓ key saved":""}</span></div>`}
+function closeOverlay(){const n=$("#nameIn");if(n&&n.value.trim()&&n.value.trim()!==S.name){S.name=n.value.trim();persist("progress")}$("#overlay").classList.remove("show");$("#overlay").innerHTML="";render()}
+
+/* ======================= RENDER / ROUTING ======================= */
+const TABS=[["today","🏠","Oggi","Today"],["course","📘","Corso","Course"],["talk","🗣️","Parla","Talk"],["help","🆘","Aiuto","Live"],["words","⭐","Parole","Words"]];
+function render(){const main=$("#main");
+ const v=view==="unit"?vUnit():view==="course"?vCourse():view==="talk"?vTalk():view==="help"?vHelp():view==="words"?vWords():view==="quiz"?vQuiz():vToday();
+ main.innerHTML=v;main.classList.toggle("chatpad",view==="talk"&&!!chat);
+ $("#inputbar").innerHTML=vTalkBar();
+ const act=view==="unit"?"course":view==="quiz"?"today":view;
+ $("#tabs").innerHTML=TABS.map(t=>`<button class="tab ${act===t[0]?"on":""}" data-a="go" data-v="${t[0]}"><b>${t[1]}</b><span>${t[2]}${S.immersion?"":"<small>"+t[3]+"</small>"}</span></button>`).join("");
+ updatePill();
+ if(view==="talk"&&chat)setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),30);
+ const ci=$("#chatIn");if(ci)autoGrow(ci)}
+function softRender(){const ae=document.activeElement;if(ae&&(ae.tagName==="TEXTAREA"||ae.tagName==="INPUT"))return;if($("#overlay").classList.contains("show"))return;render()}
+function autoGrow(el){el.style.height="auto";el.style.height=Math.min(120,el.scrollHeight)+"px"}
+function go(v,id){if(v!=="quiz")stopQuizTimer();view=v;if(v==="unit"){unitId=+id;lessonTab="learn";const s=S.units[id]=S.units[id]||{};if(s.seen!==dayStr()){s.seen=dayStr();persist("progress")}}const h=v==="unit"?"unit-"+id:v;if(location.hash.slice(1)!==h){try{history.replaceState(null,"","#"+h)}catch(e){location.hash=h}}render();if(!(v==="talk"&&chat))window.scrollTo(0,0)}
+function route(){const h=location.hash.slice(1);const m=h.match(/^unit-(\d+)$/);if(m&&U(m[1])){view="unit";unitId=+m[1]}else if(["today","course","talk","help","words","quiz"].includes(h))view=h;else view="today";if(view!=="quiz")stopQuizTimer()}
+window.addEventListener("hashchange",()=>{route();render()});
+
+/* ======================= ACTIONS ======================= */
+async function startChat(scn){if(listening&&dict)dict.stop().catch(()=>{});
+ chat={scn,e:scn.e||"🗣️",title:scn.title,msgs:[],busy:true,err:"",history:[],showSug:false};view="talk";
+ try{history.replaceState(null,"","#talk")}catch(e){}render();
+ const sys=`You are an Italian conversation partner and coach for ${who()}. Her level: ${LVL[S.level]}.
+ROLE-PLAY: ${scn.role}
+Rules:
+- Stay in role. Speak natural, real-life Italian as people in Ancona would, simplified to her level.
+- Each reply: 1–3 short sentences, usually ending with a question or prompt so the conversation continues.
+- If she writes English or mixes languages, reply in Italian and give the Italian for what she meant in "correction".
+- Correct only real mistakes (grammar, wrong word, gender/agreement, tu/Lei register). Ignore missing accents, capitals and small typos from voice typing. If her message is fine, "correction" is null and "praise" is a short Italian praise (2–4 words).
+Return ONLY a JSON object, no markdown, in this exact shape:
+{"reply":"your Italian reply","en":"English translation of your reply","correction":null,"praise":"","suggestions":[{"it":"possible reply she could say next, at her level","en":"English"},{"it":"","en":""},{"it":"","en":""}],"words":[{"it":"useful word or short phrase from your reply","en":"English"}]}
+"correction" when needed is {"better":"natural correct Italian version of her last message","why":"one short English explanation"}. "words": 0–3 items.`;
+ chat.history=[{role:"user",content:sys+"\n\nStart the conversation now, in role (she hasn't spoken yet, so correction is null)."}];
+ await chatTurn()}
+async function chatTurn(){const c=chat;c.busy=true;c.err="";render();
+ try{const r=await askJSON(c.history,"default");if(chat!==c)return;
+  const lastMe=[...c.msgs].reverse().find(m=>m.role==="me");
+  if(lastMe&&c.msgs[c.msgs.length-1]===lastMe){if(r.correction&&r.correction.better&&nkey(r.correction.better)!==nkey(lastMe.it))lastMe.fix=r.correction;else if(r.praise)lastMe.praise=r.praise}
+  const msg={role:"tu",it:r.reply||"…",en:r.en||"",words:(r.words||[]).filter(w=>w&&w.it).slice(0,3),suggestions:(r.suggestions||[]).filter(s=>s&&s.it).slice(0,3),show:false};
+  c.msgs.push(msg);c.history.push({role:"assistant",content:JSON.stringify(r)});c.busy=false;c.showSug=false;render();
+  if(S.autoplay||S.voiceMode)speak(msg.it);
+ }catch(e){if(chat!==c)return;c.busy=false;c.err=aiErr(e);render()}}
+function sendChat(forced){const el=$("#chatIn");const t=(forced||(el&&el.value)||"").trim();if(!t||!chat||chat.busy)return;if(listening&&dict)dict.stop().catch(()=>{});
+ chat.msgs.push({role:"me",it:t});chat.history.push({role:"user",content:`She says: "${t}"\nReply in role with the JSON object only.`});
+ inputs.chatIn="";dictBase="";const n=chat.msgs.filter(m=>m.role==="me").length;activity("chat",n<=10?3:1);chatTurn()}
+async function helpGo(){const el=$("#helpIn");const t=(el&&el.value||"").trim();if(!t){toast("Type or say something first");return}if(help.busy)return;
+ if(listening&&dict)dict.stop().catch(()=>{});
+ const pl=(PLACES.find(p=>p[0]===help.place)||PLACES[0])[2];const mode=help.mode;
+ const ctx=help.log.length?"Conversation so far:\n"+help.log.slice(-6).map(x=>(x.who==="they"?"Them: ":"Her: ")+x.it).join("\n")+"\n":"";
+ help.busy=true;help.err="";help.res=null;render();
+ const prompt=mode==="heard"?`You help ${who()} understand and answer people in real time. Her Italian level: ${LVL[S.level]}. Place: ${pl}.
+Her usual preferences (use them to pick the best reply): ${S.helpPrefs||"none given"}
+${ctx}Someone just said this to her (from speech-to-text, so it may contain recognition errors or be partly English-spelled): "${t}"
+Return ONLY JSON, no markdown:
+{"heard":"the most likely intended Italian sentence, corrected","meaning":"clear natural English meaning","simple":"the same idea in very simple Italian (or empty if already simple)","replies":[{"it":"short natural reply she can say right now","en":"English meaning","say":"easy pronunciation guide for an English speaker, hyphenated syllables, stressed syllable in CAPS"}],"tip":"one short practical or cultural tip for this moment, or empty","best":0}
+"best" is the index of the reply that best fits her preferences and the conversation so far. Give exactly 3 replies covering the most likely answers (e.g. yes / no / please repeat, or the most useful options). Use Lei with staff and strangers.`
+ :`You help ${who()} say things in Italian in real life, right now. Her level: ${LVL[S.level]}. Place: ${pl}.
+${ctx}She wants to say (in English or broken Italian): "${t}"
+Return ONLY JSON, no markdown:
+{"options":[{"it":"natural Italian sentence","en":"back-translation in English","say":"easy pronunciation guide for an English speaker, hyphenated syllables, stressed syllable in CAPS","note":"when to use it, e.g. polite / casual"}],"listen_for":[{"it":"something they will likely answer","en":"English"}],"tip":"one short practical or cultural tip, or empty"}
+Give 2–3 options; the first is the best polite version for staff/strangers (Lei). Give 2–3 likely answers in listen_for. Keep everything short and speakable.`;
+ try{const r=await askJSON(prompt,"quick");help.res={kind:mode,data:r};help.busy=false;inputs.helpIn="";dictBase="";activity("help",5);
+  if(mode==="heard"&&r.heard)help.log.push({who:"they",it:r.heard,en:r.meaning});
+  let auto=null;if(mode==="heard"&&S.autoAnswer){const reps=r.replies||[];const o=reps[+r.best]||reps[0];if(o&&o.it)auto=o.it}
+  else if(mode==="want"){const o=r.options&&r.options[0];if(o&&o.it&&(S.autoplay||S.autoAnswer))auto=o.it}
+  if(auto){help.log.push({who:"me",it:auto});help.res.spoke=auto}
+  render();if(auto)speak(auto);
+ }catch(e){help.busy=false;help.err=aiErr(e);render()}}
+async function moreDrill(){const u=U(drill.unit);drill.busy=true;drill.err="";render();
+ try{const r=await askJSON(`Create 6 new practice items for ${who()}, level ${u.lvl}, for the unit "${u.title}" (${u.en}: ${u.goal}). Grammar focus: ${u.grammar}
+Each item is an English sentence she must say in Italian plus one natural Italian answer. Short, practical, set in daily life in Ancona. Vary them; don't repeat these: ${u.p.map(p=>p[0]).join(" | ")}
+Return ONLY JSON: {"items":[{"en":"...","it":"..."}]}`,"default");
+  const items=(r.items||[]).filter(x=>x&&x.en&&x.it);if(!items.length)throw{};drill.items=items;drill.i=0;drill.res=null;drill.scores=[];drill.why="";drill.busy=false;render()
+ }catch(e){drill.busy=false;drill.err=aiErr(e);render()}}
+async function drillWhy(){const it=drill.items[drill.i],ans=drill.res&&drill.res.ans;drill.busy=true;render();
+ try{const r=await askJSON(`An English-speaking learner of Italian (level ${S.level}) was asked to say "${it.en}". Expected answer: "${it.it}". She said: "${ans}". In 2–3 short English sentences: say whether her version is also correct/acceptable, and explain the key difference. Be encouraging. Ignore missing accents and capitals. Return ONLY JSON: {"ok":true,"explain":"..."}`,"quick");
+  drill.why=(r.ok?"✅ ":"")+(r.explain||"");}catch(e){drill.why=aiErr(e)}drill.busy=false;render()}
+function startReview(){const due=dueWords().slice(0,20);for(let i=due.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[due[i],due[j]]=[due[j],due[i]]}
+ review={q:due,i:0,flip:false,n:0,dir:Math.random()<.5?"it":"en"};render()}
+function grade(g){const w=review.q[review.i];if(!w)return;
+ if(+g===0){w.box=0;w.due=Date.now()+10*60*1000;review.q.push(w)}else{w.box=Math.min(6,(w.box||0)+(+g===2?2:1));w.due=Date.now()+INTERVALS[w.box]*86400000-3600000}
+ review.i++;review.n++;review.flip=false;review.dir=Math.random()<.5?"it":"en";persist("words");if(review.n===1||review.n%5===0)activity("review",review.n===1?5:3);render()}
+
+const A={
+ go:t=>{if(t.dataset.v==="words")review=null;if(t.dataset.v==="quiz"&&quiz&&(quiz.done||!quiz.started))quiz=null;go(t.dataset.v)},
+ unit:t=>go("unit",t.dataset.id),
+ ltab:t=>{lessonTab=t.dataset.t;render();window.scrollTo(0,0)},
+ say:t=>speak(t.dataset.t,!!t.dataset.slow),
+ save:t=>addWord(t.dataset.it,t.dataset.en),
+ settings:()=>openSettings(),close:()=>closeOverlay(),
+ level:t=>{S.level=t.dataset.l;persist("progress");if($("#overlay").classList.contains("show"))openSettings();else render()},
+ rate:t=>{S.rate=+t.dataset.r;persist("progress");openSettings();speak("Ciao! Come stai?")},
+ autoplay:()=>{S.autoplay=!S.autoplay;persist("progress");if($("#overlay").classList.contains("show"))openSettings();else render()},
+ immersion:()=>{S.immersion=!S.immersion;persist("progress");openSettings();render();toast(S.immersion?"Modalità immersione attiva 🇮🇹":"Immersion off")},
+ mic:t=>{if(!dict)return;const el=document.getElementById(t.dataset.target);if(!el)return;
+  if(listening){dict.stop().catch(()=>{});return}
+  dictLang=t.dataset.lang||"it-IT";dictTarget=el;dictBase=el.value?el.value.replace(/\s*$/," "):"";const au=t.dataset.auto;dictAuto=au==="qtype"?()=>A.qtype():au==="hgo"?helpGo:au==="dcheck"?()=>A.dcheck():au==="send"?()=>sendChat():null;
+  dict.start().catch(e=>{dictAuto=null;if(e&&e.code==="not_granted"){dict=null;render();toast("Microphone not allowed — use your keyboard's mic instead")}else toast("Couldn't start the mic — try again")})},
+ startchat:t=>{const id=t.dataset.id;if(id==="free")startChat(FREE);else{const u=U(id);startChat({e:u.e,title:u.title,role:u.role})}},
+ startcustom:()=>{const v=(($("#customScn")||{}).value||"").trim();if(!v){toast("Describe a situation first");return}inputs.customScn="";startChat({e:"✍️",title:v.slice(0,40),role:`Act as the most natural Italian person for this situation she wants to rehearse: "${v}". Choose tu or Lei as an Italian would.`})},
+ endchat:()=>{if(listening&&dict)dict.stop().catch(()=>{});chat=null;render()},
+ send:()=>sendChat(),chatretry:()=>chatTurn(),
+ tr:t=>{const m=chat.msgs[+t.dataset.i];m.show=!m.show;render()},
+ reveal:t=>{const m=chat.msgs[+t.dataset.i];m.reveal=true;render()},
+ showfix:t=>{const m=chat.msgs[+t.dataset.i];m.fixShow=true;render();if(m.fix)speak(m.fix.better)},
+ vmode:t=>{S.voiceMode=t.dataset.m==="1";persist("progress");if(chat)chat.typing=false;render()},
+ typing:()=>{if(listening&&dict)dict.stop().catch(()=>{});dictAuto=null;chat.typing=!chat.typing;render()},
+ notunderstood:()=>sendChat("Scusa, non ho capito. Puoi ripetere più lentamente?"),
+ sug:()=>{if(!chat)return;chat.showSug=!chat.showSug;render()},
+ usesug:t=>{inputs.chatIn=t.dataset.t;chat.showSug=false;render();const el=$("#chatIn");if(el){el.focus()}speak(t.dataset.t)},
+ place:t=>{help.place=t.dataset.p;render()},
+ prov:t=>{const c=KEYS.p;c.provider=t.dataset.p;delete c.model;LS.set("parla_ai",c);openSettings()},
+ savekey:()=>{const c=KEYS.p;c.key=($("#keyIn").value||"").trim();delete c.model;LS.set("parla_ai",c);openSettings();toast(c.key?"Key saved ✓":"Key removed")},
+ autoanswer:()=>{S.autoAnswer=!S.autoAnswer;persist("progress");render();toast(S.autoAnswer?"Your phone will answer out loud 🤖":"Auto-answer off")},
+ prefs:()=>{help.prefs=!help.prefs;render()},
+ saveprefs:()=>{const p=$("#prefsIn");if(p){S.helpPrefs=p.value.trim();persist("progress")}help.prefs=false;render();toast("Saved")},
+ hnew:()=>{help.log=[];help.res=null;help.err="";render()},
+ sayfor:t=>{speak(t.dataset.t);const l=help.log[help.log.length-1];if(!(l&&l.who==="me"&&l.it===t.dataset.t)){help.log.push({who:"me",it:t.dataset.t});render()}},hmode:t=>{help.mode=t.dataset.m;help.res=null;help.err="";render()},hgo:()=>helpGo(),
+ showbig:t=>{const o=$("#overlay");o.innerHTML=`<div class="showbig" data-a="close"><div class="it">${esc(t.dataset.t)}</div><div class="mute" style="margin-top:24px">Tap to close</div></div>`;o.classList.add("show");speak(t.dataset.t)},
+ dcheck:()=>{const el=$("#drillIn");const ans=(el&&el.value||"").trim();if(!ans){toast("Say or type your answer");return}if(listening&&dict)dict.stop().catch(()=>{});const it=drill.items[drill.i];const c=compare(ans,it.it);drill.res={...c,ans};drill.why="";drill.scores.push(c.score);inputs.drillIn="";dictBase="";render();if(c.score>=60)speak(it.it)},
+ dshow:()=>{const it=drill.items[drill.i];drill.res={score:0,ans:"(shown)",html:'<span class="w-ok">'+esc(it.it)+"</span>"};drill.scores.push(0);drill.why="";render();speak(it.it)},
+ dnext:()=>{drill.i++;drill.res=null;drill.why="";if(drill.i>=drill.items.length)activity("lesson",15);render()},
+ dretry:()=>{drill.scores.pop();drill.res=null;drill.why="";render()},
+ dwhy:()=>drillWhy(),moredrill:()=>moreDrill(),redrill:()=>{initDrill(U(drill.unit));render()},
+ mission:t=>{const id=t.dataset.id;const s=S.units[id]=S.units[id]||{};if(!s.mission){s.mission=true;activity("help",30);toast("Bravissima! 🌍 +30 XP")}else{s.mission=false;persist("progress")}render()},
+ complete:t=>{const id=t.dataset.id;const s=S.units[id]=S.units[id]||{};if(!s.done){s.done=true;s.doneDay=dayStr();activity("lesson",50);toast("Unit complete! +50 XP 🎉");go("course")}else{s.done=false;persist("progress");render()}},
+ qstart:()=>{quiz.started=true;inputs.quizIn="";startQ()},
+ qpick:t=>answerQ(t.dataset.v),
+ qtype:()=>{const el=$("#quizIn");const v=(el&&el.value||"").trim();if(!v){toast("Type or say your answer");return}inputs.quizIn="";dictBase="";answerQ(v)},
+ qnext:()=>{if(quiz.i+1<quiz.qs.length){quiz.i++;startQ()}else finishQuiz()},
+ qquit:()=>{stopQuizTimer();quiz=null;go("today")},
+ qagain:()=>{quiz=buildQuiz();render()},
+ qsaveall:()=>{quiz.qs.filter(q=>!q.ok).forEach(q=>{if(!W.list.some(w=>nkey(w.it)===nkey(q.f.it)))W.list.unshift({it:q.f.it,en:q.f.en,box:0,due:Date.now(),added:Date.now()})});persist("words");toast("Saved to your words ⭐")},
+ startreview:()=>startReview(),endreview:()=>{review=null;render()},
+ flip:()=>{if(review&&!review.flip){review.flip=true;render();const w=review.q[review.i];if(w)speak(w.it)}},
+ grade:t=>grade(t.dataset.g),
+ addword:()=>{const a=$("#addIt"),b=$("#addEn");if(!a.value.trim()){toast("Type the Italian word");return}addWord(a.value,b.value);inputs.addIt="";inputs.addEn="";render()},
+ delword:t=>{W.list.splice(+t.dataset.i,1);persist("words");render()}
+};
+document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t){if(e.target.id==="overlay")closeOverlay();return}const f=A[t.dataset.a];if(f){e.preventDefault();f(t,e)}});
+document.addEventListener("input",e=>{if(e.target.matches("[data-in]")){inputs[e.target.id]=e.target.value;if(e.target.id==="chatIn")autoGrow(e.target)}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){const id=e.target.id;if(id==="chatIn"){e.preventDefault();sendChat()}else if(id==="drillIn"){e.preventDefault();if(!drill.res)A.dcheck()}else if(id==="customScn"){e.preventDefault();A.startcustom()}else if(id==="quizIn"){e.preventDefault();A.qtype()}}});
+
+/* ======================= STANDALONE MODE (outside Claude) ======================= */
+const STANDALONE=!(window.claude&&typeof window.claude.use==="function");
+let dictLang="it-IT";
+function makeWebDictation(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return null;
+ let rec=null,cbP=()=>{},cbF=()=>{},cbS=()=>{},stopping=null,reason="stopped";
+ return{onPartial(f){cbP=f},onFinal(f){cbF=f},onState(f){cbS=f},
+  start(){return new Promise((res,rej)=>{try{rec=new SR();rec.lang=dictLang;rec.continuous=true;rec.interimResults=true;reason="stopped";
+   rec.onresult=e=>{let interim="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)cbF({text:r[0].transcript.trim()});else interim+=r[0].transcript}cbP({text:interim})};
+   rec.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){reason="not_granted";rej({code:"not_granted"})}else reason=e.error||"error"};
+   rec.onstart=()=>{cbS({state:"listening"});res()};
+   rec.onend=()=>{cbP({text:""});cbS({state:"idle",reason});if(stopping){stopping();stopping=null}};
+   rec.start()}catch(e){rej({code:"dismissed"})}})},
+  stop(){return new Promise(r=>{if(!rec)return r();stopping=r;try{rec.stop()}catch(e){r()}})}}}
+const KEYS={get p(){return(LS.get("parla_ai")||{})}};
+const GEM_MODELS=["gemini-flash-latest","gemini-3.6-flash","gemini-3.5-flash","gemini-2.5-flash"];
+async function webAI(input,opts){const cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"};
+ const msgs=typeof input==="string"?[{role:"user",content:input}]:input;
+ if(cfg.provider==="claude"){const model=(opts&&opts.modelTier==="quick")?"claude-haiku-5-5":"claude-sonnet-5-5";
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:1500,messages:msgs})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===429?"rate_limited":r.status===401?"bad_key":"api",message:j.error&&j.error.message};
+  return{text:(j.content||[]).map(c=>c.text||"").join("")}}
+ const contents=msgs.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
+ const tryModels=cfg.model?[cfg.model]:GEM_MODELS;let last=null;
+ for(const model of tryModels){const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(cfg.key),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contents,generationConfig:{responseMimeType:"application/json",temperature:.8}})});
+  const j=await r.json().catch(()=>({}));
+  if(r.ok){if(!cfg.model){cfg.model=model;LS.set("parla_ai",cfg)}return{text:((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("")}}
+  last={code:r.status===429?"rate_limited":(r.status===400||r.status===403)&&/key/i.test(JSON.stringify(j))?"bad_key":"api",message:j.error&&j.error.message};
+  if(r.status!==404)break}
+ throw last||{code:"api"}}
+
+/* ======================= BOOT ======================= */
+route();render();
+if(STANDALONE&&location.protocol==="https:"&&"serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+(async()=>{const use=n=>(window.claude&&typeof window.claude.use==="function")?window.claude.use(n).catch(()=>null):Promise.resolve(null);
+ const [d,u,a,t,dc]=STANDALONE?[null,null,null,null,null]:await Promise.all(["db","user","sample","tts","dictation"].map(use));
+ ai=a||null;tts=t||null;dict=dc||null;
+ if(STANDALONE){dict=makeWebDictation();ai=webAI}
+ setupDict();
+ if(d&&u){try{uid=await u.id()}catch(e){uid=null}if(uid){db=d;try{subscribe("progress");subscribe("words")}catch(e){db=null}}}
+ softRender();
+})();
+</script>
+</body>
+</html>
