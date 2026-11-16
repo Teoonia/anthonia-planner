@@ -124,6 +124,7 @@ a{color:var(--terra)}
 <div id="toast"></div>
 
 <script>
+const APP_VERSION="6";
 /* ======================= CURRICULUM ======================= */
 const STAGES=[
  {lvl:"A1",title:"Survive & connect",weeks:"Weeks 1–7",desc:"Sounds, greetings, numbers, ordering, shopping, getting around and uni life. Goal: handle everyday transactions in Ancona."},
@@ -638,7 +639,8 @@ function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" da
  <div style="font-size:14.5px;margin-top:8px"><b>Android:</b> Settings → System → Languages → add Italiano → drag to the top.<br><b>To switch back:</b> Impostazioni → Sistema → Lingue → drag English to the top.</div>
  <div class="mute" style="font-size:13px;margin-top:8px">Easier start: set just WhatsApp, Instagram or TikTok to Italian. Add Italian as a keyboard too, so voice typing understands you.</div></div>
  <div class="mute" style="font-size:12.5px;text-align:center">${cloud==="cloud"?"☁️ Progress synced to your Claude account":"📱 Progress saved on this device"} · ${STANDALONE?(KEYS.p.key?"AI coach ready":"Add a key for the AI coach"):ai?"AI coach ready":"AI coach unavailable here"}</div>
- <button class="btn pri full" style="margin-top:12px" data-a="close">Done</button></div></div>`;
+ <button class="btn pri full" style="margin-top:12px" data-a="close">Done</button>
+ <div class="row" style="justify-content:center;margin-top:12px;gap:10px"><span class="mute" style="font-size:12.5px">Parla! version ${APP_VERSION}${NATIVE?" · app":""}</span><button class="btn sm" data-a="reloadapp">↻ Check for updates</button></div></div></div>`;
  o.classList.add("show")}
 function aiSettings(){const c=KEYS.p;return`<div class="card"><b>🤖 AI coach key</b><div class="mute" style="font-size:13.5px;margin:4px 0 8px">Outside Claude, the coach runs on your own key. It stays only on this phone. Get a free Gemini key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</div>
  <div class="seg"><button class="${c.provider!=="claude"?"on":""}" data-a="prov" data-p="gemini">Gemini (free)</button><button class="${c.provider==="claude"?"on":""}" data-a="prov" data-p="claude">Claude API</button></div>
@@ -757,6 +759,7 @@ const A={
  sug:()=>{if(!chat)return;chat.showSug=!chat.showSug;render()},
  usesug:t=>{inputs.chatIn=t.dataset.t;chat.showSug=false;render();const el=$("#chatIn");if(el){el.focus()}speak(t.dataset.t)},
  place:t=>{help.place=t.dataset.p;render()},
+ reloadapp:async()=>{try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.update().catch(()=>{})))}if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}location.reload()},
  prov:t=>{const c=KEYS.p;c.provider=t.dataset.p;delete c.model;LS.set("parla_ai",c);openSettings()},
  savekey:async()=>{const c=KEYS.p;c.key=($("#keyIn").value||"").trim();delete c.model;c.status="";LS.set("parla_ai",c);if(!c.key){openSettings();toast("Key removed");return}
   toast("Checking your key…");try{await setupAI(c);c.status="ok"}catch(e){c.status=e&&e.code==="bad_key"?"That key didn't work — check it and paste again.":"Couldn't check the key: "+((e&&e.message)||"network error")}LS.set("parla_ai",c);openSettings();toast(c.status==="ok"?"Connected ✓ using "+c.model:"Key problem")},
@@ -849,9 +852,9 @@ async function setupAI(cfg){if(!cfg.key)return cfg;
  const best=names.filter(n=>gemVer(n)>0).sort((a,b)=>gemVer(b)-gemVer(a))[0]||(names.includes("gemini-flash-latest")?"gemini-flash-latest":names.find(n=>/flash/.test(n)&&!/lite|tts|live|image|audio|embed/.test(n)));
  if(!best)throw{code:"api",message:"No suitable Gemini model on this key"};cfg.model=best;return cfg}
 function tfetch(url,o,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||30000);return fetch(url,Object.assign({},o,{signal:c.signal})).catch(e=>{throw{code:e&&e.name==="AbortError"?"slow":"net"}}).finally(()=>clearTimeout(t))}
-function thinkCfg(model){const v=parseFloat((model.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||"0");return v>=3?{thinkingLevel:"low"}:v>=2.5?{thinkingBudget:0}:null}
+function thinkCfg(model){const v=parseFloat((model.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||"0");return v>=3||!v?{thinkingLevel:"low"}:v>=2.5?{thinkingBudget:0}:null}
 async function webAI(input,opts){let cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"};
- if(!cfg.model){cfg=await setupAI(cfg);LS.set("parla_ai",cfg)}
+ if(!cfg.model||(cfg.provider!=="claude"&&cfg.ver!==APP_VERSION)){cfg=await setupAI(cfg);cfg.ver=APP_VERSION;LS.set("parla_ai",cfg)}
  const msgs=typeof input==="string"?[{role:"user",content:input}]:input;
  if(cfg.provider==="claude"){const model=cfg.model||"claude-sonnet-5-5";
   const r=await tfetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:1500,messages:msgs})},40000);
