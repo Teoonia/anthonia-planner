@@ -221,7 +221,7 @@ const FREE={id:"free",e:"🗣️",title:"Chiacchierata libera",en:"Free chat",ro
 
 /* ======================= STATE & STORAGE ======================= */
 const dayStr=d=>{d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
-const defS=()=>({v:1,name:"Anthonia",level:"A1",rate:1,autoplay:true,immersion:false,xp:0,streak:0,lastDay:"",days:{},units:{},quizzes:[],voiceMode:false,autoAnswer:false,helpPrefs:"I usually pay by card. I don't have the loyalty card (tessera). I have my own bag. I don't need the receipt.",updatedAt:0});
+const defS=()=>({v:1,name:"Anthonia",level:"A1",rate:1,autoplay:true,immersion:false,xp:0,streak:0,lastDay:"",days:{},units:{},quizzes:[],passed:{},examLog:[],voiceMode:false,autoAnswer:false,helpPrefs:"I usually pay by card. I don't have the loyalty card (tessera). I have my own bag. I don't need the receipt.",updatedAt:0});
 const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let S=Object.assign(defS(),LS.get("parla_progress")||{});
 let W=LS.get("parla_words")||{list:[],updatedAt:0};if(!Array.isArray(W.list))W={list:[],updatedAt:0};
@@ -286,7 +286,7 @@ function speak(text,slow){if(!text)return;
 
 /* ======================= DICTATION ======================= */
 let dictTarget=null,dictBase="",listening=false,dictAuto=null;
-function liveEcho(){const l=document.getElementById("liveText");if(l&&dictTarget)l.textContent=dictTarget.value?"“"+dictTarget.value.trim()+"”":""}
+function liveEcho(){if(dictTarget&&/^exam/.test(dictTarget.id))syncExam();const l=document.getElementById("liveText");if(l&&dictTarget)l.textContent=dictTarget.value?"“"+dictTarget.value.trim()+"”":""}
 function setupDict(){if(!dict)return;
  dict.onPartial(({text})=>{if(dictTarget){dictTarget.value=dictBase+text;inputs[dictTarget.id]=dictTarget.value;liveEcho()}});
  dict.onFinal(({text})=>{if(dictTarget){dictBase=dictBase+text+" ";dictTarget.value=dictBase;inputs[dictTarget.id]=dictTarget.value;liveEcho()}});
@@ -309,6 +309,8 @@ const LVL={A1:"A1 (beginner: very short simple sentences, present tense, common 
 let view="today",unitId=null,inputs={},lessonTab="learn";
 let drill=null,chat=null,help={place:"supermercato",mode:"heard",busy:false,res:null,err:"",log:[],prefs:false},review=null;
 const nextUnit=()=>UNITS.find(u=>!(S.units[u.id]&&S.units[u.id].done))||UNITS[UNITS.length-1];
+const unitOpen=u=>stageOpen(u.lvl);
+const pendingExam=()=>{for(const l of LEVELS){if(passed(l))continue;const all=UNITS.filter(u=>u.lvl===l).every(u=>S.units[u.id]&&S.units[u.id].done);const nu=nextUnit();if(all||!unitOpen(nu))return l;return null}return null};
 const U=id=>UNITS.find(u=>u.id===+id);
 
 /* ======================= VIEWS ======================= */
@@ -321,8 +323,8 @@ function vToday(){const h=new Date().getHours();const greet=h<5?"Buonanotte":h<1
  const plan=[["review","⭐","Ripassa le parole","Review your words",due?due+" due":"all caught up",'data-a="go" data-v="words"'],["lesson","📘","Una lezione","One lesson or drill","Unit "+nu.id,'data-a="unit" data-id="'+nu.id+'"'],["chat","🗣️","Conversazione (5 min)","Talk with the coach","role-play",'data-a="startchat" data-id="'+nu.id+'"'],["help","🛒","Missione reale","Use Italian out there",nu.mission,'data-a="go" data-v="help"']];
  return`<div style="margin-top:14px"><h1>${greet}, ${esc(S.name||"")}!</h1><div class="mute" style="margin-top:4px">${S.immersion?"Pronta per parlare oggi?":"Ready to speak some Italian today?"}</div></div>
  <div class="card"><div class="row"><div style="flex:1"><b>${L("Obiettivo di oggi","Today's goal")}</b><div class="mute" style="font-size:14px">${t.xp} / ${goal} XP · 🔥 ${liveStreak()} ${S.immersion?"giorni":"day streak"} · ⭐ ${S.xp} XP</div></div><div class="serif" style="font-size:26px">${pct}%</div></div><div class="bar" style="margin-top:10px"><i style="width:${pct}%"></i></div></div>
- <div class="card terra"><small>${S.immersion?"CONTINUA":"CONTINUE"} · ${nu.lvl} · Unit ${nu.id}</small><h2 style="margin:6px 0 4px">${nu.e} ${esc(nu.title)}</h2><div class="mute">${esc(nu.en)} — ${esc(nu.goal)}</div>
- <div class="row" style="margin-top:14px"><button class="btn wh" data-a="unit" data-id="${nu.id}">${S.immersion?"Inizia":"Start lesson"}</button><button class="btn" style="background:transparent;color:#fff;border-color:#e9a690" data-a="startchat" data-id="${nu.id}">🗣️ Role-play</button></div></div>
+ ${pendingExam()?`<div class="card terra"><small>${S.immersion?"È ORA DELL'ESAME":"TIME FOR YOUR EXAM"}</small><h2 style="margin:6px 0 4px">🎓 ${L("Esame "+pendingExam(),"Level "+pendingExam()+" exam")}</h2><div class="mute">You've finished the ${pendingExam()} units. Pass the exam to graduate to ${NEXTL[pendingExam()]}.</div><button class="btn wh" style="margin-top:14px" data-a="examopen" data-l="${pendingExam()}">Take the exam</button></div>`:`<div class="card terra"><small>${S.immersion?"CONTINUA":"CONTINUE"} · ${nu.lvl} · Unit ${nu.id}</small><h2 style="margin:6px 0 4px">${nu.e} ${esc(nu.title)}</h2><div class="mute">${esc(nu.en)} — ${esc(nu.goal)}</div>
+ <div class="row" style="margin-top:14px"><button class="btn wh" data-a="unit" data-id="${nu.id}">${S.immersion?"Inizia":"Start lesson"}</button><button class="btn" style="background:transparent;color:#fff;border-color:#e9a690" data-a="startchat" data-id="${nu.id}">🗣️ Role-play</button></div></div>`}
  <button class="card gold" style="width:100%;text-align:left;cursor:pointer;display:flex;gap:12px;align-items:center" data-a="go" data-v="help"><span style="font-size:30px">🆘</span><span style="flex:1"><b>${L("Aiuto dal vivo","Live helper")}</b><br><span class="mute" style="font-size:14px">At the supermarket and stuck? Hear it, understand it, answer it — out loud.</span></span><span>›</span></button>
  ${quizCard()}
  <div class="card"><b>${L("Il piano di oggi (20 min)","Today's 20-minute plan")}</b><div style="margin-top:6px">${plan.map(p=>`<div class="check" ${p[5]} style="cursor:pointer"><span class="tick ${t[p[0]]?"on":""}">${t[p[0]]?"✓":""}</span><span style="flex:1"><b>${p[1]} ${S.immersion?esc(p[2]):esc(p[3])}</b><br><span class="mute" style="font-size:13.5px">${esc(p[4])}</span></span><span class="mute">›</span></div>`).join("")}</div></div>
@@ -338,12 +340,15 @@ function vCourse(){const nu=nextUnit();
  <div>🗣️ <b>Role-play</b> — a real conversation with the AI coach in that situation, with gentle corrections and suggested replies.</div>
  <div>🌍 <b>Mission</b> — one small real-world task in Ancona. This is where the language sticks.</div>
  <div>⭐ <b>Review</b> — words you save come back on a spaced schedule (1, 3, 7, 14, 30 days) so you don't forget them.</div>
+ <div>🎓 <b>Level exam</b> — at the end of A1, A2 and B1: listening, reading, grammar, writing and speaking, in the style of the official CILS/CELI exams. Pass it to graduate and unlock the next class.</div>
  <div>⏱️ <b>Weekly test</b> — every Friday–Sunday, a timed test on everything from that week (listening included).</div>
  <div class="mute" style="font-size:14px">Rhythm: ~1 unit a week. Daily: 5 min review · 10 min lesson or drill · 5 min conversation. Weekly: do the mission and the test. At the end of B1 you could sit the CILS or CELI B1 exam if you want a certificate.</div></div></details></div>
  ${STAGES.map(st=>`<div class="stage"><h2>${st.lvl} <span class="serif" style="font-size:17px">${esc(st.title)}</span></h2><div class="mute" style="font-size:14px;margin:4px 0 6px">${esc(st.weeks)} · ${esc(st.desc)}</div>
- ${UNITS.filter(u=>u.lvl===st.lvl).map(u=>{const s=S.units[u.id]||{};return`<button class="unit ${s.done?"done":""} ${u.id===nu.id&&!s.done?"next":""}" data-a="unit" data-id="${u.id}"><span class="num">${s.done?"✓":u.id}</span><span style="flex:1"><b>${u.e} ${esc(u.title)}</b><br><span class="mute" style="font-size:14px">${esc(u.en)}${s.mission?" · 🌍 mission done":""}</span></span><span class="mute">›</span></button>`}).join("")}</div>`).join("")}`}
+ ${!stageOpen(st.lvl)?`<div class="card gold" style="font-size:14.5px;margin:8px 0">🔒 Pass the ${LEVELS[LEVELS.indexOf(st.lvl)-1]} exam to unlock this class.</div>`:""}
+ ${UNITS.filter(u=>u.lvl===st.lvl).map(u=>{const s=S.units[u.id]||{};const lk=!stageOpen(u.lvl);return`<button class="unit ${s.done?"done":""} ${u.id===nu.id&&!s.done&&!lk?"next":""}" style="${lk?"opacity:.55":""}" data-a="${lk?"locked":"unit"}" data-id="${u.id}" data-l="${u.lvl}"><span class="num">${lk?"🔒":s.done?"✓":u.id}</span><span style="flex:1"><b>${u.e} ${esc(u.title)}</b><br><span class="mute" style="font-size:14px">${esc(u.en)}${s.mission?" · 🌍 mission done":""}</span></span><span class="mute">›</span></button>`}).join("")}
+ ${stageOpen(st.lvl)?`<button class="unit" style="border:2px solid ${passed(st.lvl)?"var(--olive)":"var(--gold)"};background:${passed(st.lvl)?"var(--olive2)":"var(--gold2)"}" data-a="examopen" data-l="${st.lvl}"><span class="num" style="background:${passed(st.lvl)?"var(--olive)":"var(--gold)"};color:#fff">🎓</span><span style="flex:1"><b>${L("Esame "+st.lvl,"Level "+st.lvl+" exam")}</b><br><span class="mute" style="font-size:14px">${passed(st.lvl)?"Passed ✓ "+S.passed[st.lvl].total+"% · "+esc(S.passed[st.lvl].d)+" · view or retake":"Pass to graduate to "+NEXTL[st.lvl]}</span></span><span class="mute">›</span></button>`:""}</div>`).join("")}`}
 
-function vUnit(){const u=U(unitId);if(!u)return vCourse();const s=S.units[u.id]||{};
+function vUnit(){const u=U(unitId);if(!u||!stageOpen(u.lvl))return vCourse();const s=S.units[u.id]||{};
  const tabs=[["learn","📘 Learn"],["drill","🎯 Drill"],["talk","🗣️ Talk"],["mission","🌍 Mission"]];
  let body="";
  if(lessonTab==="learn")body=`<div class="gram"><b>💡 ${S.immersion?"Grammatica":"Grammar"}</b><div style="margin-top:4px">${esc(u.grammar)}</div></div>
@@ -494,6 +499,125 @@ function vQuiz(){if(!quiz)quiz=buildQuiz();const z=quiz;
  const fb=r?`<div class="card ${r.ok?"olive":"gold"}" style="margin-top:12px"><b>${r.ok?"✅ Giusto!":z.picked===null&&q.t!=="type"?"⏰ Time's up":"❌ Not quite"}</b><div class="row" style="margin-top:6px"><div style="flex:1"><div class="it" style="font-size:16px">${esc(q.f.it)}</div><div class="en">${esc(q.f.en)}</div></div>${sayBtns(q.f.it,q.f.en)}</div></div><button class="btn pri full" data-a="qnext">${z.i+1<z.qs.length?"Next ›":"See my score"}</button>`:"";
  return head+`<div class="card"><small>${lab}</small>${body}${opts}</div>`+fb}
 
+/* ======================= LEVEL EXAMS (modelled on CILS/CELI format) ======================= */
+const EXAMS={
+A1:{mins:40,
+ listen:[
+  {title:"Al bar",lines:["Barista: Buongiorno! Cosa prende?","Cliente: Un cappuccino e un cornetto alla crema, per favore.","Barista: Qui o da portare via?","Cliente: Qui, grazie. Quanto costa?","Barista: Tre euro e venti."],
+   q:[["What does the customer order?",["A cappuccino and a cream croissant","An espresso and a croissant","A cappuccino and a sandwich"]],["Where will she have it?",["Here, at the bar","To take away","At home"]],["How much is it?",["€3.20","€2.30","€13.20"]]]},
+  {title:"In stazione",lines:["Scusi, a che ora parte il prossimo treno per Bologna?","Alle dieci e quindici, dal binario quattro.","E quanto costa il biglietto?","Solo andata, venticinque euro."],
+   q:[["When does the train leave?",["10:15","10:50","4:15"]],["Which platform?",["4","10","15"]]]},
+  {title:"Un messaggio vocale",lines:["Ciao Anthonia, sono Sara. Domani non c'è lezione. Ci vediamo giovedì in biblioteca alle tre. Ciao!"],
+   q:[["What does Sara say?",["There's no class tomorrow","Class is at three tomorrow","The library is closed"]],["When will they meet?",["Thursday at 3","Tomorrow at 3","Thursday at 10"]]]}],
+ read:[
+  {title:"Avviso",text:"SUPERMERCATO CONAD – Via Marconi 12\nOrari: dal lunedì al sabato 8:00–20:30. Domenica 9:00–13:00.\nOFFERTA DELLA SETTIMANA: pasta 1 kg a 0,99 €, latte fresco 1 litro a 1,20 €.\nCon la tessera Conad: sconto del 10% sulla frutta.\nPer la frutta e la verdura usare i guanti.",
+   q:[["When is it open on Sunday?",["9:00–13:00","8:00–20:30","It's closed"]],["How much is 1 kg of pasta?",["€0.99","€1.20","€10"]],["Who gets 10% off fruit?",["People with the Conad card","Everyone on Sunday","Students"]]]},
+  {title:"Un messaggio",text:"Ciao Anthonia! Sabato è il mio compleanno. Faccio una festa a casa mia, in via Matteotti 5, alle otto di sera. Porta un amico se vuoi! Non portare regali, solo il tuo sorriso :) A sabato! Giulia",
+   q:[["What is Giulia organising?",["A birthday party","A dinner at a restaurant","A study group"]],["What time?",["8 in the evening","8 in the morning","5 in the afternoon"]],["What should Anthonia NOT bring?",["Presents","A friend","Her smile"]]]}],
+ gram:[["Io ___ Anthonia.",["mi chiamo","ti chiami","si chiama"]],["Lei ___ di Ancona?",["è","sono","sei"]],["Noi ___ italiano all'università.",["studiamo","studiano","studio"]],["Vorrei ___ acqua naturale.",["un'","un","uno"]],["Quanti anni ___?",["hai","sei","fai"]],["La pizza è ___.",["buona","buono","buoni"]],["Vado ___ supermercato.",["al","alla","allo"]],["___ è il bagno?",["Dov'","Quando","Chi"]],["Domani io ___ al mare.",["vado","vai","va"]],["Mi ___ i gelati.",["piacciono","piace","piaci"]]],
+ write:{task:"Write a short message (25–40 words) to a new Italian friend. Introduce yourself (name, where you're from, where you live, what you study) and invite them for a coffee.",min:25,max:40},
+ speak:[["Presentati: come ti chiami, di dove sei, dove vivi, cosa studi.","Introduce yourself: name, where you're from, where you live, what you study."],["Sei al bar. Ordina qualcosa da bere e da mangiare e chiedi il prezzo.","You're at a café. Order a drink and something to eat, and ask the price."]]},
+A2:{mins:50,
+ listen:[
+  {title:"In farmacia",lines:["Buongiorno, ho mal di gola e un po' di febbre da ieri.","Ha anche la tosse?","No, la tosse no.","Allora le do queste pastiglie. Ne prenda una tre volte al giorno, dopo i pasti. Se tra tre giorni sta ancora male, vada dal medico."],
+   q:[["Since when has she had a fever?",["Since yesterday","For three days","Since this morning"]],["How should she take the tablets?",["Three times a day, after meals","Once a day","Three times a day, before meals"]],["What if she isn't better in three days?",["Go to the doctor","Take more tablets","Come back to the pharmacy"]]]},
+  {title:"Una telefonata",lines:["Pronto, Abbigliamento Moda Più, buongiorno.","Buongiorno, chiamo per l'annuncio. Cercate ancora una commessa part-time?","Sì. Lei ha esperienza?","Sì, ho lavorato due anni nelle vendite in Nigeria.","Perfetto. Può venire giovedì alle undici per un colloquio? Porti il curriculum."],
+   q:[["Why is she calling?",["About a part-time sales job","To buy clothes","To make a complaint"]],["What experience does she have?",["Two years in sales","Two years in a pharmacy","None"]],["What must she bring on Thursday?",["Her CV","Her ID card","A photo"]]]},
+  {title:"Annuncio in stazione",lines:["Attenzione. Il treno regionale delle diciassette e quaranta per Pesaro partirà con un ritardo di venti minuti, dal binario tre invece che dal binario uno. Ci scusiamo per il disagio."],
+   q:[["How late is the train?",["20 minutes","40 minutes","17 minutes"]],["What else changed?",["The platform: now 3 instead of 1","The destination","It leaves earlier"]]]}],
+ read:[
+  {title:"Annuncio di lavoro",text:"CERCASI ADDETTA VENDITE – Negozio di scarpe in Corso Garibaldi, Ancona. Part-time 20 ore a settimana, anche il sabato. Richiesti: esperienza minima di sei mesi, buona conoscenza dell'italiano. Inglese gradito. Inviare il CV a lavoro@scarpeancona.it entro il 30 novembre.",
+   q:[["How many hours is the job?",["20 a week","20 a day","6 a week"]],["Is English required?",["It's a plus, not required","Yes, it's required","It isn't mentioned"]],["What's the deadline?",["30 November","In six months","Saturday"]]]},
+  {title:"Un fine settimana",text:"Lo scorso fine settimana Marta è andata a Portonovo con le sue amiche. Sono partite presto la mattina in autobus. Hanno fatto il bagno anche se l'acqua era fredda e hanno mangiato pesce in un ristorante sulla spiaggia. Purtroppo, al ritorno l'autobus era in ritardo e sono arrivate a casa a mezzanotte.",
+   q:[["How did they travel?",["By bus","By car","By train"]],["What was the water like?",["Cold","Warm","Dirty"]],["What went wrong?",["The bus home was late","The restaurant was closed","It rained"]]]}],
+ gram:[["Ieri ___ al cinema con Luca.",["sono andata","ho andato","andavo"]],["Sabato ___ una pizza buonissima.",["abbiamo mangiato","siamo mangiati","mangiavamo stati"]],["Di solito mi ___ alle sette.",["sveglio","svegli","sveglia"]],["Hai comprato il pane? Sì, ___ ho comprato.",["l'","la","gli"]],["Questo vestito è ___ caro di quello.",["più","molto","tanto"]],["La settimana prossima ___ a Roma.",["andrò","sono andata","andavo"]],["Conosci Paolo? Sì, ___ conosco bene.",["lo","gli","le"]],["Ti va ___ prendere un caffè?",["di","a","per"]],["Quando ero piccola, ___ sempre al parco.",["giocavo","ho giocato","gioco"]],["Scusi, posso ___? — Certo, si accomodi.",["entrare","entro","entrato"]]],
+ write:{task:"Write an email (50–80 words) to the manager of a shop, applying for a part-time job. Say who you are, describe your experience and availability, and ask for an interview. Use the formal Lei.",min:50,max:80},
+ speak:[["Racconta cosa hai fatto lo scorso fine settimana.","Tell what you did last weekend."],["Sei in un negozio: il maglione che hai comprato è troppo piccolo. Spiega il problema e chiedi di cambiarlo.","In a shop: the sweater you bought is too small. Explain the problem and ask to exchange it."]]},
+B1:{mins:70,
+ listen:[
+  {title:"Intervista alla radio",lines:["Lei vive ad Ancona da dieci anni. Cosa le piace di più della città?","Sicuramente il mare. Grazie alla sua forma, da Ancona si può vedere il sole sorgere e tramontare sul mare. Però devo dire che i trasporti pubblici potrebbero funzionare meglio, soprattutto la sera.","E consiglierebbe Ancona a uno studente straniero?","Assolutamente sì. La vita costa meno che a Milano o a Roma, e la gente, anche se all'inizio sembra un po' chiusa, è molto accogliente."],
+   q:[["What does she like most?",["The sea","The food","The nightlife"]],["What is special about Ancona's position?",["You can watch the sun rise and set over the sea","It's the biggest port in Italy","It's in the mountains"]],["What could be better?",["Public transport, especially in the evening","Prices","The university"]],["How does she describe the people?",["Reserved at first, but very welcoming","Loud and open from the start","Unfriendly to foreigners"]]]},
+  {title:"Messaggio del proprietario",lines:["Buongiorno signora, sono il signor Bianchi, il proprietario dell'appartamento. Le volevo dire che giovedì mattina verrà il tecnico per controllare la caldaia. Se lei non è in casa, può lasciare le chiavi alla vicina del secondo piano? Mi richiami quando può, grazie."],
+   q:[["Why is the technician coming?",["To check the boiler","To fix a window","To read the meter"]],["What does he ask if she's out?",["Leave the keys with the neighbour on the second floor","Call the technician","Leave the door open"]]]}],
+ read:[
+  {title:"Prevenzione nelle Marche",text:"Negli ultimi anni le Marche hanno affrontato diversi eventi estremi, come l'alluvione di Senigallia del 2022. Secondo gli esperti, il cambiamento climatico rende questi fenomeni più frequenti e più intensi. Per questo la Protezione Civile regionale ha lanciato un programma di formazione nelle scuole: gli studenti imparano a riconoscere i segnali di pericolo e a comportarsi correttamente durante un'emergenza. «La prevenzione costa molto meno della ricostruzione», spiega la coordinatrice del progetto. Inoltre, i comuni sono invitati ad aggiornare ogni anno i propri piani di emergenza e a informare i cittadini sui punti di raccolta.",
+   q:[["According to experts, what does climate change do?",["Makes extreme events more frequent and intense","Reduces floods","Only affects the summer"]],["What does the school programme teach?",["Recognising danger signs and behaving correctly in an emergency","How to build safer houses","Only first aid"]],["What does the coordinator mean?",["Prevention is much cheaper than rebuilding","Rebuilding is cheap","Prevention is too expensive"]],["What are town councils asked to do?",["Update emergency plans every year and inform people about assembly points","Build new schools","Close the beaches"]]]},
+  {title:"Lettera al giornale",text:"Cara redazione, sono una studentessa Erasmus e vivo in Italia da sei mesi. Vorrei raccontare la mia esperienza con la burocrazia: per avere il codice fiscale e aprire un conto in banca ci ho messo quasi due mesi! Nessuno mi spiegava quali documenti servivano e ogni ufficio mi diceva una cosa diversa. Alla fine ce l'ho fatta grazie a una compagna di corso che mi ha accompagnata. Penso che le università dovrebbero offrire uno sportello di aiuto per gli studenti stranieri. — Elena",
+   q:[["What was Elena's problem?",["Paperwork took almost two months","She lost her documents","Her bank closed"]],["How did she manage in the end?",["A classmate went with her","She paid an agency","The university helped her"]],["What does she suggest?",["A help desk for foreign students at universities","Fewer documents for everyone","Using online banks"]]]}],
+ gram:[["Penso che Marco ___ ragione.",["abbia","ha","avrà"]],["Se avessi più tempo, ___ di più.",["studierei","studio","studiavo"]],["Quando sono arrivata, il film ___.",["era già iniziato","è già iniziato","inizierà già"]],["Il libro ___ ti ho parlato è bellissimo.",["di cui","che","il quale"]],["Mentre ___, è suonato il telefono.",["cucinavo","ho cucinato","cucinerò"]],["Bisogna che tu ___ subito.",["venga","vieni","verrai"]],["Hai dato il libro a Sara? Sì, ___ ho dato.",["gliel'","l'","le"]],["Il piano di emergenza ___ aggiornato ogni anno.",["viene","sta","ha"]],["Benché ___ stanca, è uscita con le amiche.",["fosse","era","è"]],["Non sapevo che tu ___ italiano così bene.",["parlassi","parli","parlerai"]]],
+ write:{task:"Write a text (90–120 words) for the university blog about your experience as an international student in Ancona: what you like, one difficulty you faced and how you dealt with it, and advice for new students.",min:90,max:120},
+ speak:[["Racconta un'esperienza importante della tua vita e spiega perché è stata importante.","Tell about an important experience in your life and explain why it mattered."],["Secondo te, è meglio vivere in una grande città o in una piccola città? Esprimi la tua opinione con esempi.","Is it better to live in a big city or a small town? Give your opinion with examples."]]}
+};
+const LEVELS=["A1","A2","B1"];const NEXTL={A1:"A2",A2:"B1",B1:"B2"};
+const passed=l=>!!(S.passed&&S.passed[l]);
+const stageOpen=l=>l==="A1"||passed(LEVELS[LEVELS.indexOf(l)-1]);
+let exam=null,eTimer=null;
+function stopExamTimer(){if(eTimer){clearInterval(eTimer);eTimer=null}}
+function buildExam(l){const E=EXAMS[l];const mix=q=>{const o=shuffle(q[1].map((t,i)=>({t,ok:i===0})));return{q:q[0],o:o.map(x=>x.t),ans:o.findIndex(x=>x.ok)}};
+ return{l,sec:-1,deadline:0,listen:E.listen.map(d=>({...d,plays:2,qs:d.q.map(mix)})),read:E.read.map(d=>({...d,qs:d.q.map(mix)})),gram:shuffle(E.gram).map(mix),pick:{},write:"",speak:E.speak.map(()=>""),res:null,grading:false}}
+const SECS=[["listen","🎧","Ascolto","Listening"],["read","📖","Lettura","Reading"],["gram","🧩","Grammatica e lessico","Grammar & vocabulary"],["write","✍️","Scrittura","Writing"],["speak","🗣️","Parlato","Speaking"]];
+function examLeft(){return Math.max(0,Math.round((exam.deadline-Date.now())/1000))}
+const fmtT=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+function startExamTimer(){stopExamTimer();eTimer=setInterval(()=>{if(!exam||exam.sec<0||exam.sec>4){stopExamTimer();return}const l=examLeft();const el=document.getElementById("etime");if(el)el.textContent="⏱ "+fmtT(l);if(l<=0){stopExamTimer();toast("Time's up — submitting");submitExam()}},1000)}
+function mcq(key,qs){return qs.map((q,i)=>{const k=key+"-"+i;return`<div style="margin-top:14px"><b style="font-size:15.5px">${i+1}. ${esc(q.q)}</b><div class="col" style="margin-top:6px">${q.o.map((o,j)=>`<button class="btn full" style="justify-content:flex-start;text-align:left;min-height:42px;${exam.pick[k]===j?"background:var(--ink);color:#fff;border-color:var(--ink)":""}" data-a="epick" data-k="${k}" data-j="${j}">${esc(o)}</button>`).join("")}</div></div>`}).join("")}
+function examScore(){const z=exam;let L=0,Ln=0,R=0,Rn=0,G=0;
+ z.listen.forEach((d,a)=>d.qs.forEach((q,i)=>{Ln++;if(z.pick["l"+a+"-"+i]===q.ans)L++}));
+ z.read.forEach((d,a)=>d.qs.forEach((q,i)=>{Rn++;if(z.pick["r"+a+"-"+i]===q.ans)R++}));
+ z.gram.forEach((q,i)=>{if(z.pick["g-"+i]===q.ans)G++});
+ return{listen:Math.round(100*L/Ln),read:Math.round(100*R/Rn),gram:Math.round(100*G/z.gram.length),raw:{L,Ln,R,Rn,G,Gn:z.gram.length}}}
+async function submitExam(){if(!exam||exam.grading||exam.res)return;stopExamTimer();if(listening&&dict)dict.stop().catch(()=>{});exam.sec=5;exam.grading=true;render();window.scrollTo(0,0);
+ const z=exam,E=EXAMS[z.l],sc=examScore();let w=null,sp=null,usedAI=false;
+ const wc=s=>s.trim().split(/\s+/).filter(Boolean).length;
+ if(ai){try{const r=await askJSON(`You are a strict but fair examiner for an Italian language exam at CEFR level ${z.l}, using criteria like the official CILS/CELI exams. The candidate is an English speaker. Grade her two productive sections.
+WRITING TASK: ${E.write.task}
+HER TEXT (${wc(z.write)} words): """${z.write||"(empty)"}"""
+SPEAKING TASKS (her spoken answers were transcribed by speech recognition, so ignore punctuation, capitals and small recognition errors; judge task completion, grammar, vocabulary range and length/fluency for ${z.l}):
+${E.speak.map((p,i)=>`${i+1}. "${p[0]}" — HER ANSWER: """${z.speak[i]||"(empty)"}"""`).join("\n")}
+Score each from 0 to 10 for level ${z.l} (6 = just meets ${z.l}; 10 = excellent ${z.l}; an empty or off-topic answer is 0; a response in English is at most 1; much too short loses points).
+Return ONLY JSON: {"writing":{"score":0,"feedback":"2–3 sentences in English","better":"a corrected, natural version of her text"},"speaking":[{"score":0,"feedback":"1–2 sentences in English"},{"score":0,"feedback":""}]}`,"default");
+  w=r.writing;sp=r.speaking;usedAI=true}catch(e){z.aiErr=aiErr(e)}}
+ if(!usedAI){const n=wc(z.write);const ws=n===0?0:Math.min(10,Math.round(10*Math.min(1,n/E.write.min)*.7));w={score:ws,feedback:"Estimated from length only — the AI examiner wasn't available, so writing wasn't fully assessed."};sp=z.speak.map(t=>{const n2=wc(t);return{score:n2===0?0:Math.min(7,Math.round(n2/4)),feedback:"Estimated from length only."}})}
+ const writing=Math.round(10*Math.max(0,Math.min(10,+w.score||0)));const speaking=Math.round(10*(sp||[]).reduce((a,b)=>a+Math.max(0,Math.min(10,+((b||{}).score)||0)),0)/Math.max(1,E.speak.length));
+ const secs={listen:sc.listen,read:sc.read,gram:sc.gram,write:writing,speak:speaking};const total=Math.round((secs.listen+secs.read+secs.gram+secs.write+secs.speak)/5);
+ const pass=usedAI&&total>=60&&Object.values(secs).every(v=>v>=55);
+ z.res={secs,total,pass,w,sp,usedAI,raw:sc.raw};z.grading=false;
+ S.examLog=(S.examLog||[]).concat([{l:z.l,d:dayStr(),total,pass}]).slice(-20);
+ if(pass){S.passed=S.passed||{};S.passed[z.l]={d:dayStr(),total,secs};if(LEVELS.includes(NEXTL[z.l]))S.level=NEXTL[z.l];activity("lesson",150)}else activity("lesson",40);
+ render();window.scrollTo(0,0)}
+function vExam(){const z=exam;if(!z)return vCourse();const E=EXAMS[z.l];
+ if(z.sec===-1){const done=UNITS.filter(u=>u.lvl===z.l).every(u=>S.units[u.id]&&S.units[u.id].done);const last=(S.examLog||[]).filter(x=>x.l===z.l).slice(-1)[0];
+  return`<button class="btn sm" style="margin-top:12px" data-a="examquit">‹ Back</button>
+  <div style="margin-top:12px"><small>ESAME DI LIVELLO</small><h1>🎓 ${L("Esame "+z.l,"Level "+z.l+" exam")}</h1><div class="mute" style="margin-top:4px">Pass it to graduate to ${NEXTL[z.l]==="B2"?"B2 — beyond this course":NEXTL[z.l]} and unlock the next class.</div></div>
+  <div class="card"><b>Format</b> <span class="mute" style="font-size:13.5px">(modelled on the official CILS / CELI exams)</span>
+  <div class="col" style="margin-top:8px;font-size:15px">${SECS.map(s=>`<div>${s[1]} <b>${S.immersion?s[2]:s[3]}</b> — ${s[0]==="listen"?"short recordings, each played max. 2 times":s[0]==="read"?"real-life texts with questions":s[0]==="gram"?"10 gap-fill questions":s[0]==="write"?`one text, ${E.write.min}–${E.write.max} words`:"2 tasks — speak (or type) your answer"}</div>`).join("")}</div>
+  <div class="gram" style="margin-top:12px;font-size:14.5px">⏱ <b>${E.mins} minutes</b> total. To pass you need <b>60% overall</b> and <b>at least 55% in every section</b>. Writing and speaking are marked by the AI examiner.</div></div>
+  ${!done?`<div class="card gold" style="font-size:14.5px">💡 You haven't finished all ${z.l} units yet. You can still try — if you pass, you skip ahead.</div>`:""}
+  ${!ai?`<div class="card gold" style="font-size:14.5px">⚠️ The AI examiner isn't connected${STANDALONE?" (add your key in Settings ⚙️)":""}. You can practise, but you can only <b>pass</b> with writing and speaking properly marked.</div>`:""}
+  ${last?`<div class="mute" style="font-size:13.5px;text-align:center">Last attempt: ${esc(last.d)} · ${last.total}% · ${last.pass?"passed ✓":"not passed"}</div>`:""}
+  <button class="btn pri full" style="margin-top:12px" data-a="examstart">Start the exam</button>
+  <div class="mute" style="font-size:12.5px;text-align:center;margin-top:8px">Find a quiet place with headphones or the volume up.</div>`}
+ if(z.sec===5){if(z.grading)return`<div class="card" style="text-align:center;margin-top:30px"><span class="dots"><span></span><span></span><span></span></span><h2 style="margin-top:10px">Correzione in corso…</h2><div class="mute">The examiner is marking your writing and speaking.</div></div>`;
+  const r=z.res,nm=esc(S.name||"");
+  const row=s=>{const v=r.secs[s[0]];return`<div class="row" style="margin-top:10px"><span style="flex:1">${s[1]} ${S.immersion?s[2]:s[3]}</span><b style="color:${v>=55?"var(--olive)":"var(--terra)"}">${v}%</b></div><div class="bar" style="margin-top:4px"><i style="width:${v}%;background:${v>=55?"var(--olive)":"var(--terra)"}"></i></div>`};
+  return`${r.pass?`<div class="card" style="margin-top:16px;text-align:center;border:3px double var(--gold);background:#fffdf7;padding:24px 16px"><div class="flag" style="width:36px;height:26px"><i></i><i></i><i></i></div><div class="serif" style="font-size:15px;letter-spacing:.12em;margin-top:10px">CERTIFICATO DI LIVELLO</div><h1 style="font-size:46px;margin:6px 0;color:var(--terra)">${z.l}</h1><div class="mute">Si certifica che</div><div class="serif" style="font-size:24px;margin:4px 0">${nm}</div><div class="mute">ha superato l'esame di livello ${z.l} di Parla!<br>con un punteggio di <b>${r.total}%</b> · ${esc(dayStr())}</div><div style="margin-top:12px;font-weight:600;color:var(--olive)">🎉 ${NEXTL[z.l]==="B2"?"You've completed the course!":"Class "+NEXTL[z.l]+" is now unlocked"}</div></div>`
+  :`<div class="card gold" style="margin-top:16px;text-align:center"><div style="font-size:40px">💪</div><h2>Non ancora — not yet</h2><div class="score" style="margin:6px 0">${r.total}%</div><div class="mute" style="font-size:14.5px">${r.usedAI?"You need 60% overall and 55% in every section. Review the red sections and try again.":"The AI examiner wasn't available, so writing and speaking couldn't be marked. "+esc(z.aiErr||"")}</div></div>`}
+  <div class="card"><b>Your results</b>${SECS.map(row).join("")}<div class="mute" style="font-size:13px;margin-top:10px">Listening ${r.raw.L}/${r.raw.Ln} · Reading ${r.raw.R}/${r.raw.Rn} · Grammar ${r.raw.G}/${r.raw.Gn}</div></div>
+  <div class="card"><b>✍️ Writing feedback</b><div style="font-size:14.5px;margin-top:6px">${esc(r.w&&r.w.feedback||"")}</div>${r.w&&r.w.better?`<div class="gram" style="margin-top:8px;font-size:14.5px"><b>Better version:</b> ${esc(r.w.better)}</div>`:""}</div>
+  <div class="card"><b>🗣️ Speaking feedback</b>${(r.sp||[]).map((x,i)=>`<div style="font-size:14.5px;margin-top:6px"><b>${i+1}.</b> ${esc((x||{}).feedback||"")} <span class="mute">(${Math.round(+((x||{}).score)||0)}/10)</span></div>`).join("")}</div>
+  <div class="col"><button class="btn pri" data-a="${r.pass?"examdone":"examretry"}">${r.pass?"Continue to "+(NEXTL[z.l]==="B2"?"the course":NEXTL[z.l])+" ›":"↺ Try again"}</button>${r.pass?"":`<button class="btn" data-a="examquit">Back to the course</button>`}</div>`}
+ const s=SECS[z.sec];
+ const head=`<div class="row" style="margin-top:12px"><button class="btn sm" data-a="examabort">✕</button><div style="flex:1;text-align:center"><small>${z.l} · SEZIONE ${z.sec+1}/5</small></div><span class="pill" id="etime">⏱ ${fmtT(examLeft())}</span></div>
+  <div class="row" style="gap:4px;margin-top:10px">${SECS.map((x,i)=>`<div class="bar" style="flex:1;height:6px"><i style="width:${i<=z.sec?100:0}%;background:${i<z.sec?"var(--olive)":"var(--terra)"}"></i></div>`).join("")}</div>
+  <h2 style="margin-top:14px">${s[1]} ${L(s[2],s[3])}</h2>`;
+ let body="";
+ if(s[0]==="listen")body=z.listen.map((d,a)=>`<div class="card"><div class="row"><b style="flex:1">${a+1}. ${esc(d.title)}</b><button class="btn sm ol" data-a="eplay" data-i="${a}" ${d.plays?"":"disabled"}>▶ Play (${d.plays} left)</button></div>${mcq("l"+a,d.qs)}</div>`).join("");
+ if(s[0]==="read")body=z.read.map((d,a)=>`<div class="card"><b>${a+1}. ${esc(d.title)}</b><div style="white-space:pre-line;background:var(--bg);border-radius:12px;padding:12px;margin-top:8px;font-size:15.5px;line-height:1.55">${esc(d.text)}</div>${mcq("r"+a,d.qs)}</div>`).join("");
+ if(s[0]==="gram")body=`<div class="card">${z.gram.map((q,i)=>{const k="g-"+i;return`<div style="margin-top:${i?14:0}px"><b style="font-size:16px">${i+1}. ${esc(q.q)}</b><div class="row wrapx" style="margin-top:6px;gap:6px">${q.o.map((o,j)=>`<button class="chip ${exam.pick[k]===j?"on":""}" data-a="epick" data-k="${k}" data-j="${j}">${esc(o)}</button>`).join("")}</div></div>`}).join("")}</div>`;
+ if(s[0]==="write"){const n=z.write.trim().split(/\s+/).filter(Boolean).length;body=`<div class="card"><div style="font-size:15.5px">${esc(E.write.task)}</div><textarea id="examWrite" rows="9" style="margin-top:10px" data-in placeholder="Scrivi qui in italiano…">${esc(z.write)}</textarea><div class="mute" style="font-size:13px;margin-top:6px"><span id="wcount">${n}</span> words · aim for ${E.write.min}–${E.write.max}</div></div>`}
+ if(s[0]==="speak")body=E.speak.map((p,i)=>`<div class="card"><b>${i+1}. ${esc(p[0])}</b><div class="mute" style="font-size:14px">${esc(p[1])}</div><button class="btn sm" style="margin-top:8px" data-a="say" data-t="${esc(p[0])}">🔊 Listen to the task</button><div class="row" style="margin-top:10px"><textarea id="examSpeak${i}" rows="4" data-in placeholder="${dict?"Tap 🎙️ and speak for 30–60 seconds…":"Speak with your keyboard's mic, or type…"}">${esc(z.speak[i])}</textarea>${micBtn("examSpeak"+i)}</div></div>`).join("")+(dict?"":kbTip());
+ const last=z.sec===4;
+ return head+body+`<button class="btn pri full" style="margin-top:6px" data-a="${last?"examsubmit":"examnext"}">${last?"Submit the exam":"Next section ›"}</button>`}
+
 /* ======================= SETTINGS SHEET ======================= */
 function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" data-stop><div class="in"><div class="row"><h2 style="flex:1">${L("Impostazioni","Settings")}</h2><button class="icon" data-a="close">✕</button></div>
  <div class="card"><b>Your name</b><input type="text" id="nameIn" value="${esc(S.name)}" style="margin-top:8px"></div>
@@ -519,18 +643,18 @@ function closeOverlay(){const n=$("#nameIn");if(n&&n.value.trim()&&n.value.trim(
 /* ======================= RENDER / ROUTING ======================= */
 const TABS=[["today","🏠","Oggi","Today"],["course","📘","Corso","Course"],["talk","🗣️","Parla","Talk"],["help","🆘","Aiuto","Live"],["words","⭐","Parole","Words"]];
 function render(){const main=$("#main");
- const v=view==="unit"?vUnit():view==="course"?vCourse():view==="talk"?vTalk():view==="help"?vHelp():view==="words"?vWords():view==="quiz"?vQuiz():vToday();
+ const v=view==="unit"?vUnit():view==="course"?vCourse():view==="talk"?vTalk():view==="help"?vHelp():view==="words"?vWords():view==="quiz"?vQuiz():view==="exam"?vExam():vToday();
  main.innerHTML=v;main.classList.toggle("chatpad",view==="talk"&&!!chat);
  $("#inputbar").innerHTML=vTalkBar();
- const act=view==="unit"?"course":view==="quiz"?"today":view;
+ const act=view==="unit"||view==="exam"?"course":view==="quiz"?"today":view;
  $("#tabs").innerHTML=TABS.map(t=>`<button class="tab ${act===t[0]?"on":""}" data-a="go" data-v="${t[0]}"><b>${t[1]}</b><span>${t[2]}${S.immersion?"":"<small>"+t[3]+"</small>"}</span></button>`).join("");
  updatePill();
  if(view==="talk"&&chat)setTimeout(()=>window.scrollTo(0,document.body.scrollHeight),30);
  const ci=$("#chatIn");if(ci)autoGrow(ci)}
 function softRender(){const ae=document.activeElement;if(ae&&(ae.tagName==="TEXTAREA"||ae.tagName==="INPUT"))return;if($("#overlay").classList.contains("show"))return;render()}
 function autoGrow(el){el.style.height="auto";el.style.height=Math.min(120,el.scrollHeight)+"px"}
-function go(v,id){if(v!=="quiz")stopQuizTimer();view=v;if(v==="unit"){unitId=+id;lessonTab="learn";const s=S.units[id]=S.units[id]||{};if(s.seen!==dayStr()){s.seen=dayStr();persist("progress")}}const h=v==="unit"?"unit-"+id:v;if(location.hash.slice(1)!==h){try{history.replaceState(null,"","#"+h)}catch(e){location.hash=h}}render();if(!(v==="talk"&&chat))window.scrollTo(0,0)}
-function route(){const h=location.hash.slice(1);const m=h.match(/^unit-(\d+)$/);if(m&&U(m[1])){view="unit";unitId=+m[1]}else if(["today","course","talk","help","words","quiz"].includes(h))view=h;else view="today";if(view!=="quiz")stopQuizTimer()}
+function go(v,id){if(v!=="quiz")stopQuizTimer();if(v!=="exam")stopExamTimer();view=v;if(v==="unit"){unitId=+id;lessonTab="learn";const s=S.units[id]=S.units[id]||{};if(s.seen!==dayStr()){s.seen=dayStr();persist("progress")}}const h=v==="unit"?"unit-"+id:v;if(location.hash.slice(1)!==h){try{history.replaceState(null,"","#"+h)}catch(e){location.hash=h}}render();if(!(v==="talk"&&chat))window.scrollTo(0,0)}
+function route(){const h=location.hash.slice(1);const m=h.match(/^unit-(\d+)$/);if(m&&U(m[1])){view="unit";unitId=+m[1]}else if(["today","course","talk","help","words","quiz","exam"].includes(h))view=h;else view="today";if(view!=="quiz")stopQuizTimer()}
 window.addEventListener("hashchange",()=>{route();render()});
 
 /* ======================= ACTIONS ======================= */
@@ -651,6 +775,17 @@ const A={
  qquit:()=>{stopQuizTimer();quiz=null;go("today")},
  qagain:()=>{quiz=buildQuiz();render()},
  qsaveall:()=>{quiz.qs.filter(q=>!q.ok).forEach(q=>{if(!W.list.some(w=>nkey(w.it)===nkey(q.f.it)))W.list.unshift({it:q.f.it,en:q.f.en,box:0,due:Date.now(),added:Date.now()})});persist("words");toast("Saved to your words ⭐")},
+ examopen:t=>{exam=buildExam(t.dataset.l);go("exam")},
+ locked:t=>{const p=LEVELS[LEVELS.indexOf(t.dataset.l)-1];toast("🔒 Pass the "+p+" exam first");},
+ examstart:()=>{exam.sec=0;exam.deadline=Date.now()+EXAMS[exam.l].mins*60000;startExamTimer();render();window.scrollTo(0,0)},
+ epick:t=>{syncExam();exam.pick[t.dataset.k]=+t.dataset.j;const y=window.scrollY;render();window.scrollTo(0,y)},
+ eplay:t=>{const d=exam.listen[+t.dataset.i];if(!d||d.plays<=0)return;d.plays--;const y=window.scrollY;render();window.scrollTo(0,y);speak(d.lines.join("  …  "))},
+ examnext:()=>{syncExam();if(listening&&dict)dict.stop().catch(()=>{});exam.sec++;render();window.scrollTo(0,0)},
+ examsubmit:()=>{syncExam();submitExam()},
+ examabort:()=>{if(!exam.abortAsk){exam.abortAsk=true;toast("Tap ✕ again to leave — this attempt won't count");setTimeout(()=>{if(exam)exam.abortAsk=false},3000);return}stopExamTimer();exam=null;go("course")},
+ examquit:()=>{stopExamTimer();exam=null;go("course")},
+ examretry:()=>{exam=buildExam(exam.l);render();window.scrollTo(0,0)},
+ examdone:()=>{exam=null;go("course")},
  startreview:()=>startReview(),endreview:()=>{review=null;render()},
  flip:()=>{if(review&&!review.flip){review.flip=true;render();const w=review.q[review.i];if(w)speak(w.it)}},
  grade:t=>grade(t.dataset.g),
@@ -658,7 +793,8 @@ const A={
  delword:t=>{W.list.splice(+t.dataset.i,1);persist("words");render()}
 };
 document.addEventListener("click",e=>{const t=e.target.closest("[data-a]");if(!t){if(e.target.id==="overlay")closeOverlay();return}const f=A[t.dataset.a];if(f){e.preventDefault();f(t,e)}});
-document.addEventListener("input",e=>{if(e.target.matches("[data-in]")){inputs[e.target.id]=e.target.value;if(e.target.id==="chatIn")autoGrow(e.target)}});
+function syncExam(){if(!exam)return;const w=document.getElementById("examWrite");if(w){exam.write=w.value;const c=document.getElementById("wcount");if(c)c.textContent=w.value.trim().split(/\s+/).filter(Boolean).length}EXAMS[exam.l].speak.forEach((_,i)=>{const el=document.getElementById("examSpeak"+i);if(el)exam.speak[i]=el.value})}
+document.addEventListener("input",e=>{if(/^exam(Write|Speak)/.test(e.target.id))syncExam();if(e.target.matches("[data-in]")){inputs[e.target.id]=e.target.value;if(e.target.id==="chatIn")autoGrow(e.target)}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){const id=e.target.id;if(id==="chatIn"){e.preventDefault();sendChat()}else if(id==="drillIn"){e.preventDefault();if(!drill.res)A.dcheck()}else if(id==="customScn"){e.preventDefault();A.startcustom()}else if(id==="quizIn"){e.preventDefault();A.qtype()}}});
 
 /* ======================= STANDALONE MODE (outside Claude) ======================= */
