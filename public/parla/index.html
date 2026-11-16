@@ -301,7 +301,7 @@ function parseLoose(t){t=String(t||"");const a=t.indexOf("{"),b=t.lastIndexOf("}
 async function askJSON(input,tier){if(!ai)throw{code:"no_ai"};const opts={modelTier:tier||"default",cache:false};
  if(typeof ai.json==="function"){try{const v=await ai.json(input,opts);if(v&&typeof v==="object")return v}catch(e){if(e&&(e.code==="not_granted"||e.code==="rate_limited"))throw e}}
  const r=await ai(input,opts);return parseLoose(r&&r.text)}
-function aiErr(e){const c=e&&e.code;if(c==="no_key")return"Add your free AI key in Settings ⚙️ to use the coach.";if(c==="bad_key")return"Your AI key didn't work — check it in Settings ⚙️.";if(c==="api")return"The AI service said: "+((e&&e.message)||"error")+". Try again.";if(c==="no_ai")return"The AI coach needs this page opened in Claude while signed in.";if(c==="not_granted"){ai=null;return"AI access was declined. Reload the page to allow it."}if(c==="rate_limited")return"The coach needs a short break — try again in a minute.";return"Something went wrong — please try again."}
+function aiErr(e){const c=e&&e.code;if(c==="slow")return"The AI took too long to answer. Check your internet and try again.";if(c==="net")return"No connection to the AI. Check your internet and try again.";if(c==="no_key")return"Add your free AI key in Settings ⚙️ to use the coach.";if(c==="bad_key")return"Your AI key didn't work — check it in Settings ⚙️.";if(c==="api")return"The AI service said: "+((e&&e.message)||"error")+". Try again.";if(c==="no_ai")return"The AI coach needs this page opened in Claude while signed in.";if(c==="not_granted"){ai=null;return"AI access was declined. Reload the page to allow it."}if(c==="rate_limited")return"The coach needs a short break — try again in a minute.";return"Something went wrong — please try again."}
 const who=()=>esc(S.name||"the learner")+", a Nigerian woman (English speaker) living in Ancona, Italy, doing a master's in Environmental Hazard and Disaster Risk Management at Università Politecnica delle Marche";
 const LVL={A1:"A1 (beginner: very short simple sentences, present tense, common words)",A2:"A2 (elementary: short sentences, present and passato prossimo, everyday topics)",B1:"B1 (intermediate: natural sentences, mix of tenses, some idioms)"};
 
@@ -402,7 +402,7 @@ function vTalkBar(){if(view!=="talk"||!chat)return"";const last=[...chat.msgs].r
 
 function vHelp(){const h=help;const pl=PLACES.find(p=>p[0]===h.place)||PLACES[0];
  let res="";
- if(h.busy)res=`<div class="card" style="text-align:center"><span class="dots"><span></span><span></span><span></span></span><div class="mute" style="margin-top:6px">Un attimo…</div></div>`;
+ if(h.busy)res=`<div class="card" style="text-align:center"><span class="dots"><span></span><span></span><span></span></span><div class="mute" style="margin-top:6px">Un attimo…</div><button class="btn sm" style="margin-top:10px" data-a="hcancel">Cancel</button></div>`;
  else if(h.err)res=`<div class="card mute">${esc(h.err)}</div>`;
  else if(h.res&&h.res.kind==="heard"){const r=h.res.data;
   res=`${h.res.spoke?`<div class="card terra" style="padding:12px 14px"><small>🤖 YOUR PHONE SAID</small><div class="row" style="margin-top:4px"><b style="flex:1;font-size:18px">${esc(h.res.spoke)}</b><button class="btn sm wh" data-a="say" data-t="${esc(h.res.spoke)}">🔁</button></div></div>`:""}<div class="card olive"><small>THEY SAID</small><div class="row" style="margin-top:4px"><div class="it" style="flex:1">${esc(r.heard||"")}</div>${sayBtns(r.heard||"")}</div><div style="margin-top:8px;font-size:17px">🇬🇧 <b>${esc(r.meaning||"")}</b></div>${r.simple?`<div class="mute" style="font-size:14px;margin-top:6px">Simpler: ${esc(r.simple)}</div>`:""}</div>
@@ -565,7 +565,7 @@ async function helpGo(){const el=$("#helpIn");const t=(el&&el.value||"").trim();
  if(listening&&dict)dict.stop().catch(()=>{});
  const pl=(PLACES.find(p=>p[0]===help.place)||PLACES[0])[2];const mode=help.mode;
  const ctx=help.log.length?"Conversation so far:\n"+help.log.slice(-6).map(x=>(x.who==="they"?"Them: ":"Her: ")+x.it).join("\n")+"\n":"";
- help.busy=true;help.err="";help.res=null;render();hScroll();
+ help.busy=true;help.err="";help.res=null;const gen=help.gen=(help.gen||0)+1;render();hScroll();
  const prompt=mode==="heard"?`You help ${who()} understand and answer people in real time. Her Italian level: ${LVL[S.level]}. Place: ${pl}.
 Her usual preferences (use them to pick the best reply): ${S.helpPrefs||"none given"}
 ${ctx}Someone just said this to her (from speech-to-text, so it may contain recognition errors or be partly English-spelled): "${t}"
@@ -577,13 +577,13 @@ ${ctx}She wants to say (in English or broken Italian): "${t}"
 Return ONLY JSON, no markdown:
 {"options":[{"it":"natural Italian sentence","en":"back-translation in English","say":"easy pronunciation guide for an English speaker, hyphenated syllables, stressed syllable in CAPS","note":"when to use it, e.g. polite / casual"}],"listen_for":[{"it":"something they will likely answer","en":"English"}],"tip":"one short practical or cultural tip, or empty"}
 Give 2–3 options; the first is the best polite version for staff/strangers (Lei). Give 2–3 likely answers in listen_for. Keep everything short and speakable.`;
- try{const r=await askJSON(prompt,"default");help.res={kind:mode,data:r};help.busy=false;inputs.helpIn="";dictBase="";activity("help",5);
+ try{const r=await askJSON(prompt,"default");if(gen!==help.gen)return;help.res={kind:mode,data:r};help.busy=false;inputs.helpIn="";dictBase="";activity("help",5);
   if(mode==="heard"&&r.heard)help.log.push({who:"they",it:r.heard,en:r.meaning});
   let auto=null;if(mode==="heard"&&S.autoAnswer){const reps=r.replies||[];const o=reps[+r.best]||reps[0];if(o&&o.it)auto=o.it}
   else if(mode==="want"){const o=r.options&&r.options[0];if(o&&o.it&&(S.autoplay||S.autoAnswer))auto=o.it}
   if(auto){help.log.push({who:"me",it:auto});help.res.spoke=auto}
   render();hScroll();if(auto)speak(auto);
- }catch(e){help.busy=false;help.err=aiErr(e);render();hScroll()}}
+ }catch(e){if(gen!==help.gen)return;help.busy=false;help.err=aiErr(e);render();hScroll()}}
 async function moreDrill(){const u=U(drill.unit);drill.busy=true;drill.err="";render();
  try{const r=await askJSON(`Create 6 new practice items for ${who()}, level ${u.lvl}, for the unit "${u.title}" (${u.en}: ${u.goal}). Grammar focus: ${u.grammar}
 Each item is an English sentence she must say in Italian plus one natural Italian answer. Short, practical, set in daily life in Ancona. Vary them; don't repeat these: ${u.p.map(p=>p[0]).join(" | ")}
@@ -610,10 +610,10 @@ const A={
  rate:t=>{S.rate=+t.dataset.r;persist("progress");openSettings();speak("Ciao! Come stai?")},
  autoplay:()=>{S.autoplay=!S.autoplay;persist("progress");if($("#overlay").classList.contains("show"))openSettings();else render()},
  immersion:()=>{S.immersion=!S.immersion;persist("progress");openSettings();render();toast(S.immersion?"Modalità immersione attiva 🇮🇹":"Immersion off")},
- mic:t=>{if(!dict)return;const el=document.getElementById(t.dataset.target);if(!el)return;
+ mic:t=>{if(!dict){toast("Microphone not available here — use your keyboard's mic");return}const el=document.getElementById(t.dataset.target);if(!el)return;
   if(listening){dict.stop().catch(()=>{});return}
   dictLang=t.dataset.lang||"it-IT";dictTarget=el;dictBase=el.value?el.value.replace(/\s*$/," "):"";const au=t.dataset.auto;dictAuto=au==="qtype"?()=>A.qtype():au==="hgo"?helpGo:au==="dcheck"?()=>A.dcheck():au==="send"?()=>sendChat():null;
-  dict.start().catch(e=>{dictAuto=null;if(e&&e.code==="not_granted"){dict=null;render();toast("Microphone not allowed — use your keyboard's mic instead")}else toast("Couldn't start the mic — try again")})},
+  dict.start().catch(e=>{dictAuto=null;if(e&&e.code==="not_granted"){dict=null;render();toast("Microphone not allowed — use your keyboard's mic instead")}else if(e&&e.code==="timeout")toast("The microphone didn't respond — close and reopen the app");else toast("Couldn't start the mic — try again")})},
  startchat:t=>{const id=t.dataset.id;if(id==="free")startChat(FREE);else{const u=U(id);startChat({e:u.e,title:u.title,role:u.role})}},
  startcustom:()=>{const v=(($("#customScn")||{}).value||"").trim();if(!v){toast("Describe a situation first");return}inputs.customScn="";startChat({e:"✍️",title:v.slice(0,40),role:`Act as the most natural Italian person for this situation she wants to rehearse: "${v}". Choose tu or Lei as an Italian would.`})},
  endchat:()=>{if(listening&&dict)dict.stop().catch(()=>{});chat=null;render()},
@@ -633,6 +633,7 @@ const A={
  autoanswer:()=>{S.autoAnswer=!S.autoAnswer;persist("progress");render();toast(S.autoAnswer?"Your phone will answer out loud 🤖":"Auto-answer off")},
  prefs:()=>{help.prefs=!help.prefs;render()},
  saveprefs:()=>{const p=$("#prefsIn");if(p){S.helpPrefs=p.value.trim();persist("progress")}help.prefs=false;render();toast("Saved")},
+ hcancel:()=>{help.busy=false;help.gen=(help.gen||0)+1;render()},
  hnew:()=>{help.log=[];help.res=null;help.err="";render()},
  sayfor:t=>{speak(t.dataset.t);const l=help.log[help.log.length-1];if(!(l&&l.who==="me"&&l.it===t.dataset.t)){help.log.push({who:"me",it:t.dataset.t});render()}},hmode:t=>{help.mode=t.dataset.m;help.res=null;help.err="";render()},hgo:()=>helpGo(),
  showbig:t=>{const o=$("#overlay");o.innerHTML=`<div class="showbig" data-a="close"><div class="it">${esc(t.dataset.t)}</div><div class="mute" style="margin-top:24px">Tap to close</div></div>`;o.classList.add("show");speak(t.dataset.t)},
@@ -674,14 +675,22 @@ function makeWebDictation(){const SR=window.SpeechRecognition||window.webkitSpee
    rec.start()}catch(e){rej({code:"dismissed"})}})},
   stop(){return new Promise(r=>{if(!rec)return r();stopping=r;try{rec.stop()}catch(e){r()}})}}}
 const NATIVE=!!(window.Capacitor&&typeof window.Capacitor.isNativePlatform==="function"&&window.Capacitor.isNativePlatform());
-const NP=n=>NATIVE&&window.Capacitor.Plugins?window.Capacitor.Plugins[n]:null;
+const _np={};
+function NP(name){if(!NATIVE)return null;if(name in _np)return _np[name];const cap=window.Capacitor;let p=null;
+ if(cap.Plugins&&cap.Plugins[name])p=cap.Plugins[name];
+ else if(typeof cap.nativePromise==="function"&&(!cap.PluginHeaders||cap.PluginHeaders.some(h=>h.name===name))){
+  p=new Proxy({},{get(_,m){if(m==="then")return undefined;
+   if(m==="addListener")return(ev,cb)=>{let id=null;try{id=cap.nativeCallback(name,"addListener",{eventName:ev},cb)}catch(e){}return Promise.resolve({remove:()=>cap.nativePromise(name,"removeListener",{eventName:ev,callbackId:id}).catch(()=>{})})};
+   return o=>cap.nativePromise(name,String(m),o||{})}})}
+ return(_np[name]=p)}
+const withTimeout=(pr,ms)=>Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej({code:"timeout"}),ms))]);
 function makeNativeDictation(){const P=NP("SpeechRecognition");if(!P)return null;
  let cbP=()=>{},cbF=()=>{},cbS=()=>{},cur="",active=false;
  const end=()=>{if(!active)return;active=false;if(cur){cbF({text:cur});cur=""}cbP({text:""});cbS({state:"idle",reason:"stopped"})};
  try{P.addListener("partialResults",d=>{cur=(d&&d.matches&&d.matches[0])||cur;if(active)cbP({text:cur})});
   P.addListener("listeningState",d=>{if(d&&d.status==="stopped")end()})}catch(e){}
  return{onPartial(f){cbP=f},onFinal(f){cbF=f},onState(f){cbS=f},
-  async start(){let p=await P.checkPermissions().catch(()=>({}));if(!p||p.speechRecognition!=="granted"){p=await P.requestPermissions().catch(()=>({}));if(!p||p.speechRecognition!=="granted")throw{code:"not_granted"}}
+  async start(){let p=await withTimeout(P.checkPermissions(),4000).catch(()=>({}));if(!p||p.speechRecognition!=="granted"){p=await withTimeout(P.requestPermissions(),30000).catch(()=>({}));if(!p||p.speechRecognition!=="granted")throw{code:"not_granted"}}
    cur="";active=true;cbS({state:"listening"});
    P.start({language:dictLang,partialResults:true,popup:false,maxResults:1}).then(r=>{if(r&&r.matches&&r.matches[0])cur=r.matches[0]}).catch(()=>end())},
   async stop(){try{await P.stop()}catch(e){}setTimeout(end,700)}}}
@@ -689,24 +698,28 @@ const KEYS={get p(){return(LS.get("parla_ai")||{})}};
 const GEM_MODELS=["gemini-flash-latest","gemini-3.6-flash","gemini-3.5-flash","gemini-2.5-flash"];
 function gemVer(n){const m=n.match(/^gemini-(\d+(?:\.\d+)?)-flash$/);return m?parseFloat(m[1]):-1}
 async function setupAI(cfg){if(!cfg.key)return cfg;
- if(cfg.provider==="claude"){const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:10,messages:[{role:"user",content:"Say ok"}]})});
+ if(cfg.provider==="claude"){const r=await tfetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:10,messages:[{role:"user",content:"Say ok"}]})});
   if(!r.ok){const j=await r.json().catch(()=>({}));throw{code:r.status===401?"bad_key":"api",message:j.error&&j.error.message}}cfg.model="claude-sonnet-5-5";return cfg}
- const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key="+encodeURIComponent(cfg.key));const j=await r.json().catch(()=>({}));
+ const r=await tfetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key="+encodeURIComponent(cfg.key));const j=await r.json().catch(()=>({}));
  if(!r.ok)throw{code:(r.status===400||r.status===403)?"bad_key":"api",message:j.error&&j.error.message};
  const names=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent")).map(m=>m.name.replace(/^models\//,""));
  const best=names.filter(n=>gemVer(n)>0).sort((a,b)=>gemVer(b)-gemVer(a))[0]||(names.includes("gemini-flash-latest")?"gemini-flash-latest":names.find(n=>/flash/.test(n)&&!/lite|tts|live|image|audio|embed/.test(n)));
  if(!best)throw{code:"api",message:"No suitable Gemini model on this key"};cfg.model=best;return cfg}
+function tfetch(url,o,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||30000);return fetch(url,Object.assign({},o,{signal:c.signal})).catch(e=>{throw{code:e&&e.name==="AbortError"?"slow":"net"}}).finally(()=>clearTimeout(t))}
+function thinkCfg(model){const v=parseFloat((model.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||"0");return v>=3?{thinkingLevel:"low"}:v>=2.5?{thinkingBudget:0}:null}
 async function webAI(input,opts){let cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"};
  if(!cfg.model){cfg=await setupAI(cfg);LS.set("parla_ai",cfg)}
  const msgs=typeof input==="string"?[{role:"user",content:input}]:input;
  if(cfg.provider==="claude"){const model=cfg.model||"claude-sonnet-5-5";
-  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:1500,messages:msgs})});
+  const r=await tfetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model,max_tokens:1500,messages:msgs})},40000);
   const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===429?"rate_limited":r.status===401?"bad_key":"api",message:j.error&&j.error.message};
   return{text:(j.content||[]).map(c=>c.text||"").join("")}}
  const contents=msgs.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
  const tryModels=[cfg.model].concat(GEM_MODELS.filter(m=>m!==cfg.model));let last=null;
- for(const model of tryModels){const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(cfg.key),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contents,generationConfig:{responseMimeType:"application/json",temperature:.8}})});
-  const j=await r.json().catch(()=>({}));
+ for(const model of tryModels){if(!model)continue;const gc={responseMimeType:"application/json",temperature:.8};const tc=cfg.noThink?null:thinkCfg(model);if(tc)gc.thinkingConfig=tc;
+  const call=g=>tfetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(cfg.key),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contents,generationConfig:g})},40000);
+  let r=await call(gc);let j=await r.json().catch(()=>({}));
+  if(!r.ok&&r.status===400&&gc.thinkingConfig&&/think/i.test(JSON.stringify(j))){delete gc.thinkingConfig;cfg.noThink=true;LS.set("parla_ai",cfg);r=await call(gc);j=await r.json().catch(()=>({}))}
   if(r.ok){if(cfg.model!==model){cfg.model=model;LS.set("parla_ai",cfg)}return{text:((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("")}}
   last={code:r.status===429?"rate_limited":(r.status===400||r.status===403)&&/key/i.test(JSON.stringify(j))?"bad_key":"api",message:j.error&&j.error.message};
   if(r.status!==404)break}
@@ -718,7 +731,7 @@ if(STANDALONE&&location.protocol==="https:"&&"serviceWorker" in navigator){navig
 (async()=>{const use=n=>(window.claude&&typeof window.claude.use==="function")?window.claude.use(n).catch(()=>null):Promise.resolve(null);
  const [d,u,a,t,dc]=STANDALONE?[null,null,null,null,null]:await Promise.all(["db","user","sample","tts","dictation"].map(use));
  ai=a||null;tts=t||null;dict=dc||null;
- if(STANDALONE){dict=NATIVE?(makeNativeDictation()||makeWebDictation()):makeWebDictation();ai=webAI}
+ if(STANDALONE){dict=NATIVE?makeNativeDictation():makeWebDictation();ai=webAI}
  setupDict();
  if(d&&u){try{uid=await u.id()}catch(e){uid=null}if(uid){db=d;try{subscribe("progress");subscribe("words")}catch(e){db=null}}}
  softRender();
