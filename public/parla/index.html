@@ -124,7 +124,7 @@ a{color:var(--terra)}
 <div id="toast"></div>
 
 <script>
-const APP_VERSION="6";
+const APP_VERSION="7";
 /* ======================= CURRICULUM ======================= */
 const STAGES=[
  {lvl:"A1",title:"Survive & connect",weeks:"Weeks 1–7",desc:"Sounds, greetings, numbers, ordering, shopping, getting around and uni life. Goal: handle everyday transactions in Ancona."},
@@ -645,7 +645,8 @@ function openSettings(){const o=$("#overlay");o.innerHTML=`<div class="sheet" da
 function aiSettings(){const c=KEYS.p;return`<div class="card"><b>🤖 AI coach key</b><div class="mute" style="font-size:13.5px;margin:4px 0 8px">Outside Claude, the coach runs on your own key. It stays only on this phone. Get a free Gemini key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.</div>
  <div class="seg"><button class="${c.provider!=="claude"?"on":""}" data-a="prov" data-p="gemini">Gemini (free)</button><button class="${c.provider==="claude"?"on":""}" data-a="prov" data-p="claude">Claude API</button></div>
  <input type="text" id="keyIn" style="margin-top:8px" placeholder="Paste your API key" value="${esc(c.key||"")}" autocomplete="off" spellcheck="false">
- <button class="btn sm ol" style="margin-top:8px" data-a="savekey">Save &amp; connect</button> <span style="font-size:12.5px;${c.status&&c.status!=="ok"?"color:var(--terra)":"color:var(--olive)"}">${c.status==="ok"?"✓ Connected · "+esc(c.model):c.status?esc(c.status):c.key?"key saved":""}</span></div>`}
+ ${c.provider!=="claude"?`<div class="toggle" style="margin-top:8px"><div><b>⚡ Fast mode</b><div class="mute" style="font-size:13px">Uses Gemini Flash-Lite: quicker replies, slightly simpler Italian</div></div><button class="sw ${c.fast?"on":""}" data-a="fastmode"></button></div>`:""}
+ <button class="btn sm ol" style="margin-top:8px" data-a="savekey">Save &amp; connect</button> ${c.key?`<button class="btn sm" style="margin-top:8px" data-a="speedtest">⏱ Test speed</button>`:""}<div id="speedRes" class="mute" style="font-size:13px;margin-top:6px"></div> <span style="font-size:12.5px;${c.status&&c.status!=="ok"?"color:var(--terra)":"color:var(--olive)"}">${c.status==="ok"?"✓ Connected · "+esc(c.model):c.status?esc(c.status):c.key?"key saved":""}</span></div>`}
 function closeOverlay(){const n=$("#nameIn");if(n&&n.value.trim()&&n.value.trim()!==S.name){S.name=n.value.trim();persist("progress")}$("#overlay").classList.remove("show");$("#overlay").innerHTML="";render()}
 
 /* ======================= RENDER / ROUTING ======================= */
@@ -759,6 +760,11 @@ const A={
  sug:()=>{if(!chat)return;chat.showSug=!chat.showSug;render()},
  usesug:t=>{inputs.chatIn=t.dataset.t;chat.showSug=false;render();const el=$("#chatIn");if(el){el.focus()}speak(t.dataset.t)},
  place:t=>{help.place=t.dataset.p;render()},
+ fastmode:()=>{const c=KEYS.p;c.fast=!c.fast;delete c.model;LS.set("parla_ai",c);openSettings();toast(c.fast?"Fast mode on ⚡":"Best quality mode")},
+ speedtest:async()=>{const out=$("#speedRes");if(out)out.textContent="Testing…";const t0=Date.now();
+  try{const r=await webAI('Reply with ONLY this JSON: {"reply":"Ciao! Come stai?"}',{});const sec=((Date.now()-t0)/1000).toFixed(1);const c=KEYS.p;
+   if(out)out.innerHTML="✓ Answered in <b>"+sec+" s</b> using "+esc(c.model||"?")+(sec>12?" — that's slow; try ⚡ Fast mode":"")}
+  catch(e){if(out)out.textContent="✗ "+aiErr(e)+" ("+((Date.now()-t0)/1000).toFixed(1)+" s)"}},
  reloadapp:async()=>{try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.update().catch(()=>{})))}if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}location.reload()},
  prov:t=>{const c=KEYS.p;c.provider=t.dataset.p;delete c.model;LS.set("parla_ai",c);openSettings()},
  savekey:async()=>{const c=KEYS.p;c.key=($("#keyIn").value||"").trim();delete c.model;c.status="";LS.set("parla_ai",c);if(!c.key){openSettings();toast("Key removed");return}
@@ -849,10 +855,12 @@ async function setupAI(cfg){if(!cfg.key)return cfg;
  const r=await tfetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000&key="+encodeURIComponent(cfg.key));const j=await r.json().catch(()=>({}));
  if(!r.ok)throw{code:(r.status===400||r.status===403)?"bad_key":"api",message:j.error&&j.error.message};
  const names=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes("generateContent")).map(m=>m.name.replace(/^models\//,""));
- const best=names.filter(n=>gemVer(n)>0).sort((a,b)=>gemVer(b)-gemVer(a))[0]||(names.includes("gemini-flash-latest")?"gemini-flash-latest":names.find(n=>/flash/.test(n)&&!/lite|tts|live|image|audio|embed/.test(n)));
+ const liteV=n=>{const m=n.match(/^gemini-(\d+(?:\.\d+)?)-flash-lite$/);return m?parseFloat(m[1]):-1};
+ const fastPick=cfg.fast?names.filter(n=>liteV(n)>0).sort((a,b)=>liteV(b)-liteV(a))[0]:null;
+ const best=fastPick||names.filter(n=>gemVer(n)>0).sort((a,b)=>gemVer(b)-gemVer(a))[0]||(names.includes("gemini-flash-latest")?"gemini-flash-latest":names.find(n=>/flash/.test(n)&&!/lite|tts|live|image|audio|embed/.test(n)));
  if(!best)throw{code:"api",message:"No suitable Gemini model on this key"};cfg.model=best;return cfg}
 function tfetch(url,o,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||30000);return fetch(url,Object.assign({},o,{signal:c.signal})).catch(e=>{throw{code:e&&e.name==="AbortError"?"slow":"net"}}).finally(()=>clearTimeout(t))}
-function thinkCfg(model){const v=parseFloat((model.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||"0");return v>=3||!v?{thinkingLevel:"low"}:v>=2.5?{thinkingBudget:0}:null}
+function thinkCfg(model,lvl){const v=parseFloat((model.match(/gemini-(\d+(?:\.\d+)?)/)||[])[1]||"0");return v>=3||!v?{thinkingLevel:lvl||"minimal"}:v>=2.5?{thinkingBudget:0}:null}
 async function webAI(input,opts){let cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"};
  if(!cfg.model||(cfg.provider!=="claude"&&cfg.ver!==APP_VERSION)){cfg=await setupAI(cfg);cfg.ver=APP_VERSION;LS.set("parla_ai",cfg)}
  const msgs=typeof input==="string"?[{role:"user",content:input}]:input;
@@ -862,9 +870,10 @@ async function webAI(input,opts){let cfg=KEYS.p;if(!cfg.key)throw{code:"no_key"}
   return{text:(j.content||[]).map(c=>c.text||"").join("")}}
  const contents=msgs.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
  const tryModels=[cfg.model].concat(GEM_MODELS.filter(m=>m!==cfg.model));let last=null;
- for(const model of tryModels){if(!model)continue;const gc={responseMimeType:"application/json",temperature:.8};const tc=cfg.noThink?null:thinkCfg(model);if(tc)gc.thinkingConfig=tc;
+ for(const model of tryModels){if(!model)continue;const gc={responseMimeType:"application/json",temperature:.8,maxOutputTokens:1200};const tc=cfg.noThink?null:thinkCfg(model,cfg.think);if(tc)gc.thinkingConfig=tc;
   const call=g=>tfetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(cfg.key),{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({contents,generationConfig:g})},40000);
   let r=await call(gc);let j=await r.json().catch(()=>({}));
+  if(!r.ok&&r.status===400&&gc.thinkingConfig&&gc.thinkingConfig.thinkingLevel==="minimal"&&/think/i.test(JSON.stringify(j))){gc.thinkingConfig={thinkingLevel:"low"};cfg.think="low";LS.set("parla_ai",cfg);r=await call(gc);j=await r.json().catch(()=>({}))}
   if(!r.ok&&r.status===400&&gc.thinkingConfig&&/think/i.test(JSON.stringify(j))){delete gc.thinkingConfig;cfg.noThink=true;LS.set("parla_ai",cfg);r=await call(gc);j=await r.json().catch(()=>({}))}
   if(r.ok){if(cfg.model!==model){cfg.model=model;LS.set("parla_ai",cfg)}return{text:((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||"").join("")}}
   last={code:r.status===429?"rate_limited":(r.status===400||r.status===403)&&/key/i.test(JSON.stringify(j))?"bad_key":"api",message:j.error&&j.error.message};
