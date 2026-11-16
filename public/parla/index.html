@@ -124,7 +124,7 @@ a{color:var(--terra)}
 <div id="toast"></div>
 
 <script>
-const APP_VERSION="7";
+const APP_VERSION="8";
 /* ======================= CURRICULUM ======================= */
 const STAGES=[
  {lvl:"A1",title:"Survive & connect",weeks:"Weeks 1–7",desc:"Sounds, greetings, numbers, ordering, shopping, getting around and uni life. Goal: handle everyday transactions in Ancona."},
@@ -286,15 +286,16 @@ function speak(text,slow){if(!text)return;
  }else browserSpeak(text,slow)}
 
 /* ======================= DICTATION ======================= */
-let dictTarget=null,dictBase="",listening=false,dictAuto=null;
-function liveEcho(){if(dictTarget&&/^exam/.test(dictTarget.id))syncExam();const l=document.getElementById("liveText");if(l&&dictTarget)l.textContent=dictTarget.value?"“"+dictTarget.value.trim()+"”":""}
+let dictTarget=null,dictTargetId="",dictBase="",listening=false,dictAuto=null;
+const dtgt=()=>(dictTargetId&&document.getElementById(dictTargetId))||dictTarget;
+function liveEcho(){const el=dtgt();if(el&&/^exam/.test(el.id))syncExam();const l=document.getElementById("liveText");if(l&&el)l.textContent=el.value?"“"+el.value.trim()+"”":(listening?"🎙️ Sto ascoltando… / Listening…":"")}
 function setupDict(){if(!dict)return;
- dict.onPartial(({text})=>{if(dictTarget){dictTarget.value=dictBase+text;inputs[dictTarget.id]=dictTarget.value;liveEcho()}});
- dict.onFinal(({text})=>{if(dictTarget){dictBase=dictBase+text+" ";dictTarget.value=dictBase;inputs[dictTarget.id]=dictTarget.value;liveEcho()}});
- dict.onState(({state,reason})=>{listening=state==="listening";document.querySelectorAll(".mic").forEach(b=>b.classList.toggle("live",listening&&b.dataset.target===(dictTarget&&dictTarget.id)));
+ dict.onPartial(({text})=>{const el=dtgt();if(el){el.value=dictBase+text;inputs[el.id]=el.value;liveEcho()}});
+ dict.onFinal(({text})=>{if(!text)return;dictBase=dictBase+text+" ";const el=dtgt();if(el){el.value=dictBase;inputs[el.id]=el.value;liveEcho()}else if(dictTargetId)inputs[dictTargetId]=dictBase});
+ dict.onState(({state,reason})=>{listening=state==="listening";document.querySelectorAll(".mic").forEach(b=>b.classList.toggle("live",listening&&b.dataset.target===dictTargetId));liveEcho();if(listening)toast("🎙️ Listening… tap the mic again when finished");
   if(!listening&&dictAuto&&reason!=="hidden"){const f=dictAuto;dictAuto=null;setTimeout(f,150)}});
 }
-function micBtn(id,big,auto){if(!dict)return"";return'<button class="mic'+(big?" bigmic":"")+'" data-a="mic" data-lang="'+(id==="helpIn"&&help.mode==="want"?"en-US":"it-IT")+'" data-target="'+id+'"'+(auto?' data-auto="'+auto+'"':"")+' aria-label="Speak">🎙️</button>'}
+function micBtn(id,big,auto){if(!dict)return"";return'<button class="mic'+(big?" bigmic":"")+(listening&&dictTargetId===id?" live":"")+'" data-a="mic" data-lang="'+(id==="helpIn"&&help.mode==="want"?"en-US":"it-IT")+'" data-target="'+id+'"'+(auto?' data-auto="'+auto+'"':"")+' aria-label="Speak">🎙️</button>'}
 const kbTip=()=>dict?(STANDALONE?'<div class="kbtip">🎙️ Tap the mic, speak, tap again to stop.</div>':'<div class="kbtip">🎙️ Tap the mic, speak, tap again to stop. If it writes English, use your keyboard\'s mic set to Italian instead.</div>'):'<div class="kbtip">🎙️ To speak instead of type: tap the box, then the <b>microphone on your keyboard</b> (add Italian as a keyboard language and switch to it). On a computer in Chrome, a mic button appears here.</div>';
 
 /* ======================= AI ======================= */
@@ -406,7 +407,7 @@ function vTalkBar(){if(view!=="talk"||!chat)return"";const last=[...chat.msgs].r
  if(S.voiceMode&&dict&&!chat.typing)return`<div class="inputbar"><div class="in">${sugHtml}<div class="row" style="justify-content:center;gap:18px">
   <button class="icon" data-a="sug" title="Help me reply">💡</button>${micBtn("chatIn",true,"send")}<button class="icon" data-a="typing" title="Type instead">⌨️</button></div>
   <textarea id="chatIn" rows="1" data-in style="position:absolute;opacity:0;pointer-events:none;height:1px"></textarea>
-  <div id="liveText" class="mute" style="text-align:center;min-height:20px;font-size:14px;margin-top:4px"></div><div class="row" style="justify-content:center;margin-top:2px"><button class="chip" style="white-space:nowrap" data-a="notunderstood">🙋 Non ho capito</button></div><div class="mute" style="font-size:12px;text-align:center;margin-top:4px">Tap the mic, speak, tap again to send</div></div></div>`;
+  <div id="liveText" class="mute" style="text-align:center;min-height:20px;font-size:14px;margin-top:4px"></div><div class="row" style="justify-content:center;margin-top:2px"><button class="chip" style="white-space:nowrap" data-a="notunderstood">🙋 Non ho capito</button></div><div class="mute" style="font-size:12px;text-align:center;margin-top:4px">Tap the mic, speak (pauses are fine), tap again to send</div></div></div>`;
  return`<div class="inputbar"><div class="in">${sugHtml}
  <div class="row"><button class="icon" data-a="sug" aria-label="Help me reply" title="Help me reply">💡</button><textarea id="chatIn" rows="1" data-in placeholder="Rispondi in italiano…" style="min-height:46px">${esc(inputs.chatIn||"")}</textarea>${micBtn("chatIn")}<button class="mic" style="background:var(--terra)" data-a="send" aria-label="Send">➤</button></div>
  <div class="row" style="justify-content:center;margin-top:5px;gap:8px">${S.voiceMode?`<button class="chip" style="padding:5px 10px;font-size:12.5px" data-a="notunderstood">🙋 Non ho capito</button>`:""}${dict&&S.voiceMode?`<button class="chip" style="padding:5px 10px;font-size:12.5px" data-a="typing">🎙️ Back to voice</button>`:""}${dict?"":'<span class="mute" style="font-size:11.5px">🎙️ Use your keyboard\'s mic (Italian) to speak · 💡 for reply ideas</span>'}</div></div></div>`}
@@ -690,7 +691,7 @@ async function chatTurn(){const c=chat;c.busy=true;c.err="";render();
   c.msgs.push(msg);c.history.push({role:"assistant",content:JSON.stringify(r)});c.busy=false;c.showSug=false;render();
   if(S.autoplay||S.voiceMode)speak(msg.it);
  }catch(e){if(chat!==c)return;c.busy=false;c.err=aiErr(e);render()}}
-function sendChat(forced){const el=$("#chatIn");const t=(forced||(el&&el.value)||"").trim();if(!t||!chat||chat.busy)return;if(listening&&dict)dict.stop().catch(()=>{});
+function sendChat(forced){const el=$("#chatIn");const t=(forced||(el&&el.value)||inputs.chatIn||"").trim();if(!t||!chat||chat.busy)return;if(listening&&dict)dict.stop().catch(()=>{});
  chat.msgs.push({role:"me",it:t});chat.history.push({role:"user",content:`She says: "${t}"\nReply in role with the JSON object only.`});
  inputs.chatIn="";dictBase="";const n=chat.msgs.filter(m=>m.role==="me").length;activity("chat",n<=10?3:1);chatTurn()}
 async function hScroll(){setTimeout(()=>{const h=document.getElementById("hres");if(h)h.scrollIntoView({behavior:"smooth",block:"start"})},60)}
@@ -745,7 +746,7 @@ const A={
  immersion:()=>{S.immersion=!S.immersion;persist("progress");openSettings();render();toast(S.immersion?"Modalità immersione attiva 🇮🇹":"Immersion off")},
  mic:t=>{if(!dict){toast("Microphone not available here — use your keyboard's mic");return}const el=document.getElementById(t.dataset.target);if(!el)return;
   if(listening){dict.stop().catch(()=>{});return}
-  dictLang=t.dataset.lang||"it-IT";dictTarget=el;dictBase=el.value?el.value.replace(/\s*$/," "):"";const au=t.dataset.auto;dictAuto=au==="qtype"?()=>A.qtype():au==="hgo"?helpGo:au==="dcheck"?()=>A.dcheck():au==="send"?()=>sendChat():null;
+  dictLang=t.dataset.lang||"it-IT";if(el.id==="helpIn"){el.value="";inputs.helpIn=""}dictTarget=el;dictTargetId=el.id;dictBase=el.value?el.value.replace(/\s*$/," "):"";const au=t.dataset.auto;dictAuto=au==="qtype"?()=>A.qtype():au==="hgo"?helpGo:au==="dcheck"?()=>A.dcheck():au==="send"?()=>sendChat():null;
   dict.start().catch(e=>{dictAuto=null;if(e&&e.code==="not_granted"){dict=null;render();toast("Microphone not allowed — use your keyboard's mic instead")}else if(e&&e.code==="timeout")toast("The microphone didn't respond — close and reopen the app");else toast("Couldn't start the mic — try again")})},
  startchat:t=>{const id=t.dataset.id;if(id==="free")startChat(FREE);else{const u=U(id);startChat({e:u.e,title:u.title,role:u.role})}},
  startcustom:()=>{const v=(($("#customScn")||{}).value||"").trim();if(!v){toast("Describe a situation first");return}inputs.customScn="";startChat({e:"✍️",title:v.slice(0,40),role:`Act as the most natural Italian person for this situation she wants to rehearse: "${v}". Choose tu or Lei as an Italian would.`})},
@@ -837,15 +838,20 @@ function NP(name){if(!NATIVE)return null;if(name in _np)return _np[name];const c
  return(_np[name]=p)}
 const withTimeout=(pr,ms)=>Promise.race([pr,new Promise((_,rej)=>setTimeout(()=>rej({code:"timeout"}),ms))]);
 function makeNativeDictation(){const P=NP("SpeechRecognition");if(!P)return null;
- let cbP=()=>{},cbF=()=>{},cbS=()=>{},cur="",active=false;
- const end=()=>{if(!active)return;active=false;if(cur){cbF({text:cur});cur=""}cbP({text:""});cbS({state:"idle",reason:"stopped"})};
- try{P.addListener("partialResults",d=>{cur=(d&&d.matches&&d.matches[0])||cur;if(active)cbP({text:cur})});
-  P.addListener("listeningState",d=>{if(d&&d.status==="stopped")end()})}catch(e){}
+ let cbP=()=>{},cbF=()=>{},cbS=()=>{};let active=false,userStop=false,seg="",silent=0,watch=null,endT=null,heard=false;
+ const clearT=()=>{clearTimeout(watch);clearTimeout(endT)};
+ const commit=()=>{if(seg){const t=seg;seg="";cbF({text:t})}};
+ const finish=()=>{if(!active)return;clearT();commit();active=false;cbP({text:""});cbS({state:"idle",reason:"stopped"});P.stop().catch(()=>{})};
+ const segEnded=()=>{clearT();endT=setTimeout(()=>{if(!active)return;commit();if(userStop||silent>=2)finish();else listen()},1300)};
+ const listen=()=>{if(!active)return;heard=false;clearT();
+  watch=setTimeout(()=>{if(!active||heard)return;silent++;segEnded()},7000);
+  P.start({language:dictLang,partialResults:true,popup:false,maxResults:1}).catch(()=>{if(active){silent++;segEnded()}})};
+ try{P.addListener("partialResults",d=>{if(!active)return;const m=d&&d.matches&&d.matches[0];if(m){seg=m;heard=true;silent=0;cbP({text:seg})}});
+  P.addListener("listeningState",d=>{if(!active||!d)return;if(d.status==="started"){heard=true;silent=0;clearTimeout(watch)}else if(d.status==="stopped")segEnded()})}catch(e){}
  return{onPartial(f){cbP=f},onFinal(f){cbF=f},onState(f){cbS=f},
   async start(){let p=await withTimeout(P.checkPermissions(),4000).catch(()=>({}));if(!p||p.speechRecognition!=="granted"){p=await withTimeout(P.requestPermissions(),30000).catch(()=>({}));if(!p||p.speechRecognition!=="granted")throw{code:"not_granted"}}
-   cur="";active=true;cbS({state:"listening"});
-   P.start({language:dictLang,partialResults:true,popup:false,maxResults:1}).then(r=>{if(r&&r.matches&&r.matches[0])cur=r.matches[0]}).catch(()=>end())},
-  async stop(){try{await P.stop()}catch(e){}setTimeout(end,700)}}}
+   if(active)finish();active=true;userStop=false;seg="";silent=0;cbS({state:"listening"});listen()},
+  async stop(){if(!active)return;userStop=true;clearT();P.stop().catch(()=>{});endT=setTimeout(finish,1300)}}}
 const KEYS={get p(){return(LS.get("parla_ai")||{})}};
 const GEM_MODELS=["gemini-flash-latest","gemini-3.6-flash","gemini-3.5-flash","gemini-2.5-flash"];
 function gemVer(n){const m=n.match(/^gemini-(\d+(?:\.\d+)?)-flash$/);return m?parseFloat(m[1]):-1}
