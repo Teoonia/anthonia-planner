@@ -268,7 +268,7 @@ G.words = {
   name: 'Word Tiles', short: 'Our own word board', icon: ICON('<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><path d="M6 9l1-4 1 4M16 5h2.5a1.5 1.5 0 0 1 0 3H16zm0 3h2.5a1.5 1.5 0 0 1 0 3H16z"/>'),
   desc: 'Build crossword-style words on a 15×15 board. Coloured squares double or triple letters and words. Using all 7 tiles earns 50 extra points.',
   start(me) { const bag = []; for (const [l, [n]] of Object.entries(LETTERS)) for (let k = 0; k < n; k++) bag.push(l); shuffleArr(bag);
-    const st = { kind: 'words', board: Array(225).fill(''), bag, racks: { anthonia: bag.splice(0, 7), ifeayomi: bag.splice(0, 7) }, scores: { anthonia: 0, ifeayomi: 0 }, turn: me, passes: 0, last: [], limit: 180, turnStart: null };
+    const st = { kind: 'words', board: Array(225).fill(''), bag, racks: { anthonia: bag.splice(0, 7), ifeayomi: bag.splice(0, 7) }, scores: { anthonia: 0, ifeayomi: 0 }, turn: me, passes: 0, last: [], limit: 60, turnStart: null };
     st.msg = `${NAMES[me]} goes first`; S.wt = null; return st; },
   score: (st) => [st.scores.anthonia, st.scores.ifeayomi],
   view(st, me) {
