@@ -2,12 +2,12 @@
    Anthonia's class timetable (UNIVPM, EHDRM). Bump `version` whenever it changes:
    the app replaces the classes in Firestore once, on the next open, on every device. */
 export const TIMETABLE = {
-  version: "2026-11-16",
+  version: "2026-11-16b",
   label: "week of 16 November",
   classes: {
     "bio-mon":  { title: "Biological and Ecological Risk", day: 0, start: "08:30", end: "11:30", room: "B12" },
     "es-mon":   { title: "Environmental Sustainability", day: 0, start: "11:30", end: "13:30", room: "B12" },
-    "chem-mon": { title: "Chemical and Industrial Risk", day: 0, start: "14:30", end: "17:30", room: "Aula Azzurra (Scienze 3)" },
+    "chem-mon": { title: "Chemical and Industrial Risk", day: 0, start: "14:30", end: "16:30", room: "Aula Azzurra (Scienze 3)" },
     "clim-wed": { title: "Climate Change and Natural Hazard", day: 2, start: "14:30", end: "16:30", room: "A5" },
     "ren-tue":  { title: "Renewables and Innovative Energy Systems", day: 1, start: "08:30", end: "10:30", room: "B12" },
     "bio-tue":  { title: "Biological and Ecological Risk", day: 1, start: "10:30", end: "13:30", room: "B12" },

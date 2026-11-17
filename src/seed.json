@@ -423,7 +423,7 @@
    "sleep": "23:00",
    "wake": "06:00",
    "walkwait": 25,
-   "timetableVersion": "2026-11-16"
+   "timetableVersion": "2026-11-16b"
   }
  },
  "classes": {
@@ -445,7 +445,7 @@
    "title": "Chemical and Industrial Risk",
    "day": 0,
    "start": "14:30",
-   "end": "17:30",
+   "end": "16:30",
    "room": "Aula Azzurra (Scienze 3)"
   },
   "ren-tue": {
