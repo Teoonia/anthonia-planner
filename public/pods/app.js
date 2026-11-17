@@ -1,0 +1,652 @@
+
+/* ---------- constants ---------- */
+const NAMES={anthonia:'Anthonia',ifeayomi:'Ifeayomi'};
+const other=r=>r==='anthonia'?'ifeayomi':'anthonia';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const HEART_PATH='M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.6.7-1.5 2.2-2.6 4.3-2.6 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z';
+const HEART=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${HEART_PATH}"/></svg>`;
+const QUESTIONS=["What made you smile today?","What's one thing you miss about being in the same room as me?","If we could teleport for one hour tonight, where would we go?","What's a small thing I do that makes you feel loved?","What's something you're worried about this week?","Describe your perfect lazy Sunday with me.","What's one goal you want us to hit before the year ends?","What song reminds you of us right now?","What food do you want us to eat together on our next visit?","What's one thing you're proud of yourself for lately?","What did you dream about recently?","What's a habit of mine you secretly love?","Where do you see us in five years?","What's one thing I could do this week to make you happier?","What was your first impression of me?","What's a memory of us you replay often?","If we opened a business together, what would it be?","What's something new you learned this week?","What's one thing you want to tell me but haven't yet?","Which of our plans are you most excited about?","What's your love language today: words, time, gifts, help or touch?","What's a place back home you want us to visit together?","What's a place in Italy you want us to explore together?","What stressed you today, and how can I help?","What would our dream home look like?","What's a silly thing that made you laugh recently?","What do you appreciate most about how we handle the distance?","What's one thing we should start doing as a couple?","What's one thing we should stop doing as a couple?","Finish this: I knew I loved you when…"];
+const OPEN_WHEN=["Open when you miss me","Open when you're sad","Open when you need a laugh","Open when you can't sleep","Open when you're stressed","Open when we've had a fight","Open on your birthday"];
+const SIZES=[[24,6,4],[60,10,6],[120,15,8],[260,20,13]];
+const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],["play","Play",'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>'],["plan","Plan",'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],["truth","Truth",'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h6"/>'],["us","Gallery",'<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5.5-5.5L7 19"/>']];
+
+/* ---------- avatars ---------- */
+const SKINS=['#4a2c1d','#6e4029','#91583a','#bf8459','#e8b892'];
+const HAIRC=['#1b1210','#3d2516','#7a4524','#b8322f','#e9b949'];
+const HAIRS=['Long','Puff','Braids & bun','Short','Low cut'];
+const EXTRAS=['None','Glasses','Bow','Earrings','Cap'];
+const DEFAULT_AV={anthonia:{skin:1,hair:2,hc:0,extra:3},ifeayomi:{skin:1,hair:4,hc:0,extra:0}};
+function avatarSVG(role,cfg){
+  cfg=Object.assign({},DEFAULT_AV[role],cfg||{});
+  const sk=SKINS[cfg.skin]||SKINS[1],hc=HAIRC[cfg.hc]||HAIRC[0],main=role==='anthonia'?'#ff4f7e':'#22b3a3',bg=role==='anthonia'?'#ffe4ec':'#d9f6f1';
+  const back=[`<path d="M24 46c0-20 12-30 26-30s26 10 26 30v30H24z" fill="${hc}"/>`,`<circle cx="50" cy="30" r="25" fill="${hc}"/>`,`<circle cx="50" cy="14" r="11" fill="${hc}"/><path d="M27 44c-3 14-4 24-2 32M73 44c3 14 4 24 2 32" stroke="${hc}" stroke-width="6" stroke-linecap="round" fill="none"/>`,'',''][cfg.hair]||'';
+  const front=[`<path d="M25 44c0-16 11-25 25-25s25 9 25 25c-8-8-18-11-27-11-9 0-16 4-23 11z" fill="${hc}"/>`,`<path d="M26 42c2-14 12-20 24-20s22 6 24 20c-7-6-15-9-24-9s-17 3-24 9z" fill="${hc}"/>`,`<path d="M26 42c1-14 11-21 24-21s23 7 24 21c-6-7-15-10-24-10s-18 3-24 10z" fill="${hc}"/>`,`<path d="M26 40c2-13 12-19 24-19s22 6 24 19c-3-3-8-7-12-7-4 4-12 5-20 4-6 0-11 1-16 3z" fill="${hc}"/>`,`<path d="M27 38c3-10 12-16 23-16s20 6 23 16c-6-4-14-6-23-6s-17 2-23 6z" fill="${hc}" opacity=".85"/>`][cfg.hair]||'';
+  const extra=[``,`<g fill="none" stroke="#3a1f2b" stroke-width="2.4"><circle cx="41" cy="46" r="7"/><circle cx="59" cy="46" r="7"/><path d="M48 46h4"/></g>`,`<g fill="${main}"><path d="M60 22l10-7v14z"/><path d="M60 22l-10-7v14z"/><circle cx="60" cy="22" r="3.5"/></g>`,`<circle cx="25.5" cy="54" r="3" fill="#ffb21f"/><circle cx="74.5" cy="54" r="3" fill="#ffb21f"/>`,`<path d="M24 38c2-14 13-20 26-20s24 6 26 20z" fill="${main}"/><path d="M50 38h30c0 3-3 5-6 5H50z" fill="${main}"/>`][cfg.extra]||'';
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="${bg}"/>${back}
+  <path d="M18 100c2-18 15-26 32-26s30 8 32 26z" fill="${main}"/><rect x="43" y="62" width="14" height="14" rx="5" fill="${sk}"/>
+  <ellipse cx="50" cy="47" rx="24" ry="26" fill="${sk}"/><circle cx="26" cy="50" r="4" fill="${sk}"/><circle cx="74" cy="50" r="4" fill="${sk}"/>${front}
+  <ellipse cx="41" cy="47" rx="2.6" ry="3.4" fill="#2a1712"/><ellipse cx="59" cy="47" rx="2.6" ry="3.4" fill="#2a1712"/><circle cx="42" cy="46" r=".9" fill="#fff"/><circle cx="60" cy="46" r=".9" fill="#fff"/>
+  <circle cx="35" cy="56" r="4" fill="#ff7d9a" opacity=".45"/><circle cx="65" cy="56" r="4" fill="#ff7d9a" opacity=".45"/>
+  <path d="M43 57c3 4 11 4 14 0" stroke="#2a1712" stroke-width="2.4" fill="none" stroke-linecap="round"/>${extra}</svg>`;
+}
+const av=(role,size=36)=>`<span class="av" style="width:${size}px;height:${size}px">${avatarSVG(role,(S.avatars||{})[role])}</span>`;
+
+/* ---------- HD photos for the jigsaw (CC0, shipped with the app) ---------- */
+const PHOTOS=[['pug','animals','Cosy pug'],['splash','animals','Splashing dogs'],['kitty','animals','Sleepy kitty'],['lion','animals','Lion'],['turtle','animals','Sea turtle'],['tiger','animals','Tiger'],['parrot','animals','Macaw'],['horses','animals','Horses'],['bear','animals','Bear'],['seal','animals','Seal'],
+['pier','nature','Lake pier'],['fjord','nature','Fjord'],['waterfall','nature','Waterfall'],['blossom','nature','Cherry blossom'],['balloon','nature','Balloon lake'],['leaves','nature','Autumn leaves'],['peak','nature','Sunset peak'],['beach','nature','Beach from above'],
+['lakehouse','places','Lake house'],['castle','places','Fairytale castle'],['paris','places','Paris at night'],['brooklyn','places','Brooklyn street'],['havana','places','Yellow car'],
+['pineapple','sweet','Pineapples'],['flowers','sweet','Flower bouquet'],['berries','sweet','Blueberries']];
+const CATS=[['animals','Animals'],['nature','Nature'],['places','Places'],['sweet','Sweet things'],['ours','Our photos']];
+const photoURL=k=>'photos/'+k+'.jpg',thumbURL=k=>'photos/t/'+k+'.jpg';
+const photoTitle=k=>(PHOTOS.find(p=>p[0]===k)||[,,'Puzzle'])[2];
+
+/* ---------- jigsaw engine: real piece shapes on canvas ---------- */
+const imgCache={};
+function getImg(src){if(!imgCache[src])imgCache[src]=loadImg(src).catch(e=>{delete imgCache[src];throw e;});return imgCache[src];}
+const jigSrc=j=>j.photo?photoURL(j.photo):j.img;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let edgeCache={k:null};
+function edgesFor(j){const k=j.at+':'+j.cols+':'+j.seed;if(edgeCache.k===k)return edgeCache;const r=mulberry32(j.seed||7);const V=[],H=[];
+  for(let y=0;y<j.rows;y++){V.push([]);for(let x=0;x<j.cols-1;x++)V[y].push(r()<.5?1:-1);}
+  for(let y=0;y<j.rows-1;y++){H.push([]);for(let x=0;x<j.cols;x++)H[y].push(r()<.5?1:-1);}
+  edgeCache={k,V,H};return edgeCache;}
+function sides(j,i){const x=i%j.cols,y=Math.floor(i/j.cols),E=edgesFor(j);
+  return [y===0?0:-E.H[y-1][x], x===j.cols-1?0:E.V[y][x], y===j.rows-1?0:E.H[y][x], x===0?0:-E.V[y][x-1]];}
+function edgeTo(ctx,x0,y0,x1,y1,d){if(!d){ctx.lineTo(x1,y1);return;}const L=Math.hypot(x1-x0,y1-y0),ux=(x1-x0)/L,uy=(y1-y0)/L,nx=uy*d,ny=-ux*d;
+  const P=(t,h)=>[x0+ux*t*L+nx*h*L,y0+uy*t*L+ny*h*L];
+  ctx.lineTo(...P(.36,0));ctx.bezierCurveTo(...P(.44,0),...P(.28,.24),...P(.5,.24));ctx.bezierCurveTo(...P(.72,.24),...P(.56,0),...P(.64,0));ctx.lineTo(x1,y1);}
+function pieceOutline(ctx,s,sd){const p=[[0,0],[s,0],[s,s],[0,s]];ctx.beginPath();ctx.moveTo(0,0);for(let k=0;k<4;k++){const a=p[k],b=p[(k+1)%4];edgeTo(ctx,a[0],a[1],b[0],b[1],sd[k]);}ctx.closePath();}
+function cropRect(img,cols,rows){const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,ar=cols/rows;let sw=iw,sh=iw/ar;if(sh>ih){sh=ih;sw=ih*ar;}return [(iw-sw)/2,(ih-sh)/2,sw,sh];}
+const scaledCache=new Map();
+function scaled(img,j,px){const k=j.at+'|'+px+'|'+(j.photo||'u');if(scaledCache.has(k))return scaledCache.get(k);
+  const c=document.createElement('canvas');c.width=Math.round(j.cols*px);c.height=Math.round(j.rows*px);const cr=cropRect(img,j.cols,j.rows);
+  c.getContext('2d').drawImage(img,cr[0],cr[1],cr[2],cr[3],0,0,c.width,c.height);if(scaledCache.size>4)scaledCache.clear();scaledCache.set(k,c);return c;}
+function drawPiece(ctx,sc,j,i,s,ox,oy,stroke){const x=i%j.cols,y=Math.floor(i/j.cols);ctx.save();ctx.translate(ox,oy);pieceOutline(ctx,s,sides(j,i));
+  ctx.save();ctx.clip();ctx.drawImage(sc,-x*s,-y*s,j.cols*s,j.rows*s);ctx.restore();ctx.lineWidth=Math.max(.8,s*.035);ctx.strokeStyle=stroke||'rgba(255,255,255,.8)';ctx.stroke();ctx.restore();}
+const DPR=()=>Math.min(2,window.devicePixelRatio||1);
+let boardGeom=null;
+async function drawJig(){
+  const j=S.jig;if(!j||j.done)return;let img;try{img=await getImg(jigSrc(j));}catch(e){return;}
+  if(S.jig!==j&&(!S.jig||S.jig.at!==j.at))return;
+  const cv=document.getElementById('board'),wrap=document.getElementById('boardwrap');if(!cv||!wrap)return;
+  const dpr=DPR(),avail=wrap.clientWidth-12;let s=Math.floor(avail/(j.cols+.5));if(S.zoom)s=Math.max(s,40);s=Math.max(s,12);
+  const pad=Math.round(s*.25),W=j.cols*s+pad*2,H=j.rows*s+pad*2;
+  cv.style.width=W+'px';cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#f7eef2';ctx.beginPath();ctx.roundRect?ctx.roundRect(pad,pad,j.cols*s,j.rows*s,8):ctx.rect(pad,pad,j.cols*s,j.rows*s);ctx.fill();
+  const placed=new Set(j.placed||[]),total=j.cols*j.rows;
+  ctx.strokeStyle='rgba(255,79,126,.2)';ctx.lineWidth=1;
+  for(let i=0;i<total;i++){if(placed.has(i))continue;ctx.save();ctx.translate(pad+(i%j.cols)*s,pad+Math.floor(i/j.cols)*s);pieceOutline(ctx,s,sides(j,i));ctx.stroke();ctx.restore();}
+  const sc=scaled(img,j,s*dpr);
+  for(const i of placed)drawPiece(ctx,sc,j,i,s,pad+(i%j.cols)*s,pad+Math.floor(i/j.cols)*s,'rgba(255,255,255,.35)');
+  boardGeom={s,pad};
+  // tray pieces
+  const T=60,ts=T/1.5,tpad=ts*.25,tsc=scaled(img,j,ts*dpr);
+  document.querySelectorAll('canvas.piece').forEach(c=>{const i=Number(c.dataset.i);c.style.width=T+'px';c.style.height=T+'px';c.width=T*dpr;c.height=T*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);
+    x.shadowColor='rgba(58,31,43,.25)';x.shadowBlur=4;x.shadowOffsetY=1.5;drawPiece(x,tsc,j,i,ts,tpad,tpad);});
+}
+function sparkle(cx,cy,good){const el=document.createElement('div');el.className='spark '+(good?'good':'bad');el.style.left=cx+'px';el.style.top=cy+'px';el.innerHTML=good?HEART:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/></svg>';document.body.appendChild(el);setTimeout(()=>el.remove(),900);}
+async function boardTap(e){
+  const j=S.jig,me=S.role,cv=e.target;if(!j||j.done||!boardGeom)return;
+  if(j.turn!==me)return toast(`It's ${NAMES[j.turn]}'s turn`);
+  if(S.sel===null)return toast('Pick a piece from the tray first');
+  const r=cv.getBoundingClientRect(),{s,pad}=boardGeom;const cx=Math.floor((e.clientX-r.left-pad)/s),cy=Math.floor((e.clientY-r.top-pad)/s);
+  if(cx<0||cy<0||cx>=j.cols||cy>=j.rows)return;const i=cy*j.cols+cx;
+  if((j.placed||[]).includes(i))return toast('That spot is already filled');
+  if(i!==S.sel){sparkle(e.clientX,e.clientY,false);cv.classList.add('shake');setTimeout(()=>cv.classList.remove('shake'),400);S.sel=null;const nxt=other(me);
+    setTimeout(async()=>{await mergeDoc('games/jigsaw',{turn:nxt,run:0});toast(`Missed! Over to ${NAMES[nxt]}`);},450);return;}
+  sparkle(e.clientX,e.clientY,true);
+  const placed=[...(j.placed||[]),i],counts={...(j.counts||{})};counts[me]=(counts[me]||0)+1;const run=(j.run||0)+1;
+  let best=j.best||null;if(!best||run>best.n)best={by:me,n:run};const done=placed.length===j.cols*j.rows;S.sel=null;
+  await mergeDoc('games/jigsaw',{placed,counts,run,best,done});
+  if(!done&&(run===5||run===10||run===20))toast(`${run} in a row!`);
+  if(done){const src=jigSrc(j);let thumb=j.photo?thumbURL(j.photo):null;if(!thumb){try{thumb=cropTo(await getImg(src),300,300,.72);}catch(e){}}
+    const w=winnerOf(counts);await saveToGallery({thumb,photo:j.photo||null,img:j.photo?null:j.img,caption:`Our ${j.cols*j.rows}-piece ${j.photo?photoTitle(j.photo).toLowerCase():'puzzle'} · ${w?NAMES[w]+' won':'a tie'}`,kind:'puzzle'});}
+}
+const winnerOf=c=>{const a=(c&&c.anthonia)||0,i=(c&&c.ifeayomi)||0;return a===i?null:(a>i?'anthonia':'ifeayomi');};
+const CROWN='<svg viewBox="0 0 64 44" aria-hidden="true"><path d="M4 14l14 12L32 4l14 22 14-12-6 28H10z" fill="#ffc531" stroke="#e59a00" stroke-width="2.5" stroke-linejoin="round"/><circle cx="4" cy="14" r="4" fill="#ff4f7e"/><circle cx="32" cy="4" r="4" fill="#22b3a3"/><circle cx="60" cy="14" r="4" fill="#ff4f7e"/><rect x="10" y="36" width="44" height="6" rx="2" fill="#e59a00"/></svg>';
+function showWinner(j){
+  const c=j.counts||{},w=winnerOf(c),me=S.role;const el=document.createElement('div');el.className='win';
+  el.innerHTML=`<div class="winCard"><div class="rays"></div>
+   ${w?`<div class="crown">${CROWN}</div><div class="winAv">${av(w,130)}</div><h1>${NAMES[w]} wins!</h1><p class="muted" style="margin:0">${w===me?'You did it! Victory dance time.':'Well played. Rematch?'}</p>`
+      :`<div class="row" style="justify-content:center;gap:4px"><div class="winAv">${av('anthonia',96)}</div><span class="bridge">${HEART}</span><div class="winAv">${av('ifeayomi',96)}</div></div><h1>It's a tie!</h1><p class="muted" style="margin:0">Perfect match, like the two of you.</p>`}
+   <div class="score"><span style="color:var(--her)">${c.anthonia||0}</span><span class="muted" style="font-size:1rem">pieces</span><span style="color:var(--him)">${c.ifeayomi||0}</span></div>
+   <img src="${jigSrc(j)}" alt="The finished puzzle" class="winPic">
+   <div class="row" style="justify-content:center"><button class="btn primary" data-act="winAgain">Play again</button><button class="btn" data-act="winGallery">See it in the gallery</button></div>
+   <button class="btn ghost sm" data-act="winClose">Close</button></div>`;
+  document.body.appendChild(el);confetti();setTimeout(confetti,900);setTimeout(confetti,1800);floatHearts();
+}
+
+/* ---------- state ---------- */
+const S={tab:['home','play','plan','truth','us'].includes(location.hash.slice(1))?location.hash.slice(1):'home',
+  mode:'loading',role:null,couple:null,daily:[],songs:{},tap:null,jig:null,month:null,year:null,dates:[],truths:[],
+  memories:[],wish:null,letters:[],mood:[],avatars:{},games:{},voice:[],game:null,zoom:false,edgesOnly:false,pickCat:'animals',pickSize:60,galFilter:'all',lb:null,sel:null,truthDraft:null,truthBusy:false,gotCouple:false,note:'',lastPlaced:null};
+let uid=null,lastTapAt=null;
+
+/* ---------- dates ---------- */
+const fmtDay=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'});
+const todayKey=()=>fmtDay.format(new Date());
+const monthKey=()=>todayKey().slice(0,7);
+const addDays=(k,n)=>new Date(Date.parse(k+'T12:00:00Z')+n*864e5).toISOString().slice(0,10);
+const daysBetween=(a,b)=>Math.round((Date.parse(b+'T12:00:00Z')-Date.parse(a+'T12:00:00Z'))/864e5);
+const prettyDay=k=>new Date(k+'T12:00:00Z').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'});
+const monthName=k=>new Date(k+'-15T12:00:00Z').toLocaleDateString('en-GB',{month:'long',year:'numeric',timeZone:'UTC'});
+const hostFor=k=>(Number(k.slice(5,7))-1)%2===0?'anthonia':'ifeayomi';
+function lastSunday(y,m){const d=new Date(Date.UTC(y,m+1,0));return d.getUTCDate()-d.getUTCDay();}
+function romeDST(k){const [y,m,d]=k.split('-').map(Number);const s=lastSunday(y,2),e=lastSunday(y,9);
+  if(m-1>2&&m-1<9)return true;if(m-1===2)return d>=s;if(m-1===9)return d<e;return false;}
+function ibadanTime(k,t){if(!t)return '';if(!romeDST(k))return t;let [h,mi]=t.split(':').map(Number);h=(h+23)%24;return String(h).padStart(2,'0')+':'+String(mi).padStart(2,'0');}
+function ago(ts){if(!ts)return '';const s=Math.max(0,(Date.now()-ts)/1000);if(s<60)return 'just now';if(s<3600)return Math.floor(s/60)+' min ago';if(s<86400)return Math.floor(s/3600)+' h ago';return Math.floor(s/86400)+' d ago';}
+const clockFmt=tz=>new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit'});
+const romeClock=clockFmt('Europe/Rome'),lagosClock=clockFmt('Africa/Lagos');
+const hourIn=tz=>Number(new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',hour12:false}).format(new Date()));
+const uidGen=()=>Math.random().toString(36).slice(2,10);
+
+/* ---------- store: Firebase (live) or in-memory (?demo) ---------- */
+const mem=new Map(),memSubs=[];let POD=null;const unsubs=[];
+const LIVE=()=>S.mode==='live'&&window.FB&&POD;
+const fp=p=>POD+'/'+p;
+function deepMerge(a,b){const o={...(a||{})};for(const k in b){const v=b[k];if(v&&typeof v==='object'&&!Array.isArray(v)&&o[k]&&typeof o[k]==='object'&&!Array.isArray(o[k]))o[k]=deepMerge(o[k],v);else o[k]=v;}return o;}
+function memCol(p){const out=[];const pre=p+'/';for(const [k,v] of mem){if(k.startsWith(pre)&&!k.slice(pre.length).includes('/'))out.push({id:k.slice(pre.length),...v});}return out;}
+function memNotify(){memSubs.forEach(s=>s.cb(s.col?memCol(s.path):(mem.get(s.path)||null)));}
+function watchDoc(path,cb){if(!LIVE()){memSubs.push({path,col:false,cb});cb(mem.get(path)||null);return;}unsubs.push(FB.watchDoc(fp(path),cb,handleErr));}
+function watchCol(path,cb,opt){if(!LIVE()){memSubs.push({path,col:true,cb});let l=memCol(path);if(opt&&opt.order)l.sort((a,b)=>opt.dir==='desc'?(b[opt.order]||0)-(a[opt.order]||0):(a[opt.order]||0)-(b[opt.order]||0));cb(l);return;}
+  unsubs.push(FB.watchCol(fp(path),cb,handleErr,opt));}
+const queues={};
+function enqueue(path,fn){const p=(queues[path]||Promise.resolve()).then(fn,fn);queues[path]=p.catch(()=>{});return p;}
+function memSort(){/* demo-only: keep newest first where needed */}
+async function mergeDoc(path,data){if(!LIVE()){mem.set(path,deepMerge(mem.get(path),data));memNotify();return;}return enqueue(path,()=>FB.merge(fp(path),data)).catch(saveFail);}
+async function setDoc(path,data){if(!LIVE()){mem.set(path,JSON.parse(JSON.stringify(data)));memNotify();return;}return enqueue(path,()=>FB.set(fp(path),data)).catch(saveFail);}
+async function addDoc(col,data){const id=Date.now().toString(36)+uidGen();await setDoc(col+'/'+id,data);return id;}
+async function getDoc(path){if(!LIVE())return mem.get(path)||null;try{return await FB.get(fp(path));}catch(e){return null;}}
+async function delDoc(path){if(!LIVE()){mem.delete(path);memNotify();return;}return enqueue(path,()=>FB.del(fp(path))).catch(saveFail);}
+function saveFail(e){const c=e&&e.code||'';if(/permission/.test(c))toast("Pods isn't allowed to save. Check the Firestore rules (see Settings).");
+  else if(/resource-exhausted|quota/.test(c))toast('Pods storage limit reached for today. Try again tomorrow.');
+  else toast("Couldn't save. Check your connection and try again.");throw e;}
+function handleErr(e){const c=e&&e.code||'';if(/permission/.test(c)){S.note="Pods can't read your data. Paste the new Firestore rules (Settings shows how).";render();}}
+
+/* ---------- boot: sign in, find our pod ---------- */
+async function boot(){
+  makeBgHearts();render();setInterval(tickClocks,20000);
+  if(new URLSearchParams(location.search).has('demo')){S.mode='demo';try{S.role=localStorage.getItem('pods-role');}catch(e){}subscribe();render();return;}
+  if(!window.FB)await new Promise(r=>{window.addEventListener('fb-ready',r,{once:true});setTimeout(r,15000);});
+  if(!window.FB){S.mode='offline';render();return;}
+  FB.onAuth(async user=>{
+    unsubs.splice(0).forEach(u=>{try{u();}catch(e){}});
+    if(!user){uid=null;POD=null;S.mode='auth';render();return;}
+    uid=user.uid;S.email=user.email;
+    let link=null;try{link=await FB.get('users/'+uid+'/pods/link');}catch(e){}
+    if(!link||!link.podId){S.mode='setup';render();return;}
+    POD='pods/'+link.podId;S.podId=link.podId;S.role=link.role;S.mode='live';
+    subscribe();render();
+    setTimeout(()=>{if(!S.gotCouple){S.note="Pods can't reach its data yet. It will appear as soon as you're back online.";render();}},12000);
+  });
+}
+function authView(){const up=S.authMode==='up';return `<div class="card center" style="margin-top:16px">${av('anthonia',64)}<h1 style="font-size:1.8rem;color:var(--her)">Welcome to Pods</h1>
+  <p class="muted" style="margin:0">${up?'Create your own login. Each of you has one.':'Sign in with your email and password. Anthonia: use your Weekly Board login.'}</p>
+  <form id="authForm" style="display:flex;flex-direction:column;gap:10px;width:100%">
+   <input type="text" id="aEmail" inputmode="email" autocomplete="email" placeholder="Email">
+   <input type="text" id="aPass" autocomplete="${up?'new-password':'current-password'}" placeholder="Password${up?' (at least 6 characters)':''}" style="-webkit-text-security:disc">
+   <button class="btn primary" type="submit">${up?'Create my login':'Sign in'}</button></form>
+  <button class="btn ghost sm" data-act="authToggle">${up?'I already have a login':'New here? Create a login'}</button>
+  ${up?'':'<button class="btn ghost sm" data-act="authReset">Forgot password</button>'}</div>`;}
+function setupView(){return `<div class="card center" style="margin-top:16px"><h1 style="font-size:1.6rem;color:var(--her)">Let's link the two of you</h1>
+  <p class="muted" style="margin:0">One of you creates your Pod. The other joins with its code.</p>
+  <span class="eyebrow">Who are you?</span>
+  <div class="pick"><button class="a ${S.setupRole==='anthonia'?'sel':''}" data-act="setupRole" data-r="anthonia">${av('anthonia',64)}Anthonia</button><button class="i ${S.setupRole==='ifeayomi'?'sel':''}" data-act="setupRole" data-r="ifeayomi">${av('ifeayomi',64)}Ifeayomi</button></div>
+  <button class="btn primary block" data-act="podCreate" ${S.setupRole?'':'disabled'}>Create our Pod</button>
+  <div class="row" style="width:100%;flex-wrap:nowrap"><input type="text" id="joinCode" placeholder="Got a code? e.g. K7Q2XM" style="text-transform:uppercase"><button class="btn teal" data-act="podJoin" ${S.setupRole?'':'disabled'}>Join</button></div>
+  <button class="btn ghost sm" data-act="signOut">Sign out (${esc(S.email||'')})</button></div>`;}
+
+function subscribe(){
+  watchDoc('pods/couple',d=>{S.couple=d;S.gotCouple=true;if(S.note.startsWith("Pods can't"))S.note='';refresh();});
+  watchDoc('pods/avatars',d=>{S.avatars=d||{};refresh();});
+  watchCol('daily',l=>{S.daily=l;refresh();});
+  watchDoc('pods/songs',d=>{S.songs=d||{};refresh();});
+  watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role))floatHearts();lastTapAt=d?d.at:0;refresh();});
+  watchCol('games',l=>{const prev=S.games||{};S.games=Object.fromEntries(l.filter(x=>x.id!=='jigsaw').map(x=>[x.id,x]));gamesChanged(prev,S.games);refresh();});
+  watchCol('voice',l=>{S.voice=l;refresh();},{order:'at',dir:'desc',limit:12});
+  watchDoc('games/jigsaw',d=>{const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done)setTimeout(()=>showWinner(d),300);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();});
+  watchDoc('months/'+monthKey(),d=>{S.month=d;refresh();});
+  watchDoc('years/'+todayKey().slice(0,4),d=>{S.year=d;refresh();});
+  watchCol('dates',l=>{S.dates=l;refresh();});
+  watchCol('truths',l=>{S.truths=l;refresh();});
+  watchCol('memories',l=>{S.memories=l;refresh();},{order:'at',dir:'desc',limit:150});
+  watchDoc('pods/wishlist',d=>{S.wish=d;refresh();});
+  watchCol('letters',l=>{S.letters=l;refresh();});
+  watchCol('mood',l=>{S.mood=l;refresh();});
+}
+
+/* ---------- render plumbing ---------- */
+let pending=false,lastTab=null;
+function refresh(){if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pending){const a=document.activeElement;if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))){pending=false;render(true);}}},0));
+function render(quiet){
+  const v=document.getElementById('view');
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l,p])=>`<button data-act="tab" data-k="${k}" class="${S.tab===k?'on':''}" aria-current="${S.tab===k?'page':'false'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round">${p}</svg>${l}</button>`).join('');
+  document.getElementById('who').innerHTML=S.role?`<button class="who" data-act="avatarSheet">${av(S.role,32)}${NAMES[S.role]}</button>`:'';
+  if(S.mode==='loading'){v.innerHTML=`<div class="loading">${HEART}<p class="muted">Opening Pods…</p></div>`;return;}
+  if(S.mode==='offline'){v.innerHTML=`<div class="card center" style="margin-top:20px"><h2>Pods needs the internet to start</h2><p class="muted">Connect and reload the page.</p></div>`;return;}
+  if(S.mode==='auth'){v.innerHTML=authView();return;}
+  if(S.mode==='setup'){v.innerHTML=setupView();return;}
+  if(!S.role){v.innerHTML=pickView();return;}
+  const banners=(S.mode==='demo'?`<div class="banner">Demo mode: nothing is saved. <button class="btn sm ghost" data-act="switch">See ${NAMES[other(S.role)]}'s side</button></div>`:'')+(S.note?`<div class="banner">${esc(S.note)}</div>`:'');
+  v.innerHTML=banners+({home:homeView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
+  // keep entrance animation only when switching tabs
+  if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
+  lastTab=S.tab;tickClocks();
+  if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post)G[S.game].post(S.games[S.game],S.role);}
+}
+function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
+  <div class="pick"><button class="a" data-act="pick" data-r="anthonia">${av('anthonia',72)}Anthonia<span class="small muted">in Ancona</span></button><button class="i" data-act="pick" data-r="ifeayomi">${av('ifeayomi',72)}Ifeayomi<span class="small muted">in Ibadan</span></button></div></div>`;}
+function tickClocks(){const a=document.getElementById('clkA'),i=document.getElementById('clkI');const now=new Date();if(a)a.textContent=romeClock.format(now);if(i)i.textContent=lagosClock.format(now);}
+function makeBgHearts(){const el=document.getElementById('bgHearts');let h='';for(let i=0;i<12;i++){const s=14+Math.random()*26;h+=`<span style="left:${Math.random()*96}%;width:${s}px;height:${s}px;animation-duration:${18+Math.random()*22}s;animation-delay:-${Math.random()*30}s">${HEART}</span>`;}el.innerHTML=h;}
+
+/* ---------- HOME ---------- */
+function streak(){const both=new Set(S.daily.filter(d=>d.anthonia&&d.ifeayomi).map(d=>d.id));let k=todayKey();if(!both.has(k))k=addDays(k,-1);let n=0;while(both.has(k)){n++;k=addDays(k,-1);}return n;}
+function greeting(){const h=hourIn(S.role==='anthonia'?'Europe/Rome':'Africa/Lagos');return h<5?'Still up':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night';}
+function homeView(){
+  const me=S.role,you=other(me),t=todayKey();
+  const nv=S.couple&&S.couple.nextVisit;const dleft=nv?daysBetween(t,nv):null;
+  const q=QUESTIONS[Math.floor(Date.parse(t+'T12:00:00Z')/864e5)%QUESTIONS.length];
+  const day=S.daily.find(d=>d.id===t)||{};const mine=day[me],theirs=day[you];
+  const bub=(r,a)=>`<div class="bubble ${r}">${av(r,34)}<div class="b"><div class="who2">${r===me?'You':NAMES[r]}</div>${a.voice?voicePlayer(a.voice,a.secs):esc(a.text)}</div></div>`;
+  let daily;
+  if(mine)daily=bub(me,mine)+(theirs?bub(you,theirs):`<div class="locked">${av(you,26)} Waiting for ${NAMES[you]} to answer…</div>`);
+  else daily=(theirs?`<div class="locked">${av(you,26)} ${NAMES[you]} has answered! Answer to unlock it.</div>`:'')+`<textarea id="dailyIn" placeholder="Your answer…"></textarea><div class="row"><button class="btn primary" data-act="answer">Answer</button>${rec?`<button class="btn" data-act="recStop">Stop recording</button>`:`<button class="btn" data-act="recStart" data-k="daily">Answer with a voice note</button>`}</div>`;
+  const tapC=(S.tap&&S.tap.day===t&&S.tap.counts)||{};
+  const tapLine=S.tap&&S.tap.from===you?`${NAMES[you]} thought of you ${ago(S.tap.at)}`:(S.tap&&S.tap.from===me?`You sent love ${ago(S.tap.at)}`:'Send a little love across the miles');
+  const songRow=r=>{const s=S.songs[r];return `<div class="item">${av(r,34)}<div class="grow"><div class="small muted">${r===me?'Your':NAMES[r]+"'s"} song of the moment</div>${s?(s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:700">${esc(s.title||s.url)}</a>`:`<b>${esc(s.title)}</b>`):'<span class="muted">Nothing pinned yet</span>'}</div>${r===me?`<button class="btn sm" data-act="songSheet">${s?'Change':'Pin'}</button>`:''}</div>`;};
+  return `
+  <div class="greet">${av(me,54)}<div><h1>${greeting()}, ${NAMES[me]} <span class="wave">${HEART.replace('<svg','<svg width="22" height="22" style="color:var(--her);vertical-align:-3px"')}</span></h1><div class="small muted">${NAMES[you]} is ${hourIn(me==='anthonia'?'Africa/Lagos':'Europe/Rome')<6?'probably asleep':'awake in '+(me==='anthonia'?'Ibadan':'Ancona')}</div></div></div>
+  <section class="card hero center">
+    <div class="couple">${av('anthonia',64)}<span class="bridge">${HEART}</span>${av('ifeayomi',64)}</div>
+    ${nv?(dleft>0?`<div class="big">${dleft}</div><div class="muted" style="font-weight:700">${dleft===1?'day':'days'} until we're together · ${prettyDay(nv)}</div>`:`<div class="big" style="font-size:2.6rem">${dleft===0?'Today!':'Together'}</div><div class="small muted">Set the date of your next visit.</div>`):`<div class="muted" style="font-weight:700">When will you see each other next?</div>`}
+    <button class="btn sm ghost" data-act="visitSheet">${nv?'Change date':'Set our next visit'}</button>
+    <div class="clocks" style="width:100%">
+      <div class="clock"><div class="small muted"><span class="dot anthonia"></span> Ancona</div><div class="t" id="clkA">--:--</div></div>
+      <div class="clock him"><div class="small muted"><span class="dot ifeayomi"></span> Ibadan</div><div class="t" id="clkI">--:--</div></div>
+    </div>
+  </section>
+  <div><button class="tapbtn" data-act="tap">${HEART} Thinking of you</button>
+  <div class="row between small muted" style="margin-top:8px;padding:0 6px"><span>${esc(tapLine)}</span><span>Love sent today: <b style="color:var(--her)">${tapC.anthonia||0}</b> · <b style="color:var(--him)">${tapC.ifeayomi||0}</b></span></div></div>
+  <section class="card">
+    <div class="row between"><span class="eyebrow">Today's question</span><span class="chip gold">${streak()} day streak</span></div>
+    <h2>${esc(q)}</h2>${daily}
+  </section>
+  ${waitingCard()}
+  ${voiceCard()}
+  ${homeGallery()}
+  <section class="card"><span class="eyebrow">Songs of the moment</span>${songRow(me)}${songRow(you)}</section>`;
+}
+function voiceCard(){const l=(S.voice||[]).slice(0,4);return `<section class="card"><div class="row between"><span class="eyebrow">Voice notes</span>${rec?`<button class="btn sm primary" data-act="recStop">Stop and send</button>`:`<button class="btn sm primary" data-act="recStart" data-k="note">Record one</button>`}</div>
+  ${rec?`<div class="locked" style="color:var(--her)"><span class="dot anthonia" style="animation:beat 1s infinite"></span> Recording… up to 60 seconds</div>`:''}
+  ${l.length?l.map(v=>`<div class="bubble ${v.by}">${av(v.by,30)}<div class="b"><div class="who2">${v.by===S.role?'You':NAMES[v.by]} · ${ago(v.at)}</div>${voicePlayer(v.src,v.secs)}</div></div>`).join(''):'<p class="small muted" style="margin:0">Say good morning in your own voice.</p>'}</section>`;}
+function waitingCard(){
+  const me=S.role,w=[];const t=todayKey();const day=S.daily.find(d=>d.id===t)||{};
+  if(!day[me])w.push(['home',"Answer today's question"]);
+  if(S.jig&&!S.jig.done&&S.jig.turn===me)w.push(['play','Your turn in the jigsaw']);
+  for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me)w.push(['play','Your turn in '+G[id].name]);
+  const tr=S.truths.filter(x=>x.to===me&&x.status==='sent').length;if(tr)w.push(['truth',`${tr} new message${tr>1?'s':''} in Truth Corner`]);
+  const lt=S.letters.filter(x=>x.to===me&&!x.opened).length;if(lt)w.push(['us',`${lt} sealed letter${lt>1?'s':''} for you`]);
+  const mk=monthKey();if(!(S.month&&S.month.done)&&hostFor(mk)===me)w.push(['plan',Number(t.slice(8))<=7?"You host this month's planning date":"This month's planning date is overdue"]);
+  if(!w.length)return '';
+  return `<section class="card waiting"><span class="eyebrow">Waiting for you</span>${w.map(([k,l])=>`<button class="w" data-act="tab" data-k="${k}"><span class="dot ${me}"></span><span>${esc(l)}</span><span class="go">›</span></button>`).join('')}</section>`;
+}
+
+/* ---------- PLAY ---------- */
+function jigCard(){
+  const j=S.jig,me=S.role;let jig;
+  if(!j||j.done){
+    const res=j&&j.done?`<div class="row" style="justify-content:center">${av('anthonia',44)}<b style="font-family:var(--display);font-size:1.5rem">${(j.counts||{}).anthonia||0} – ${(j.counts||{}).ifeayomi||0}</b>${av('ifeayomi',44)}</div><p class="muted center" style="margin:0">${winnerOf(j.counts)?NAMES[winnerOf(j.counts)]+' won the last puzzle.':'The last puzzle was a tie.'} It's saved in the gallery.</p>`
+      :`<p class="muted" style="margin:0">Pick a piece and place it. Right spot? Keep going. Wrong spot? Your turn passes. Most pieces placed wins.</p>`;
+    jig=`${res}<button class="btn primary" data-act="jigSheet">Start a new puzzle</button>`;
+  }else{
+    const total=j.cols*j.rows,placed=new Set(j.placed||[]),mine=j.turn===me,c=j.counts||{};
+    let tray=(j.tray||[]).filter(i=>!placed.has(i));
+    if(S.edgesOnly){const e=tray.filter(i=>sides(j,i).includes(0));if(e.length)tray=e;}
+    const shown=tray.slice(0,30);
+    jig=`<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
+    <div class="progress"><i style="width:${placed.size/total*100}%"></i></div>
+    <div class="row" style="gap:6px"><button class="btn sm" data-act="peek">Peek at the picture</button><button class="btn sm ${S.zoom?'on':''}" data-act="zoom">${S.zoom?'Fit board':'Zoom in'}</button>${mine?`<button class="btn sm ${S.edgesOnly?'on':''}" data-act="edges">${S.edgesOnly?'All pieces':'Edges first'}</button>`:''}</div>
+    <div class="boardwrap" id="boardwrap"><canvas id="board" aria-label="Puzzle board"></canvas></div>
+    ${mine?`<p class="small muted" style="margin:0">Tap a piece below, then tap where it goes on the board.</p>
+      <div class="tray">${shown.map(i=>`<canvas class="piece ${S.sel===i?'sel':''}" data-act="selPiece" data-i="${i}" aria-label="Puzzle piece"></canvas>`).join('')}</div>
+      <div class="row between"><span class="small muted">${tray.length>shown.length?`${tray.length-shown.length} more in the box`:''}</span><button class="btn sm" data-act="shuffle">Shuffle pieces</button></div>`
+    :`<div class="locked">${av(j.turn,28)} ${NAMES[j.turn]} is playing. Your turn comes when they miss.</div>`}
+    <div class="row" style="justify-content:space-around"><div class="row">${av('anthonia',32)}<b>${c.anthonia||0}</b></div><span class="small muted">pieces placed</span><div class="row"><b>${c.ifeayomi||0}</b>${av('ifeayomi',32)}</div></div>
+    ${j.best?`<p class="small muted center" style="margin:0">Best run: ${NAMES[j.best.by]}, ${j.best.n} in a row</p>`:''}
+    <button class="btn sm ghost" style="align-self:center" data-act="jigSheet">Start a different puzzle</button>`;
+  }
+  return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>Jigsaw</h2></div>${j&&!j.done?`<span class="chip gold">${j.cols*j.rows} pieces</span>`:''}</div>${j&&!j.done&&j.photo?`<div class="small muted">${esc(photoTitle(j.photo))}</div>`:''}${jig}</section>`;
+}
+function playView(){
+  if(S.game==='jigsaw')return jigCard();
+  if(S.game&&G[S.game]){const g=G[S.game],st=S.games[S.game];
+    return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>${g.name}</h2></div><button class="btn sm ghost" data-act="gNew" data-g="${S.game}">${st?'New game':'Start'}</button></div>
+    ${st?gameStatus(S.game,st)+g.view(st,S.role):`<p class="muted" style="margin:0">${g.desc}</p><button class="btn primary" data-act="gNew" data-g="${S.game}">Start a game</button>`}</section>`;}
+  const tile=(id,name,desc,icon,st,isTurnGame)=>{let chip='<span class="chip">Start</span>';
+    if(st&&st.over)chip='<span class="chip gold">Finished</span>';else if(st&&st.turn===S.role)chip='<span class="chip her">Your turn</span>';else if(st&&st.turn)chip=`<span class="chip him">${NAMES[st.turn]}'s turn</span>`;else if(st)chip='<span class="chip him">Open</span>';
+    return `<button class="gtile" data-act="game" data-g="${id}"><span class="gico">${icon}</span><b>${name}</b><span class="small muted">${desc}</span>${chip}</button>`;};
+  const j=S.jig;const jst=j?{turn:j.done?null:j.turn,over:j.done}:null;
+  return `<div class="greet" style="padding-top:2px"><h1>Game Area</h1></div>
+  <div class="glist">${tile('jigsaw','Jigsaw','Real pieces, HD photos','<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 3a2 2 0 0 1 4 0v1h4a2 2 0 0 1 2 2v4h-1a2 2 0 0 0 0 4h1v4a2 2 0 0 1-2 2h-4v-1a2 2 0 0 0-4 0v1H6a2 2 0 0 1-2-2v-4h1a2 2 0 0 0 0-4H4V6a2 2 0 0 1 2-2h4z"/></svg>',jst)}
+  ${Object.entries(G).map(([id,g])=>tile(id,g.name,g.short,g.icon,S.games[id])).join('')}</div>`;
+}
+/* ---------- PLAN ---------- */
+function planView(){
+  const me=S.role,mk=monthKey(),host=hostFor(mk),m=S.month||{},t=todayKey(),day=Number(t.slice(8));
+  const status=m.done?`<span class="chip him">Done ${m.doneAt?prettyDay(m.doneAt):''}</span>`:(day<=7?`<span class="chip gold">Due by the 7th</span>`:`<span class="chip warn">Overdue</span>`);
+  const todos=m.todos||[],goals=(S.year&&S.year.goals)||[];
+  const dates=[...S.dates].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const up=dates.filter(d=>d.status!=='done'),past=dates.filter(d=>d.status==='done').reverse().slice(0,5);
+  const dateItem=d=>`<div class="item" style="align-items:flex-start">${av(d.host,34)}<div class="grow">
+    <b>${prettyDay(d.date)}</b> <span class="small muted">· ${esc(d.time)} Ancona · ${esc(ibadanTime(d.date,d.time))} Ibadan</span>
+    <div class="small">Anthonia: ${esc(d.herPlace||'—')}<br>Ifeayomi: ${esc(d.hisPlace||'—')}</div>
+    <div class="small muted">${NAMES[d.host]} hosts and pays both bills${d.note?' · '+esc(d.note):''}</div></div>
+    ${d.status!=='done'?`<button class="btn sm" data-act="dateDone" data-id="${d.id}">Done</button>`:''}</div>`;
+  const pins=S.mood.filter(p=>p.month===mk).sort((a,b)=>a.at-b.at);
+  return `
+  <section class="card">
+    <div class="row between"><span class="eyebrow">${monthName(mk)} planning date</span>${status}</div>
+    <div class="row">${av(host,48)}<h2>${host===me?'You host this month':NAMES[host]+' hosts this month'}</h2></div>
+    <ol class="small" style="margin:0;padding-left:18px;color:var(--muted)"><li>How last month went: wins and what to improve</li><li>Plan next month: goals, visits, money, to-dos</li><li>Update the year plan</li><li>Book this month's date night</li></ol>
+    <label class="f" for="mNotes">Planning notes<textarea id="mNotes" placeholder="What we decided…">${esc(m.notes||'')}</textarea></label>
+    <div class="row"><button class="btn sm" data-act="saveNotes">Save notes</button>${m.done?'':`<button class="btn sm primary" data-act="planDone">Mark planning date done</button>`}</div>
+  </section>
+  <section class="card"><span class="eyebrow">This month's to-dos</span>
+    <ul class="list">${todos.map(x=>`<li class="item ${x.done?'done':''}"><button class="check ${x.done?'on':''}" data-act="todo" data-id="${x.id}" aria-label="Done"></button>${av(x.owner,26)}<span class="grow">${esc(x.t)}</span><button class="x" data-act="todoDel" data-id="${x.id}" aria-label="Delete">×</button></li>`).join('')||'<li class="small muted">Nothing planned yet.</li>'}</ul>
+    <div class="row" style="flex-wrap:nowrap"><input type="text" id="todoIn" placeholder="Add a to-do"><select id="todoOwner" style="width:auto"><option value="${me}">Me</option><option value="${other(me)}">${NAMES[other(me)]}</option></select><button class="btn sm" data-act="todoAdd">Add</button></div>
+  </section>
+  <section class="card">
+    <div class="row between"><h2>Date nights</h2><button class="btn sm primary" data-act="dateSheet">Plan one</button></div>
+    <p class="small muted" style="margin:0">Same time, two cities. You both go out, stay on a call, and the host pays both bills.</p>
+    ${up.length?up.map(dateItem).join(''):'<p class="small muted" style="margin:0">No date night booked yet.</p>'}
+    ${past.length?`<span class="eyebrow">Recent</span>${past.map(dateItem).join('')}`:''}
+  </section>
+  <section class="card"><span class="eyebrow">${t.slice(0,4)} goals</span>
+    <ul class="list">${goals.map(x=>`<li class="item ${x.done?'done':''}"><button class="check ${x.done?'on':''}" data-act="goal" data-id="${x.id}" aria-label="Done"></button><span class="grow">${esc(x.t)}</span><button class="x" data-act="goalDel" data-id="${x.id}" aria-label="Delete">×</button></li>`).join('')||'<li class="small muted">Add the big things you want this year.</li>'}</ul>
+    <div class="row" style="flex-wrap:nowrap"><input type="text" id="goalIn" placeholder="e.g. Visit twice, grow the farm to 10 pigs"><button class="btn sm" data-act="goalAdd">Add</button></div>
+  </section>
+  <section class="card"><span class="eyebrow">${monthName(mk)} mood board</span>
+    <div class="mood">${pins.map(p=>`<div class="pin">${p.img?`<img src="${p.img}" alt="">`:esc(p.text)}</div>`).join('')||'<p class="small muted" style="margin:0">Pin words or photos for how this month should feel.</p>'}</div>
+    <div class="row" style="flex-wrap:nowrap"><input type="text" id="moodIn" placeholder="A word, a quote, a feeling"><button class="btn sm" data-act="moodAdd">Pin</button></div>
+    <label class="btn sm" style="align-self:flex-start" for="moodImg">Pin a photo</label><input type="file" id="moodImg" accept="image/*" hidden>
+  </section>`;
+}
+
+/* ---------- TRUTH ---------- */
+function truthView(){
+  const me=S.role,you=other(me);
+  const inbox=S.truths.filter(x=>x.to===me).sort((a,b)=>b.at-a.at),sent=S.truths.filter(x=>x.from===me).sort((a,b)=>b.at-a.at);
+  const weekCount=sent.filter(x=>x.kind!=='appr'&&Date.now()-x.at<7*864e5).length;
+  const card=(x,mine)=>{const advice=(x.advice||[]).filter(Boolean);let foot='';
+    if(!mine&&x.kind!=='appr')foot=x.status==='sent'?`<div class="row"><button class="btn sm teal" data-act="respond" data-id="${x.id}" data-s="Noted">Noted</button><button class="btn sm" data-act="respond" data-id="${x.id}" data-s="Let's talk">Let's talk</button><button class="btn sm" data-act="respond" data-id="${x.id}" data-s="I'm working on it">I'm working on it</button></div>`:`<span class="chip him">You said: ${esc(x.status)}</span>`;
+    if(mine&&x.kind!=='appr'){foot=x.status==='sent'?`<span class="chip">Not answered yet</span>`:`<span class="chip him">${NAMES[you]}: ${esc(x.status)}</span>`;
+      if(x.status!=='sent'&&!x.followup&&Date.now()-x.at>14*864e5)foot+=`<div class="row small"><span class="muted">Has this got better?</span><button class="btn sm" data-act="follow" data-id="${x.id}" data-v="Better">Yes</button><button class="btn sm" data-act="follow" data-id="${x.id}" data-v="Not yet">Not yet</button></div>`;
+      if(x.followup)foot+=` <span class="chip gold">${esc(x.followup)}</span>`;}
+    return `<div class="truth ${x.kind==='appr'?'appr':''}"><div class="row between"><div class="row">${av(x.from,28)}<span class="eyebrow">${x.kind==='appr'?'Appreciation':'Truth'} · ${mine?'to '+NAMES[you]:'from '+NAMES[x.from]}</span></div><span class="small muted">${ago(x.at)}</span></div>
+      <div>${esc(x.filtered)}</div>${advice.length&&!mine?`<div class="small"><b>What would help</b><ul>${advice.map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>`:''}${foot}</div>`;};
+  const d=S.truthDraft;
+  const composer=d?`<div class="banner">Only you ever see your raw words. This is what ${NAMES[you]} will get. Edit anything before sending.</div>
+    <label class="f" for="tFiltered">Message<textarea id="tFiltered" style="min-height:120px">${esc(d.filtered)}</textarea></label>
+    <label class="f" for="tAdvice">What would help (one per line)<textarea id="tAdvice">${esc((d.advice||[]).join('\n'))}</textarea></label>
+    <div class="row"><button class="btn primary" data-act="truthSend">Send to ${NAMES[you]}</button><button class="btn" data-act="truthRetry">Try again</button><button class="btn ghost" data-act="truthCancel">Cancel</button></div>`
+    :`<label class="f" for="tRaw">Say it raw. Nobody sees this version but you.<textarea id="tRaw" style="min-height:120px" placeholder="What's really on your heart?"></textarea></label>
+    <div class="row"><button class="btn primary" data-act="truthFilter" ${weekCount>=3||S.truthBusy?'disabled':''}>${S.truthBusy?'Softening…':'Make it kind'}</button><button class="btn" data-act="apprSend">Send as appreciation</button></div>
+    <p class="small muted" style="margin:0">${weekCount}/3 truths this week. Appreciations are unlimited.</p>`;
+  return `<section class="card"><div class="row">${av(me,44)}<div><h2>Truth Corner</h2><div class="small muted">Say it straight. Pods keeps the point, takes out the heat, and adds what would help.</div></div></div>${composer}</section>
+  <section class="card"><span class="eyebrow">For you</span>${inbox.length?inbox.map(x=>card(x,false)).join(''):'<p class="small muted" style="margin:0">Nothing yet.</p>'}</section>
+  ${sent.length?`<section class="card"><span class="eyebrow">You sent</span>${sent.slice(0,10).map(x=>card(x,true)).join('')}</section>`:''}`;
+}
+
+/* ---------- GALLERY ---------- */
+function galleryList(){const f=S.galFilter||'all';return S.memories.filter(m=>f==='all'||(f==='puzzle'?m.kind==='puzzle':m.by===f&&m.kind!=='puzzle'));}
+const memThumb=m=>m.thumb||m.img||(m.photo?thumbURL(m.photo):'');
+function usView(){
+  const me=S.role,you=other(me),items=(S.wish&&S.wish.items)||[],list=galleryList(),f=S.galFilter||'all';
+  const forMe=S.letters.filter(l=>l.to===me).sort((a,b)=>b.at-a.at),fromMe=S.letters.filter(l=>l.from===me);
+  const fb=(k,l)=>`<button class="${f===k?'on':''}" data-act="galFilter" data-k="${k}">${l}</button>`;
+  return `
+  <section class="card"><div class="row between"><div><h2>Our gallery</h2><div class="small muted">${S.memories.length} photo${S.memories.length===1?'':'s'} · every picture you upload lands here</div></div><label class="btn primary" for="memImg">Add photos</label><input type="file" id="memImg" accept="image/*" multiple hidden></div>
+    <div class="seg">${fb('all','All')}${fb('anthonia','Anthonia')}${fb('ifeayomi','Ifeayomi')}${fb('puzzle','Puzzles')}</div>
+    ${list.length?`<div class="gal">${list.map(m=>`<button class="ph" data-act="lightbox" data-id="${m.id}" aria-label="${esc(m.caption||'Open photo')}"><img src="${memThumb(m)}" alt="" loading="lazy"><span class="dot ${m.by}"></span>${m.kind==='puzzle'?'<span class="tag">Puzzle</span>':''}</button>`).join('')}</div>`
+      :`<div class="empty">${HEART}<p class="muted" style="margin:0">No photos here yet. Add your favourite pictures of the two of you.</p></div>`}
+  </section>
+  <section class="card"><span class="eyebrow">Shared wishlist</span>
+    <ul class="list">${items.map(x=>`<li class="item ${x.done?'done':''}"><button class="check ${x.done?'on':''}" data-act="wish" data-id="${x.id}" aria-label="Done"></button>${av(x.by,26)}<span class="grow">${esc(x.t)}</span><button class="x" data-act="wishDel" data-id="${x.id}" aria-label="Delete">×</button></li>`).join('')||"<li class=\"small muted\">Things to do together, gifts you'd love.</li>"}</ul>
+    <div class="row" style="flex-wrap:nowrap"><input type="text" id="wishIn" placeholder="e.g. Dinner by the sea in Ancona"><button class="btn sm" data-act="wishAdd">Add</button></div>
+  </section>
+  <section class="card"><div class="row between"><h2>Open-when letters</h2><button class="btn sm" data-act="letterSheet">Write one</button></div>
+    ${forMe.length?forMe.map(l=>`<div class="item">${av(l.from,34)}<span class="grow"><b>${esc(l.when)}</b><br><span class="small muted">from ${NAMES[l.from]}</span></span><button class="btn sm ${l.opened?'':'primary'}" data-act="openLetter" data-id="${l.id}">${l.opened?'Read again':'Open'}</button></div>`).join(''):'<p class="small muted" style="margin:0">No letters for you yet.</p>'}
+    ${fromMe.length?`<p class="small muted" style="margin:0">You've written ${fromMe.length} for ${NAMES[you]} · ${fromMe.filter(l=>l.opened).length} opened</p>`:''}
+  </section>`;
+}
+function homeGallery(){const l=S.memories.slice(0,6);return `<section class="card"><div class="row between"><span class="eyebrow">Our gallery</span><button class="btn sm ghost" data-act="tab" data-k="us">Open gallery ›</button></div>
+  ${l.length?`<div class="strip">${l.map(m=>`<button class="ph" data-act="lightbox" data-id="${m.id}" aria-label="Open photo"><img src="${memThumb(m)}" alt="" loading="lazy"></button>`).join('')}</div>`:`<label class="locked" for="memImg2" style="cursor:pointer">${HEART.replace('<svg','<svg width="20" height="20" style="color:var(--her)"')} Add your first photo together</label><input type="file" id="memImg2" accept="image/*" multiple hidden>`}</section>`;}
+/* lightbox */
+async function openLightbox(id){
+  const list=galleryList().length&&galleryList().some(m=>m.id===id)?galleryList():S.memories;const idx=list.findIndex(m=>m.id===id);if(idx<0)return;const m=list[idx];
+  S.lb={id,list:list.map(x=>x.id)};
+  let el=document.getElementById('lb');if(!el){el=document.createElement('div');el.id='lb';el.className='lb';document.body.appendChild(el);}
+  el.innerHTML=`<div class="lbTop"><div class="row">${av(m.by,32)}<div><b>${NAMES[m.by]||''}</b><div class="small" style="opacity:.75">${m.at?new Date(m.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''}</div></div></div><button class="x" data-act="lbClose" aria-label="Close" style="color:#fff">×</button></div>
+   <div class="lbImg"><img id="lbImg" src="${memThumb(m)}" alt="${esc(m.caption||'')}"></div>
+   <div class="lbCap">${m.caption?esc(m.caption):'<span style="opacity:.6">No caption</span>'}</div>
+   <div class="row" style="justify-content:center;gap:8px"><button class="btn sm" data-act="lbNav" data-d="-1" aria-label="Previous">‹</button><button class="btn sm primary" data-act="lbPuzzle">Make a puzzle</button><button class="btn sm" data-act="lbCaption">Caption</button>${m.by===S.role?`<button class="btn sm" data-act="lbDel">Delete</button>`:''}<button class="btn sm" data-act="lbNav" data-d="1" aria-label="Next">›</button></div>`;
+  el.classList.add('on');
+  const full=await fullImage(m);const im=document.getElementById('lbImg');if(full&&im&&S.lb&&S.lb.id===id)im.src=full;
+}
+async function fullImage(m){if(m.photo)return photoURL(m.photo);if(m.img)return m.img;const d=await getDoc('photos/'+m.id);return d&&d.img?d.img:memThumb(m);}
+let lbX=null;
+document.addEventListener('touchstart',e=>{if(e.target.closest('#lb .lbImg'))lbX=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',e=>{if(lbX===null)return;const dx=e.changedTouches[0].clientX-lbX;lbX=null;if(Math.abs(dx)>50)lbNav(dx<0?1:-1);});
+function lbNav(d){if(!S.lb)return;const i=S.lb.list.indexOf(S.lb.id);const n=S.lb.list[(i+d+S.lb.list.length)%S.lb.list.length];if(n)openLightbox(n);}
+function closeLb(){const el=document.getElementById('lb');if(el)el.classList.remove('on');S.lb=null;}
+/* saving pictures */
+async function compressPhoto(im){let max=1600,q=.84,out='';for(let k=0;k<8;k++){out=fitMax(im,max,q);if(out.length<235000)return out;if(q>.6)q-=.1;else{max=Math.round(max*.8);q=.78;}}return out;}
+async function saveToGallery({thumb,img,photo,caption,kind}){const id=Date.now().toString(36)+uidGen();
+  if(img)await setDoc('photos/'+id,{img});await setDoc('memories/'+id,{thumb:thumb||'',photo:photo||null,caption:caption||'',by:S.role,kind:kind||'photo',at:Date.now()});return id;}
+async function uploadFiles(files,caption,kind){let n=0;for(const file of files){try{const url=URL.createObjectURL(file);const im=await loadImg(url);URL.revokeObjectURL(url);
+    await saveToGallery({thumb:cropTo(im,320,320,.74),img:await compressPhoto(im),caption,kind});n++;}catch(e){}}
+  if(n){floatHearts();toast(n===1?'Saved to the gallery':`${n} photos saved to the gallery`);}else toast("That photo couldn't be opened. Try another one.");return n;}
+
+/* ---------- AI (Truth Corner): each phone keeps its own key, like Parla ---------- */
+const AIK='pods_ai';
+function aiCfg(){try{return JSON.parse(localStorage.getItem(AIK)||'{}');}catch(e){return {};}}
+function tfetch(url,o,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||40000);return fetch(url,Object.assign({},o,{signal:c.signal})).finally(()=>clearTimeout(t));}
+async function aiJSON(prompt){const cfg=aiCfg();if(!cfg.key)throw{code:'no_key'};let text='';
+  if(/^sk-ant/.test(cfg.key)){const r=await tfetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-5-5',max_tokens:900,messages:[{role:'user',content:prompt}]})});
+    const j=await r.json().catch(()=>({}));if(!r.ok)throw{code:r.status===401?'bad_key':'api'};text=(j.content||[]).map(c=>c.text||'').join('');}
+  else{let last=null;for(const m of [cfg.model,'gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash'].filter(Boolean)){
+      const r=await tfetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent?key='+encodeURIComponent(cfg.key),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',temperature:.7}})});
+      const j=await r.json().catch(()=>({}));if(r.ok){if(cfg.model!==m){cfg.model=m;localStorage.setItem(AIK,JSON.stringify(cfg));}text=((j.candidates||[])[0]?.content?.parts||[]).map(p=>p.text||'').join('');last=null;break;}
+      last={code:(r.status===400||r.status===403)?'bad_key':r.status===429?'busy':'api'};if(r.status!==404)break;}
+    if(last)throw last;}
+  const m=text.match(/\{[\s\S]*\}/);return JSON.parse(m?m[0]:text);}
+function settingsSheet(){const cfg=aiCfg();openSheet(`${sheetHead('Settings')}
+  <span class="eyebrow">Our Pod</span>
+  <div class="item"><div class="grow">Invite code<br><b style="font-family:var(--display);font-size:1.4rem;letter-spacing:.12em">${esc(S.podId||'—')}</b></div><button class="btn sm" data-act="copyCode">Copy</button></div>
+  <p class="small muted" style="margin:0">The other person signs in at this same link, picks their name and types this code.</p>
+  <span class="eyebrow">Truth Corner AI</span>
+  <label class="f" for="aiKey">Paste a free Gemini key (aistudio.google.com/apikey) or a Claude key. It stays on this phone only.<input type="text" id="aiKey" value="${esc(cfg.key||'')}" placeholder="AIza… or sk-ant-…" autocomplete="off"></label>
+  <div class="row"><button class="btn primary sm" data-act="aiSave">Save key</button>${cfg.key?'<button class="btn sm" data-act="aiClear">Remove key</button>':''}</div>
+  <span class="eyebrow">Account</span>
+  <div class="item"><span class="grow small">${esc(S.email||'')}</span><button class="btn sm" data-act="signOut">Sign out</button></div>`);}
+/* ---------- voice notes (MediaRecorder → small audio saved with the note) ---------- */
+let rec=null;
+async function startRec(onDone){
+  if(!navigator.mediaDevices||!window.MediaRecorder)return toast("This phone's browser can't record here.");
+  let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){return toast('Allow the microphone to record a voice note.');}
+  const type=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+  const mr=new MediaRecorder(stream,type?{mimeType:type,audioBitsPerSecond:32000}:{});const chunks=[];const t0=Date.now();
+  mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
+  mr.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});const secs=Math.round((Date.now()-t0)/1000);rec=null;render(true);
+    if(blob.size>700000)return toast('That voice note is too long. Keep it under a minute.');const fr=new FileReader();fr.onload=()=>onDone(fr.result,secs);fr.readAsDataURL(blob);};
+  mr.start();rec={mr,t0,timer:setTimeout(()=>{if(mr.state==='recording')mr.stop();},60000)};render(true);}
+function stopRec(){if(rec&&rec.mr.state==='recording'){clearTimeout(rec.timer);rec.mr.stop();}}
+const voicePlayer=(src,secs)=>`<audio controls preload="none" src="${src}" style="width:100%;height:36px"></audio>${secs?`<span class="small muted">${secs}s</span>`:''}`;
+
+/* ---------- sheets, toast, effects ---------- */
+function openSheet(html){document.getElementById('panel').innerHTML=html;document.getElementById('sheet').classList.remove('hidden');}
+function closeSheet(){document.getElementById('sheet').classList.add('hidden');if(pending){pending=false;render(true);}}
+document.getElementById('sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet();closeLb();const w=document.querySelector('.win');if(w)w.remove();}if(S.lb&&e.key==='ArrowRight')lbNav(1);if(S.lb&&e.key==='ArrowLeft')lbNav(-1);});
+const sheetHead=t=>`<div class="row between"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`;
+let tt;function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2600);}
+function floatHearts(){for(let k=0;k<9;k++){const h=document.createElement('div');h.className='float';h.innerHTML=HEART;h.style.left=(10+Math.random()*80)+'vw';h.style.bottom='100px';h.style.animationDelay=(k*0.12)+'s';h.style.color=k%3?'var(--her)':'var(--gold)';document.body.appendChild(h);setTimeout(()=>h.remove(),3200);}}
+function confetti(){const cols=['#ff4f7e','#ffb21f','#22b3a3','#6cc6ff','#b388ff'];for(let i=0;i<70;i++){const c=document.createElement('div');c.className='confetti';c.style.left=Math.random()*100+'vw';c.style.background=cols[i%5];c.style.animationDuration=(1.8+Math.random()*1.6)+'s';c.style.animationDelay=(Math.random()*.4)+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),4200);}}
+
+/* ---------- images ---------- */
+function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src;});}
+function cropTo(im,w,h,q=.8){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');const iw=im.naturalWidth||im.width,ih=im.naturalHeight||im.height;const s=Math.max(w/iw,h/ih);const dw=iw*s,dh=ih*s;x.drawImage(im,(w-dw)/2,(h-dh)/2,dw,dh);return c.toDataURL('image/jpeg',q);}
+function fitMax(im,max,q=.72){const s=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',q);}
+function shuffled(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+const curSize=()=>{const v=Number((document.getElementById('jigSize')||{}).value||S.pickSize||60);S.pickSize=v;return SIZES.find(s=>s[0]==v)||SIZES[1];};
+
+/* ---------- avatar editor ---------- */
+function avatarSheet(){const me=S.role,cfg=Object.assign({},DEFAULT_AV[me],(S.avatars||{})[me]);S.avDraft=cfg;drawAvatarSheet();}
+function drawAvatarSheet(){const me=S.role,c=S.avDraft;const prev=Object.assign({},S.avatars);S.avatars={...S.avatars,[me]:c};
+  const opt=(key,vals,fn)=>`<div class="opts ${fn?'':'wide'}">${vals.map((v,i)=>`<button class="${c[key]===i?'on':''}" data-act="avSet" data-k="${key}" data-v="${i}" aria-label="${esc(typeof v==='string'?v:key+' '+(i+1))}" ${fn?`style="background:${v}"`:''}>${fn?'':esc(v)}</button>`).join('')}</div>`;
+  openSheet(`${sheetHead('Your avatar')}<div class="row" style="justify-content:center">${av(me,110)}</div>
+  <span class="eyebrow">Skin</span>${opt('skin',SKINS,true)}<span class="eyebrow">Hair</span>${opt('hair',HAIRS)}<span class="eyebrow">Hair colour</span>${opt('hc',HAIRC,true)}<span class="eyebrow">Extra</span>${opt('extra',EXTRAS)}
+  <button class="btn primary" data-act="avSave">Save my avatar</button><button class="btn" data-act="settings">Settings, invite code &amp; AI key</button>${S.mode==='demo'?`<button class="btn ghost" data-act="switch">Switch to ${NAMES[other(me)]}</button>`:''}`);
+  S.avatars=prev;}
+
+/* ---------- actions ---------- */
+const clearIn=id=>{const e=document.getElementById(id);if(e)e.value='';};
+const val=id=>(document.getElementById(id)||{}).value||'';
+const A={
+  tab:t=>{S.tab=t.dataset.k;location.hash=S.tab;closeSheet();render();window.scrollTo(0,0);},
+  close:closeSheet,
+  pick:async t=>{const r=t.dataset.r;S.role=r;try{localStorage.setItem('pods-role',r);}catch(e){}render();floatHearts();},
+  switch:()=>{if(S.mode==='live'&&uid)return;closeSheet();S.role=other(S.role);S.sel=null;S.truthDraft=null;render();},
+  avatarSheet:()=>avatarSheet(),
+  avSet:t=>{S.avDraft[t.dataset.k]=Number(t.dataset.v);drawAvatarSheet();},
+  avSave:async()=>{const c=S.avDraft;closeSheet();await mergeDoc('pods/avatars',{[S.role]:c});floatHearts();toast('Looking good!');},
+  visitSheet:()=>openSheet(`${sheetHead('Next visit')}<label class="f" for="visitIn">When will you see each other?<input type="date" id="visitIn" value="${esc((S.couple&&S.couple.nextVisit)||'')}"></label><button class="btn primary" data-act="visitSave">Save</button>`),
+  visitSave:async()=>{const v=val('visitIn');if(!v)return toast('Pick a date first');closeSheet();await mergeDoc('pods/couple',{nextVisit:v});confetti();toast('Countdown set!');},
+  tap:async t=>{floatHearts();const day=todayKey();const prev=(S.tap&&S.tap.day===day&&S.tap.counts)||{};const counts={anthonia:prev.anthonia||0,ifeayomi:prev.ifeayomi||0};counts[S.role]++;
+    await setDoc('pods/tap',{from:S.role,at:Date.now(),day,counts});toast(`Love sent to ${NAMES[other(S.role)]}`);},
+  answer:async()=>{const v=val('dailyIn').trim();if(!v)return toast('Write your answer first');const day=S.daily.find(d=>d.id===todayKey())||{};
+    await mergeDoc('daily/'+todayKey(),{[S.role]:{text:v,at:Date.now()}});if(day[other(S.role)]){confetti();toast('Unlocked!');}else floatHearts();},
+  songSheet:()=>{const s=S.songs[S.role]||{};openSheet(`${sheetHead('Song of the moment')}<label class="f" for="songT">Song and artist<input type="text" id="songT" value="${esc(s.title||'')}" placeholder="Song name and artist"></label><label class="f" for="songU">Spotify or YouTube link (optional)<input type="url" id="songU" value="${esc(s.url||'')}" placeholder="https://"></label><button class="btn primary" data-act="songSave">Pin it</button>`);},
+  songSave:async()=>{const title=val('songT').trim(),url=val('songU').trim();if(!title&&!url)return toast('Add a song name or link');if(url&&!/^https?:\/\//i.test(url))return toast('Links start with https://');closeSheet();await mergeDoc('pods/songs',{[S.role]:{title,url,at:Date.now()}});},
+  /* account & pod */
+  authToggle:()=>{S.authMode=S.authMode==='up'?'in':'up';render();},
+  authReset:async()=>{const e=val('aEmail').trim();if(!e)return toast('Type your email first');try{await FB.reset(e);toast('Password reset email sent');}catch(err){toast("Couldn't send the reset email. Check the address.");}},
+  setupRole:t=>{S.setupRole=t.dataset.r;render();},
+  podCreate:async()=>{const r=S.setupRole;if(!r)return;const code=Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+    try{await FB.set('pods/'+code,{members:{[uid]:r},createdBy:uid,createdAt:Date.now()});await FB.set('users/'+uid+'/pods/link',{podId:code,role:r});}
+    catch(e){return toast(/permission/.test(e&&e.code||'')?'Firestore rules need updating first (see the README).':"Couldn't create the Pod. Try again.");}
+    POD='pods/'+code;S.podId=code;S.role=r;S.mode='live';subscribe();render();floatHearts();setTimeout(settingsSheet,600);},
+  podJoin:async()=>{const r=S.setupRole,code=val('joinCode').trim().toUpperCase();if(!r||code.length<6)return toast('Pick your name and type the 6-letter code');
+    try{await FB.update('pods/'+code,{['members.'+uid]:r});await FB.set('users/'+uid+'/pods/link',{podId:code,role:r});}
+    catch(e){return toast("That code didn't work. Check it, or ask for a new one.");}
+    POD='pods/'+code;S.podId=code;S.role=r;S.mode='live';subscribe();render();confetti();toast("You're linked! Welcome to Pods");},
+  signOut:async()=>{closeSheet();if(window.FB)await FB.signOut();},
+  settings:()=>settingsSheet(),
+  copyCode:async()=>{try{await navigator.clipboard.writeText(S.podId||'');toast('Code copied');}catch(e){toast('Code: '+(S.podId||''));}},
+  aiSave:()=>{const k=val('aiKey').trim();if(!k)return toast('Paste a key first');localStorage.setItem(AIK,JSON.stringify({key:k}));closeSheet();toast('AI key saved on this phone');},
+  aiClear:()=>{localStorage.removeItem(AIK);closeSheet();toast('AI key removed');},
+  /* voice notes */
+  recStart:t=>{const kind=t.dataset.k;startRec(async(src,secs)=>{
+    if(kind==='daily'){const day=S.daily.find(d=>d.id===todayKey())||{};await mergeDoc('daily/'+todayKey(),{[S.role]:{text:'(voice note)',voice:src,secs,at:Date.now()}});if(day[other(S.role)])confetti();else floatHearts();}
+    else{await addDoc('voice',{by:S.role,src,secs,at:Date.now()});floatHearts();toast('Voice note sent');}});},
+  recStop:()=>stopRec(),
+  /* games */
+  game:t=>{S.game=t.dataset.g;render();window.scrollTo(0,0);},
+  gameBack:()=>{S.game=null;render();window.scrollTo(0,0);},
+  g:t=>{const id=t.dataset.g,g=G[id];if(!g)return;const fn=g.act[t.dataset.a];if(fn)return fn(S.games[id]?JSON.parse(JSON.stringify(S.games[id])):null,t);},
+  gNew:t=>{const id=t.dataset.g;if(t.dataset.sure!=='1'&&S.games[id]&&!S.games[id].over){t.dataset.sure='1';t.textContent='Tap again to restart';return;}saveGame(id,G[id].start(S.role));toast('New game started');},
+  /* jigsaw */
+  jigSheet:()=>drawPicker(),
+  pickCat:t=>{S.pickCat=t.dataset.k;S.pickSize=Number(val('jigSize'))||S.pickSize;drawPicker();},
+  jigPhoto:async t=>{const [n,c,r]=curSize();closeSheet();toast('Getting the pieces ready…');await startJig({photo:t.dataset.k},c,r);},
+  jigMem:async t=>{const m=S.memories.find(x=>x.id===t.dataset.id);if(!m)return;const [n,c,r]=curSize();closeSheet();toast('Getting the pieces ready…');
+    if(m.photo)return startJig({photo:m.photo},c,r);const src=await fullImage(m);let img=src;if(src&&src.length>235000){img=await compressPhoto(await loadImg(src));}await startJig({img},c,r);},
+  selPiece:t=>{S.sel=Number(t.dataset.i);document.querySelectorAll('canvas.piece.sel').forEach(p=>p.classList.remove('sel'));t.classList.add('sel');},
+  shuffle:async()=>{const j=S.jig;if(!j)return;const placed=new Set(j.placed||[]);await mergeDoc('games/jigsaw',{tray:shuffled(j.cols*j.rows).filter(i=>!placed.has(i))});},
+  zoom:()=>{S.zoom=!S.zoom;render(true);},
+  edges:()=>{S.edgesOnly=!S.edgesOnly;render(true);},
+  peek:()=>{const j=S.jig;if(!j)return;openSheet(`${sheetHead('The picture')}<img src="${jigSrc(j)}" alt="The full puzzle picture" style="width:100%;border-radius:18px">`);},
+  winClose:t=>{const w=t.closest('.win');if(w)w.remove();},
+  winAgain:t=>{const w=t.closest('.win');if(w)w.remove();if(t.dataset.g){S.tab='play';S.game=t.dataset.g;saveGame(t.dataset.g,G[t.dataset.g].start(S.role));return;}S.tab='play';S.game='jigsaw';location.hash='play';render();drawPicker();},
+  winGallery:t=>{const w=t.closest('.win');if(w)w.remove();S.tab='us';S.galFilter='puzzle';location.hash='us';render();window.scrollTo(0,0);},
+  /* gallery */
+  galFilter:t=>{S.galFilter=t.dataset.k;render(true);},
+  lightbox:t=>openLightbox(t.dataset.id),
+  lbClose:()=>closeLb(),
+  lbNav:t=>lbNav(Number(t.dataset.d)),
+  lbPuzzle:()=>{const id=S.lb&&S.lb.id;closeLb();S.tab='play';S.game='jigsaw';location.hash='play';render();S.pickCat='ours';drawPicker(id);},
+  lbCaption:()=>{const m=S.memories.find(x=>S.lb&&x.id===S.lb.id);if(!m)return;const id=m.id;closeLb();openSheet(`${sheetHead('Caption')}<input type="text" id="capIn" value="${esc(m.caption||'')}" placeholder="Say something about this moment"><button class="btn primary" data-act="capSave" data-id="${id}">Save</button>`);},
+  capSave:async t=>{const v=val('capIn').trim();closeSheet();await mergeDoc('memories/'+t.dataset.id,{caption:v});toast('Caption saved');},
+  lbDel:async t=>{if(t.dataset.sure!=='1'){t.dataset.sure='1';t.textContent='Tap again to delete';return;}const id=S.lb&&S.lb.id;closeLb();if(!id)return;await delDoc('memories/'+id);await delDoc('photos/'+id);toast('Photo deleted');},
+
+  /* plan */
+  saveNotes:async()=>{await mergeDoc('months/'+monthKey(),{notes:val('mNotes')});toast('Notes saved');},
+  planDone:async()=>{await mergeDoc('months/'+monthKey(),{notes:val('mNotes'),done:true,doneAt:todayKey(),doneBy:S.role});confetti();toast('Planning date done. See you next month!');},
+  todoAdd:async()=>{const v=val('todoIn').trim();if(!v)return;clearIn('todoIn');const todos=[...((S.month&&S.month.todos)||[]),{id:uidGen(),t:v,owner:val('todoOwner')||S.role,done:false}];await mergeDoc('months/'+monthKey(),{todos});},
+  todo:async t=>{const todos=((S.month&&S.month.todos)||[]).map(x=>x.id===t.dataset.id?{...x,done:!x.done}:x);await mergeDoc('months/'+monthKey(),{todos});},
+  todoDel:async t=>{const todos=((S.month&&S.month.todos)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('months/'+monthKey(),{todos});},
+  goalAdd:async()=>{const v=val('goalIn').trim();if(!v)return;clearIn('goalIn');const goals=[...((S.year&&S.year.goals)||[]),{id:uidGen(),t:v,done:false}];await mergeDoc('years/'+todayKey().slice(0,4),{goals});},
+  goal:async t=>{let won=false;const goals=((S.year&&S.year.goals)||[]).map(x=>{if(x.id===t.dataset.id){won=!x.done;return {...x,done:!x.done};}return x;});await mergeDoc('years/'+todayKey().slice(0,4),{goals});if(won)confetti();},
+  goalDel:async t=>{const goals=((S.year&&S.year.goals)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('years/'+todayKey().slice(0,4),{goals});},
+  moodAdd:async()=>{const v=val('moodIn').trim();if(!v)return;clearIn('moodIn');await addDoc('mood',{month:monthKey(),text:v,by:S.role,at:Date.now()});},
+  dateSheet:()=>{const d=addDays(todayKey(),7);openSheet(`${sheetHead('Plan a date night')}
+    <div class="row" style="flex-wrap:nowrap"><label class="f" for="dDate" style="flex:1">Date<input type="date" id="dDate" value="${d}"></label><label class="f" for="dTime" style="flex:1">Time in Ancona<input type="time" id="dTime" value="19:30"></label></div>
+    <span class="small muted" id="dIb"></span>
+    <label class="f" for="dHer">Where Anthonia goes<input type="text" id="dHer" placeholder="Restaurant, café, walk…"></label>
+    <label class="f" for="dHis">Where Ifeayomi goes<input type="text" id="dHis" placeholder="Restaurant, café, walk…"></label>
+    <label class="f" for="dHost">Host (pays both bills)<select id="dHost"><option value="anthonia">Anthonia</option><option value="ifeayomi">Ifeayomi</option></select></label>
+    <span class="small muted">The host defaults to whoever hosts that month's planning date.</span>
+    <button class="btn primary" data-act="dateSave">Book it</button>`);syncDateSheet();},
+  dateSave:async()=>{const date=val('dDate'),time=val('dTime');if(!date||!time)return toast('Pick a date and time');const data={date,time,herPlace:val('dHer').trim(),hisPlace:val('dHis').trim(),host:val('dHost'),status:'planned',by:S.role,at:Date.now()};closeSheet();await addDoc('dates',data);floatHearts();toast('Date night booked!');},
+  dateDone:t=>openSheet(`${sheetHead('How was it?')}<label class="f" for="dNote">One line to remember it by<input type="text" id="dNote" placeholder="Best night of the month…"></label><button class="btn primary" data-act="dateDoneSave" data-id="${t.dataset.id}">Save</button>`),
+  dateDoneSave:async t=>{const note=val('dNote').trim();closeSheet();await mergeDoc('dates/'+t.dataset.id,{status:'done',note});confetti();},
+  /* truth */
+  truthFilter:async()=>{const raw=val('tRaw').trim();if(!raw)return toast('Write what you want to say first');
+    const from=NAMES[S.role],to=NAMES[other(S.role)];
+    if(!aiCfg().key){S.truthDraft={filtered:raw,advice:[]};render();toast('Add an AI key in Settings to soften messages. For now, edit your words yourself.');return;}
+    S.truthBusy=true;S.rawKeep=raw;render();
+    const prompt=`You help a long-distance couple, ${from} and ${to}, talk honestly and kindly.\n${from} wrote this raw, unfiltered message to ${to}. Rewrite it so it keeps the real issue and its full meaning, but removes insults, sarcasm, blame-words and heat. Write in first person from ${from} to ${to}, warm and direct, 2 to 5 sentences. Never hide, soften away or minimise the actual problem.\nThen give ${to} 1 to 3 short, concrete suggestions for what they can do so this doesn't happen again, or to make ${from} happier.\nReturn only JSON: {"filtered": string, "advice": [string]}\n\nRaw message:\n"""${raw}"""`;
+    try{let out=await aiJSON(prompt);
+      S.truthDraft={filtered:String(out.filtered||raw),advice:Array.isArray(out.advice)?out.advice.map(String):[]};}
+    catch(e){toast(e&&e.code==='bad_key'?'Your AI key was refused. Check it in Settings.':"Couldn't soften it right now. Edit it yourself below.");S.truthDraft={filtered:raw,advice:[]};}
+    S.truthBusy=false;render();},
+  truthRetry:async()=>{const raw=S.rawKeep;S.truthDraft=null;render();if(raw){document.getElementById('tRaw').value=raw;A.truthFilter();}},
+  truthCancel:()=>{S.truthDraft=null;S.rawKeep=null;render();},
+  truthSend:async()=>{const filtered=val('tFiltered').trim();if(!filtered)return toast('The message is empty');const advice=val('tAdvice').split('\n').map(s=>s.trim()).filter(Boolean);
+    S.truthDraft=null;S.rawKeep=null;render();await addDoc('truths',{kind:'truth',from:S.role,to:other(S.role),filtered,advice,status:'sent',at:Date.now()});toast(`Sent to ${NAMES[other(S.role)]}`);},
+  apprSend:async()=>{const v=val('tRaw').trim();if(!v)return toast('Write what you appreciate first');await addDoc('truths',{kind:'appr',from:S.role,to:other(S.role),filtered:v,advice:[],status:'seen',at:Date.now()});floatHearts();toast('Appreciation sent');},
+  respond:async t=>{await mergeDoc('truths/'+t.dataset.id,{status:t.dataset.s,respondedAt:Date.now()});floatHearts();},
+  follow:async t=>{await mergeDoc('truths/'+t.dataset.id,{followup:t.dataset.v});if(t.dataset.v==='Better')confetti();},
+  /* keep */
+  wishAdd:async()=>{const v=val('wishIn').trim();if(!v)return;clearIn('wishIn');const items=[...((S.wish&&S.wish.items)||[]),{id:uidGen(),t:v,by:S.role,done:false}];await mergeDoc('pods/wishlist',{items});},
+  wish:async t=>{let won=false;const items=((S.wish&&S.wish.items)||[]).map(x=>{if(x.id===t.dataset.id){won=!x.done;return {...x,done:!x.done};}return x;});await mergeDoc('pods/wishlist',{items});if(won)floatHearts();},
+  wishDel:async t=>{const items=((S.wish&&S.wish.items)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('pods/wishlist',{items});},
+  letterSheet:()=>openSheet(`${sheetHead('Write an open-when letter')}<label class="f" for="lWhen">Open when…<select id="lWhen">${OPEN_WHEN.map(w=>`<option>${w}</option>`).join('')}</select></label><label class="f" for="lBody">Your letter to ${NAMES[other(S.role)]}<textarea id="lBody" style="min-height:180px"></textarea></label><button class="btn primary" data-act="letterSave">Seal and send</button>`),
+  letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lWhen');closeSheet();await addDoc('letters',{from:S.role,to:other(S.role),when,body,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');},
+  openLetter:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l)return;openSheet(`${sheetHead(esc(l.when))}<div class="row">${av(l.from,40)}<span class="small muted">From ${NAMES[l.from]}</span></div><div style="white-space:pre-wrap;font-size:1.08rem;background:var(--blush);border-radius:18px;padding:16px">${esc(l.body)}</div>`);if(!l.opened){floatHearts();await mergeDoc('letters/'+l.id,{opened:true});}},
+};
+async function startJig(src,c,r){closeSheet();const doc={photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:S.role,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast('Puzzle ready. You go first!');}
+function drawPicker(memId){const cat=S.pickCat||'animals',size=S.pickSize||60;const ours=S.memories.filter(m=>m.kind!=='puzzle');
+  openSheet(`${sheetHead('New jigsaw')}<label class="f" for="jigSize">How many pieces?<select id="jigSize">${SIZES.map(([n,c,r])=>`<option value="${n}" ${n===size?'selected':''}>${n} pieces (${c} × ${r})</option>`).join('')}</select></label>
+  <div class="cats">${CATS.map(([k,l])=>`<button class="${cat===k?'on':''}" data-act="pickCat" data-k="${k}">${l}</button>`).join('')}</div>
+  ${cat==='ours'?`<label class="btn" for="jigImg">Upload a new photo</label><input type="file" id="jigImg" accept="image/*" hidden>${ours.length?`<div class="scenes">${ours.map(m=>`<button data-act="jigMem" data-id="${m.id}" class="${memId===m.id?'hl':''}"><img src="${memThumb(m)}" alt=""><span>${esc(m.caption||NAMES[m.by]||'')}</span></button>`).join('')}</div>`:'<p class="small muted">Photos you add to the gallery show up here.</p>'}`
+   :`<div class="scenes">${PHOTOS.filter(p=>p[1]===cat).map(([k,,t])=>`<button data-act="jigPhoto" data-k="${k}"><img src="${thumbURL(k)}" alt="" loading="lazy"><span>${t}</span></button>`).join('')}</div>`}`);}
+function syncDateSheet(){const d=val('dDate'),t=val('dTime');const el=document.getElementById('dIb');if(el&&d&&t)el.textContent=`That's ${ibadanTime(d,t)} in Ibadan.`;const h=document.getElementById('dHost');if(h&&d&&!h.dataset.touched)h.value=hostFor(d.slice(0,7));}
+document.addEventListener('click',e=>{if(e.target.id==='board'){boardTap(e);return;}const t=e.target.closest('[data-act]');if(!t||t.disabled)return;const f=A[t.dataset.act];if(f){e.preventDefault();Promise.resolve(f(t)).catch(()=>{});}});
+document.addEventListener('submit',async e=>{if(e.target.id!=='authForm')return;e.preventDefault();const em=val('aEmail').trim(),pw=val('aPass');if(!em||!pw)return toast('Type your email and password');
+  try{if(S.authMode==='up')await FB.signUp(em,pw);else await FB.signIn(em,pw);}catch(err){const c=err&&err.code||'';toast(/weak/.test(c)?'Use at least 6 characters':/in-use/.test(c)?'That email already has a login. Sign in instead.':/invalid|wrong|not-found/.test(c)?'Email or password is wrong':"Couldn't sign in. Check your connection.");}});
+document.addEventListener('input',e=>{if(e.target.id==='dDate'||e.target.id==='dTime')syncDateSheet();});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){const m={todoIn:'todoAdd',goalIn:'goalAdd',wishIn:'wishAdd',moodIn:'moodAdd'}[e.target.id];if(m){e.preventDefault();A[m]();}}});
+document.addEventListener('change',async e=>{const el=e.target;if(el.id==='dHost')el.dataset.touched='1';
+  if(!el.files||!el.files[0])return;
+  if(el.id==='memImg'||el.id==='memImg2'){const files=[...el.files];el.value='';await uploadFiles(files,'','photo');return;}
+  const file=el.files[0];el.value='';
+  try{const url=URL.createObjectURL(file);const im=await loadImg(url);URL.revokeObjectURL(url);
+    if(el.id==='moodImg'){await addDoc('mood',{month:monthKey(),img:fitMax(im,480,.7),by:S.role,at:Date.now()});await saveToGallery({thumb:cropTo(im,320,320,.74),img:await compressPhoto(im),caption:'From our '+monthName(monthKey())+' mood board',kind:'mood'});toast('Pinned and saved to the gallery');}
+    else if(el.id==='jigImg'){const [n,c,r]=curSize();closeSheet();toast('Saving to the gallery and cutting the pieces…');const img=await compressPhoto(im);await saveToGallery({thumb:cropTo(im,320,320,.74),img,caption:'',kind:'photo'});await startJig({img},c,r);}
+  }catch(err){toast("That photo couldn't be opened. Try another one.");}});
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(['home','play','plan','truth','us'].includes(h)&&h!==S.tab){S.tab=h;render();}});
+window.addEventListener('resize',()=>{if(S.tab==='play'&&S.game==='jigsaw')drawJig();});
+window.addEventListener('DOMContentLoaded',boot);
