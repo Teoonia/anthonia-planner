@@ -347,6 +347,7 @@ const PSP = [
   { n: 'Go to Missed Call', t: 'gojail' }, { n: 'Lekki', t: 'p', g: 'orange', p: 260 }, { n: 'Victoria Island', t: 'p', g: 'orange', p: 280 }, { n: 'Data Bill', t: 'tax', p: 75 },
   { n: 'Flight to Italy', t: 'tr', p: 200 }, { n: 'Rome', t: 'p', g: 'gold', p: 320 }, { n: 'Love Note', t: 'card' }, { n: 'Venice', t: 'p', g: 'gold', p: 380 },
 ];
+const PSHY = { Falconara: 'Falco&shy;nara', Senigallia: 'Seni&shy;gallia', Passetto: 'Pas&shy;setto', Mokola: 'Mo&shy;kola', Ogbomoso: 'Ogbo&shy;moso', Bodija: 'Bo&shy;dija', Loreto: 'Lo&shy;reto', Victoria: 'Victoria' };
 const PN = PSP.length, TRANS = [5, 15, 28];
 const PCOL = { brown: '#a0612f', sky: '#6cc6ff', purple: '#9b6cff', pink: '#ff7fb0', red: '#ef4444', orange: '#ff9f43', gold: '#f5b700' };
 const LOVE = [
@@ -377,6 +378,7 @@ function spinDice(sel, faces, ms = 700) { return new Promise((res) => { const el
   setTimeout(() => { clearInterval(iv); els.forEach((e, k) => { e.classList.remove('rolling'); if (faces[k]) e.querySelectorAll('i').forEach((d, j) => d.classList.toggle('on', DOTS[faces[k]].includes(j))); }); res(); }, ms); }); }
 let propAnim = null, propSeen = null;
 G.property = {
+  legacy: (st) => !st || !st.laps || Object.values(st.pos || {}).some((p) => p >= PN),
   name: 'Pods Property', short: 'Buy Oyo, Ibadan, Ancona & Venice', icon: ICON('<path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/>'),
   desc: 'Tap your avatar to roll, watch your piece hop round 32 places from Oyo Town to Venice, buy them and charge rent. Own a whole colour to double rent and build up to 4 houses. Love Notes, Lucky Jars and Date Nights bring surprises. Run your partner out of money, or end the game and the richest wins.',
   start(first) { return { kind: 'property', pos: { anthonia: 0, ifeayomi: 0 }, cash: { anthonia: 2000, ifeayomi: 2000 }, own: {}, turn: first, phase: 'roll', dice: [3, 4], dbl: 0, jail: { anthonia: 0, ifeayomi: 0 }, free: {}, laps: { anthonia: 0, ifeayomi: 0 }, mv: null, msg: `${NAMES[first]} rolls first` }; },
@@ -385,7 +387,7 @@ G.property = {
     const mine = st.turn === me && !st.over, cells = [], shown = { ...st.pos, ...(propAnim ? { [propAnim.who]: propAnim.at } : {}) };
     for (let i = 0; i < PN; i++) { const s = PSP[i], [r, c] = ringPos(i), o = st.own[i];
       const tok = ['anthonia', 'ifeayomi'].filter((x) => shown[x] === i).map((x) => `<span class="ptok ${propAnim && propAnim.who === x ? 'hop' : ''}">${av(x, 20)}</span>`).join('');
-      cells.push(`<button class="pcell ${s.t}${st.mv && st.mv.to === i && !propAnim ? ' landed' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}" data-act="g" data-g="property" data-a="info" data-x="${i}">${s.g ? `<i style="background:${PCOL[s.g]}"></i>` : ''}<span>${s.n}</span>${s.p && s.t !== 'tax' ? `<em>₦${s.p}</em>` : s.t === 'tax' ? `<em>-₦${s.p}</em>` : ''}${o ? `<u class="${o.by}">${o.houses ? '<b>' + '⌂'.repeat(o.houses) + '</b>' : ''}</u>` : ''}<div class="toks">${tok}</div></button>`); }
+      cells.push(`<button class="pcell ${s.t}${st.mv && st.mv.to === i && !propAnim ? ' landed' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}" data-act="g" data-g="property" data-a="info" data-x="${i}">${s.g ? `<i style="background:${PCOL[s.g]}"></i>` : ''}<span class="${s.n.length > 12 ? 'xlong' : s.n.length > 7 ? 'long' : ''}">${PSHY[s.n] || s.n}</span>${s.p && s.t !== 'tax' ? `<em>₦${s.p}</em>` : s.t === 'tax' ? `<em>-₦${s.p}</em>` : ''}${o ? `<u class="${o.by}">${o.houses ? '<b>' + '⌂'.repeat(o.houses) + '</b>' : ''}</u>` : ''}<div class="toks">${tok}</div></button>`); }
     const here = PSP[st.pos[me]], d = st.dice;
     const buildable = Object.entries(st.own).filter(([i, o]) => o.by === me && PSP[i].g && (o.houses || 0) < 4 && groupOf(PSP[i].g).every((k) => st.own[k] && st.own[k].by === me));
     const wallet = (r) => { const n = Object.values(st.own).filter((o) => o.by === r).length; const canRoll = r === me && mine && st.phase === 'roll';
@@ -441,7 +443,7 @@ G.property = {
     if (s.t === 'ut') return `<div class="deed"><div class="deedtop" style="background:#ff8fab"><small>FARM</small><h2>${s.n}</h2></div><div class="deedbody"><div class="drow"><span>Rent</span><b>6 × the dice</b></div><div class="dline"></div><div class="drow"><span>Price</span><b>₦${s.p}</b></div></div></div>${owner}${standing}`;
     const info = { card: ['LOVE NOTE', '#ff4f7e', 'Pick a Love Note card: gifts, bills, surprise trips or a free card.'], jar: ['LUCKY JAR', '#ffb21f', 'Open the jar for a surprise: jackpots, swaps, repairs and more.'], date: ['DATE NIGHT', '#d6336c', 'You treat your partner: pay them ₦50.'], tax: ['PAY UP', '#6b7280', `Pay ₦${s.p}.`], jail: ['MISSED CALL', '#3a1f2b', 'Stuck here? Roll doubles, use a free card or pay ₦50. You leave free after 3 tries.'], gojail: ['GO TO MISSED CALL', '#3a1f2b', 'Go straight to Missed Call. Do not pass Start.'], start: ['START', '#22b3a3', 'Collect ₦200 every time you pass.'], free: ['FREE HUG', '#22b3a3', 'Nothing happens. Enjoy the hug.'] }[s.t];
     return `<div class="deed"><div class="deedtop" style="background:${info[1]}"><small>${info[0]}</small><h2>${s.n}</h2></div><div class="deedbody"><p style="margin:0">${info[2]}</p></div></div>${standing}`; },
-  move(st, steps, dbl) { const me = S.role, from = st.pos[me], to = (from + steps) % PN; if (from + steps >= PN) { st.cash[me] += 200; st.laps[me] = (st.laps[me] || 0) + 1; logLine(st, `${NAMES[me]} passed Start: +₦200`); }
+  move(st, steps, dbl) { st.laps = st.laps || {}; st.free = st.free || {}; const me = S.role, from = st.pos[me], to = (from + steps) % PN; if (from + steps >= PN) { st.cash[me] += 200; st.laps[me] = (st.laps[me] || 0) + 1; logLine(st, `${NAMES[me]} passed Start: +₦200`); }
     st.pos[me] = to; st.again = dbl; G.property.land(st, steps); },
   land(st, dice) { const me = S.role, you = other(me), i = st.pos[me], s = PSP[i]; st.phase = st.again ? 'roll' : 'end';
     const toJail = () => { st.pos[me] = 8; st.jail[me] = 1; st.again = false; st.phase = 'end'; };
@@ -484,6 +486,7 @@ const lCan = (st, h, k, d) => { const s = st.tok[h][k]; return s < 0 ? d === 6 :
 function lAnyMove(st, r) { for (let di = 0; di < 2; di++) { if (st.used[di]) continue; for (const h of lMine(st, r)) for (let k = 0; k < 4; k++) if (lCan(st, h, k, st.dice[di])) return true; } return false; }
 let ludoSeen = null, ludoSpin = false;
 G.ludo = {
+  legacy: (st) => !st || !Array.isArray(st.tok) || !Array.isArray(st.owner) || !Array.isArray(st.dice),
   name: 'Ludo', short: '4 houses, 2 dice', icon: ICON('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>'),
   desc: 'Naija Ludo with two dice. Each of you plays two houses on opposite corners. A 6 brings a seed out. Use each die on any of your seeds. Land on your partner\'s seed to send it home (stars are safe). Rolling a 6 or capturing gives you another roll. Get all 8 seeds home to win.',
   start(first) { return { kind: 'ludo', phase: 'pick', owner: [null, null, null, null], tok: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]], turn: first, dice: [6, 6], used: [true, true], rolled: false, sel: 0, msg: `${NAMES[first]} picks colours first` }; },
@@ -567,7 +570,7 @@ function simulate(balls, angle, power, onFrame) {
     if (onFrame && step % 3 === 0) frames.push(B.filter((b) => !b.out).map((b) => ({ n: b.n, x: b.x, y: b.y })));
     if (!moving) break; }
   return { balls: B.filter((b) => !b.out).map((b) => ({ n: b.n, x: Math.round(b.x * 10) / 10, y: Math.round(b.y * 10) / 10 })), potted, firstHit, frames }; }
-function poolGeom(cv) { const full = cv.parentElement.clientWidth, vert = full < 640, maxH = Math.max(320, window.innerHeight * .74); let sc = vert ? full / (PH + 60) : full / (PW + 60); sc = Math.min(sc, maxH / (vert ? PW + 60 : PH + 60)); const w = (vert ? PH + 60 : PW + 60) * sc; return { w, vert, sc, h: (vert ? PW + 60 : PH + 60) * sc }; }
+function poolGeom(cv) { const par = cv.parentElement, cs = getComputedStyle(par), full = par.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), vert = full < 640, maxH = Math.max(320, window.innerHeight * .74); let sc = vert ? full / (PH + 60) : full / (PW + 60); sc = Math.min(sc, maxH / (vert ? PW + 60 : PH + 60)); const w = (vert ? PH + 60 : PW + 60) * sc; return { w, vert, sc, h: (vert ? PW + 60 : PH + 60) * sc }; }
 function poolToTable(cv, e) { const r = cv.getBoundingClientRect(), g = poolGeom(cv); const u = (e.clientX - r.left) / g.sc - 30, v = (e.clientY - r.top) / g.sc - 30; return g.vert ? { x: PW - v, y: u } : { x: u, y: v }; }
 function drawTable(cv, balls, aim) {
   const g = poolGeom(cv), dpr = Math.min(2, devicePixelRatio || 1); cv.style.height = g.h + 'px'; cv.style.width = g.w + 'px'; cv.width = g.w * dpr; cv.height = g.h * dpr;

@@ -238,7 +238,7 @@ function render(quiet){
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
   lastTab=S.tab;tickClocks();
-  if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post)G[S.game].post(S.games[S.game],S.role);}
+  if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
   <div class="pick"><button class="a" data-act="pick" data-r="anthonia">${av('anthonia',72)}Anthonia<span class="small muted">in Ancona</span></button><button class="i" data-act="pick" data-r="ifeayomi">${av('ifeayomi',72)}Ifeayomi<span class="small muted">in Ibadan</span></button></div></div>`;}
@@ -289,7 +289,7 @@ function waitingCard(){
   const me=S.role,w=[];const t=todayKey();const day=S.daily.find(d=>d.id===t)||{};
   if(!day[me])w.push(['home',"Answer today's question"]);
   if(S.jig&&!S.jig.done&&S.jig.turn===me)w.push(['play','Your turn in the jigsaw']);
-  for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me)w.push(['play','Your turn in '+G[id].name]);
+  for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me&&!(G[id].legacy&&G[id].legacy(g)))w.push(['play','Your turn in '+G[id].name]);
   const tr=S.truths.filter(x=>x.to===me&&x.status==='sent').length;if(tr)w.push(['truth',`${tr} new message${tr>1?'s':''} in Truth Corner`]);
   const lt=S.letters.filter(x=>x.to===me&&!x.opened).length;if(lt)w.push(['us',`${lt} sealed letter${lt>1?'s':''} for you`]);
   const mk=monthKey();if(!(S.month&&S.month.done)&&hostFor(mk)===me)w.push(['plan',Number(t.slice(8))<=7?"You host this month's planning date":"This month's planning date is overdue"]);
@@ -331,10 +331,11 @@ function playView(){
   if(S.game&&G[S.game]){const g=G[S.game],st=S.games[S.game];
     return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>${g.name}</h2></div><button class="btn sm ghost" data-act="gNew" data-g="${S.game}">${st?'New game':'Start'}</button></div>
     ${st&&st.fresh&&st.turn===S.role&&!st.over?`<div class="givebar">${st.winnerStart?'You won last time, so you start.':'You start.'} <button class="btn sm" data-act="gGive" data-g="${S.game}">Let ${NAMES[other(S.role)]} go first</button></div>`:''}
+    ${st&&g.legacy&&g.legacy(st)?`<div class="givebar ask">This ${g.name} game was started before the update, so it can't continue. <button class="btn sm primary" data-act="gFresh" data-g="${S.game}">Start the new ${g.name}</button></div>`:''}
     ${st?cancelBar(S.game,st):''}
-    ${st?(g.statusBelow?g.view(st,S.role)+gameStatus(S.game,st):gameStatus(S.game,st)+g.view(st,S.role)):`<p class="muted" style="margin:0">${g.desc}</p><button class="btn primary" data-act="gNew" data-g="${S.game}">Start a game</button>`}</section>`;}
+    ${st&&g.legacy&&g.legacy(st)?'':st?(g.statusBelow?g.view(st,S.role)+gameStatus(S.game,st):gameStatus(S.game,st)+g.view(st,S.role)):`<p class="muted" style="margin:0">${g.desc}</p><button class="btn primary" data-act="gNew" data-g="${S.game}">Start a game</button>`}</section>`;}
   const tile=(id,name,desc,icon,st,isTurnGame)=>{let chip='<span class="chip">Start</span>';
-    if(st&&st.over)chip='<span class="chip gold">Finished</span>';else if(st&&st.turn===S.role)chip='<span class="chip her">Your turn</span>';else if(st&&st.turn)chip=`<span class="chip him">${NAMES[st.turn]}'s turn</span>`;else if(st)chip='<span class="chip him">Open</span>';
+    if(st&&G[id]&&G[id].legacy&&G[id].legacy(st))chip='<span class="chip gold">Updated: start new</span>';else if(st&&st.over)chip='<span class="chip gold">Finished</span>';else if(st&&st.turn===S.role)chip='<span class="chip her">Your turn</span>';else if(st&&st.turn)chip=`<span class="chip him">${NAMES[st.turn]}'s turn</span>`;else if(st)chip='<span class="chip him">Open</span>';
     return `<button class="gtile" data-act="game" data-g="${id}"><span class="gico">${icon}</span><b>${name}</b><span class="small muted">${desc}</span>${chip}</button>`;};
   const j=S.jig;const jst=j?{turn:j.done?null:j.turn,over:j.done}:null;
   return `<div class="greet" style="padding-top:2px"><h1>Game Area</h1></div>
@@ -569,8 +570,9 @@ const A={
   game:t=>{S.game=t.dataset.g;render();window.scrollTo(0,0);},
   gameBack:()=>{S.game=null;render();window.scrollTo(0,0);},
   g:t=>{const id=t.dataset.g,g=G[id];if(!g)return;const fn=g.act[t.dataset.a];if(fn)return fn(S.games[id]?JSON.parse(JSON.stringify(S.games[id])):null,t);},
-  gNew:t=>{const id=t.dataset.g,st=S.games[id];if(st&&!st.over&&!st.fresh){if(st.cancelReq)return toast(st.cancelReq.by===S.role?`Waiting for ${NAMES[other(S.role)]} to agree`:'Answer the request above first');
+  gNew:t=>{const id=t.dataset.g,st=S.games[id];if(st&&!st.over&&!st.fresh&&!(G[id].legacy&&G[id].legacy(st))){if(st.cancelReq)return toast(st.cancelReq.by===S.role?`Waiting for ${NAMES[other(S.role)]} to agree`:'Answer the request above first');
       mergeDoc('games/'+id,{cancelReq:{by:S.role,at:Date.now()}});toast(`Asked ${NAMES[other(S.role)]} to agree to a new game`);return;}newGame(id);},
+  gFresh:t=>{const id=t.dataset.g;newGame(id);},
   gAgree:t=>{const id=t.dataset.g;if(id==='jigsaw'){mergeDoc('games/jigsaw',{done:true,cancelled:true,cancelReq:null});toast('Puzzle ended. Pick a new one!');return;}const st=S.games[id];newGame(id,st&&st.cancelReq?st.cancelReq.by:null);},
   gDecline:t=>{const id=t.dataset.g;mergeDoc('games/'+id,{cancelReq:null});},
   gGive:t=>{const id=t.dataset.g;if(id==='jigsaw'){const j=S.jig;if(!j||j.turn!==S.role||(j.placed||[]).length)return;mergeDoc('games/jigsaw',{turn:other(S.role)});toast(`${NAMES[other(S.role)]} goes first`);return;}

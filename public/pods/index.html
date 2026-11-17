@@ -257,7 +257,9 @@ canvas.piece.sel{transform:scale(1.2) rotate(-5deg);filter:drop-shadow(0 0 6px v
 .pboardwrap{overflow:auto;border-radius:16px}.pboard{display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);gap:2px;aspect-ratio:3/4;background:#dff7f3;border-radius:16px;padding:3px;min-width:100%}.pboardwrap.zoom .pboard{min-width:640px;aspect-ratio:3/4}
 .pcell{position:relative;border:none;background:#fff;border-radius:6px;padding:2px;font-size:clamp(7px,2.2vw,11px);font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.1;cursor:pointer;overflow:hidden;color:var(--ink)}
 .pcell i{position:absolute;top:0;left:0;right:0;height:18%}
-.pcell em{font-style:normal;color:var(--muted);font-size:.9em}
+.pcell em{font-style:normal;color:var(--muted);font-size:.88em;margin-top:1px}
+.pcell span{display:block;width:100%;overflow-wrap:normal;word-break:normal;hyphens:manual;letter-spacing:-.02em;padding-top:3px}
+.pcell span.long{font-size:.84em}.pcell span.xlong{font-size:.74em}
 .pcell u{text-decoration:none;position:absolute;bottom:1px;left:2px;right:2px;height:4px;border-radius:2px;font-size:7px;line-height:0}.pcell u.anthonia{background:var(--her)}.pcell u.ifeayomi{background:var(--him)}
 .pcell.start,.pcell.jail,.pcell.free,.pcell.gojail{background:#fff3d6}.pcell.card{background:#ffe4ec}.pcell.tax{background:#f1f1f1}
 .pcell .toks{position:absolute;inset:auto 0 6px 0;display:flex;justify-content:center;gap:1px}
