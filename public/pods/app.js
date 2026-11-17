@@ -158,8 +158,9 @@ function watchCol(path,cb,opt){if(!LIVE()){memSubs.push({path,col:true,cb});let 
 const queues={};
 function enqueue(path,fn){const p=(queues[path]||Promise.resolve()).then(fn,fn);queues[path]=p.catch(()=>{});return p;}
 function memSort(){/* demo-only: keep newest first where needed */}
-async function mergeDoc(path,data){if(!LIVE()){mem.set(path,deepMerge(mem.get(path),data));memNotify();return;}return enqueue(path,()=>FB.merge(fp(path),data)).catch(saveFail);}
-async function setDoc(path,data){if(!LIVE()){mem.set(path,JSON.parse(JSON.stringify(data)));memNotify();return;}return enqueue(path,()=>FB.set(fp(path),data)).catch(saveFail);}
+async function mergeDoc(path,data){if(hasNested(data,false)){console.error('Firestore cannot store nested arrays',path);toast('Bug: this data cannot be saved');throw new Error('nested');}if(!LIVE()){mem.set(path,deepMerge(mem.get(path),data));memNotify();return;}return enqueue(path,()=>FB.merge(fp(path),data)).catch(saveFail);}
+function hasNested(v,inArr){if(Array.isArray(v))return inArr||v.some(x=>hasNested(x,true));if(v&&typeof v==='object')return Object.values(v).some(x=>hasNested(x,false));return false;}
+async function setDoc(path,data){if(hasNested(data,false)){console.error('Firestore cannot store nested arrays',path);toast('Bug: this data cannot be saved');throw new Error('nested');}if(!LIVE()){mem.set(path,JSON.parse(JSON.stringify(data)));memNotify();return;}return enqueue(path,()=>FB.set(fp(path),data)).catch(saveFail);}
 async function addDoc(col,data){const id=Date.now().toString(36)+uidGen();await setDoc(col+'/'+id,data);return id;}
 async function getDoc(path){if(!LIVE())return mem.get(path)||null;try{return await FB.get(fp(path));}catch(e){return null;}}
 async function delDoc(path){if(!LIVE()){mem.delete(path);memNotify();return;}return enqueue(path,()=>FB.del(fp(path))).catch(saveFail);}

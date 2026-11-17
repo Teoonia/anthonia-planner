@@ -486,10 +486,10 @@ const lCan = (st, h, k, d) => { const s = st.tok[h][k]; return s < 0 ? d === 6 :
 function lAnyMove(st, r) { for (let di = 0; di < 2; di++) { if (st.used[di]) continue; for (const h of lMine(st, r)) for (let k = 0; k < 4; k++) if (lCan(st, h, k, st.dice[di])) return true; } return false; }
 let ludoSeen = null, ludoSpin = false;
 G.ludo = {
-  legacy: (st) => !st || !Array.isArray(st.tok) || !Array.isArray(st.owner) || !Array.isArray(st.dice),
+  legacy: (st) => !st || st.v !== 2 || !st.tok || !Array.isArray(st.owner),
   name: 'Ludo', short: '4 houses, 2 dice', icon: ICON('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>'),
   desc: 'Naija Ludo with two dice. Each of you plays two houses on opposite corners. A 6 brings a seed out. Use each die on any of your seeds. Land on your partner\'s seed to send it home (stars are safe). Rolling a 6 or capturing gives you another roll. Get all 8 seeds home to win.',
-  start(first) { return { kind: 'ludo', phase: 'pick', owner: [null, null, null, null], tok: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]], turn: first, dice: [6, 6], used: [true, true], rolled: false, sel: 0, msg: `${NAMES[first]} picks colours first` }; },
+  start(first) { return { kind: 'ludo', phase: 'pick', owner: [null, null, null, null], tok: { 0: [-1, -1, -1, -1], 1: [-1, -1, -1, -1], 2: [-1, -1, -1, -1], 3: [-1, -1, -1, -1] }, v: 2, turn: first, dice: [6, 6], used: [true, true], rolled: false, sel: 0, msg: `${NAMES[first]} picks colours first` }; },
   score: (st) => ['anthonia', 'ifeayomi'].map((r) => lMine(st, r).reduce((a, h) => a + st.tok[h].filter((s) => s === 56).length, 0) + '/8 home'),
   view(st, me) {
     const mine = st.turn === me && !st.over;
