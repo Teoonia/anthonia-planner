@@ -226,7 +226,7 @@ function subscribe(){
 
 /* ---------- render plumbing ---------- */
 let pending=false,lastTab=null;
-function refresh(){if(S.tab==='chat'&&document.getElementById('chatList')&&document.activeElement&&document.activeElement.id==='chatIn'){const tmp=document.createElement('div');tmp.innerHTML=chatView();const nl=tmp.querySelector('#chatList');document.getElementById('chatList').innerHTML=nl?nl.innerHTML:'';chatAfterRender();return;}if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
+function refresh(){pushWidget();if(S.tab==='chat'&&document.getElementById('chatList')&&document.activeElement&&document.activeElement.id==='chatIn'){const tmp=document.createElement('div');tmp.innerHTML=chatView();const nl=tmp.querySelector('#chatList');document.getElementById('chatList').innerHTML=nl?nl.innerHTML:'';chatAfterRender();return;}if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pending){const a=document.activeElement;if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))){pending=false;render(true);}}},0));
 function render(quiet){
   const v=document.getElementById('view');
@@ -241,7 +241,7 @@ function render(quiet){
   v.innerHTML=banners+({home:homeView,chat:chatView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
-  lastTab=S.tab;tickClocks();chatAfterRender();if(S.role){maybeAskNick();maybeCheckin();}
+  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();if(S.role){maybeAskNick();maybeCheckin();}
   if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
@@ -546,6 +546,20 @@ function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a
 function chatAfterRender(){if(S.tab!=='chat')return;const l=document.getElementById('chatList');if(l)l.scrollTop=l.scrollHeight;const me=S.role,newest=Math.max(0,...(S.msgs||[]).filter(m=>m.by!==me).map(m=>m.at));
   if(newest>((S.chatRead||{})[me]||0)&&S.markingRead!==newest){S.markingRead=newest;mergeDoc('pods/chatread',{[me]:newest});}}
 async function sendMsg(data){await addDoc('messages',{by:S.role,at:Date.now(),...data});}
+
+
+/* ---------- Android home-screen widget (only inside the Pods app) ---------- */
+let widgetT=null,widgetLast='';
+function widgetPlugin(){const C=window.Capacitor;if(!C||!(C.isNativePlatform&&C.isNativePlatform()))return null;try{return (C.Plugins&&C.Plugins.PodsWidget)||(C.registerPlugin&&C.registerPlugin('PodsWidget'))||null;}catch(e){return null;}}
+function pushWidget(){if(!S.role||S.mode!=='live'||!widgetPlugin())return;clearTimeout(widgetT);widgetT=setTimeout(async()=>{const P=widgetPlugin();if(!P)return;const me=S.role,you=other(me);
+  const ci=(S.checkins||[]).filter(c=>c.role===you).sort((a,b)=>b.at-a.at)[0];const fresh=ci&&Date.now()-ci.at<36*3600e3;
+  const lm=(S.msgs||[]).filter(m=>m.by===you).sort((a,b)=>b.at-a.at)[0];
+  const lastMsg=lm?(lm.kind==='voice'?'Sent you a voice note':lm.kind==='photo'?'Sent you a photo':lm.kind==='checkin'?('Day: '+(lm.text||lm.mood||'')):'"'+(lm.text||'')+'"')+' · '+ago(lm.at):'';
+  const turns=[];if(S.jig&&!S.jig.done&&S.jig.turn===me)turns.push('Jigsaw');for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me&&!(G[id].legacy&&G[id].legacy(g)))turns.push(G[id].name);
+  const data={name:NAMES[you],mood:fresh?(ci.mood||''):'',nextVisit:(S.couple&&S.couple.nextVisit)||'',lastMsg,turns:turns.join(', ')};
+  const key=JSON.stringify(data)+JSON.stringify((S.avatars||{})[you]||{});if(key===widgetLast)return;widgetLast=key;
+  try{const im=await loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(avatarSVG(you,(S.avatars||{})[you]).replace('<svg ','<svg width="192" height="192" ')));const c=document.createElement('canvas');c.width=c.height=192;const x=c.getContext('2d');x.beginPath();x.arc(96,96,96,0,7);x.clip();x.drawImage(im,0,0,192,192);data.avatar=c.toDataURL('image/png');}catch(e){}
+  try{await P.update(data);}catch(e){}},1500);}
 
 /* ---------- sheets, toast, effects ---------- */
 function openSheet(html){document.getElementById('panel').innerHTML=html;document.getElementById('sheet').classList.remove('hidden');}
