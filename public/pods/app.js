@@ -14,20 +14,24 @@ const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1
 const SKINS=['#4a2c1d','#6e4029','#91583a','#bf8459','#e8b892'];
 const HAIRC=['#1b1210','#3d2516','#7a4524','#b8322f','#e9b949'];
 const HAIRS=['Long','Puff','Braids & bun','Short','Low cut'];
-const EXTRAS=['None','Glasses','Bow','Earrings','Cap'];
+const EXTRAS=['None','Glasses','Bow','Earrings','Cap','Sunglasses','Crown','Flower','Moustache','Clown nose'];
+const MOODS=['Smile','Big grin','Wink','Shocked','Kiss','Cheeky'];
 const DEFAULT_AV={anthonia:{skin:1,hair:2,hc:0,extra:3},ifeayomi:{skin:1,hair:4,hc:0,extra:0}};
 function avatarSVG(role,cfg){
   cfg=Object.assign({},DEFAULT_AV[role],cfg||{});
   const sk=SKINS[cfg.skin]||SKINS[1],hc=HAIRC[cfg.hc]||HAIRC[0],main=role==='anthonia'?'#ff4f7e':'#22b3a3',bg=role==='anthonia'?'#ffe4ec':'#d9f6f1';
   const back=[`<path d="M24 46c0-20 12-30 26-30s26 10 26 30v30H24z" fill="${hc}"/>`,`<circle cx="50" cy="30" r="25" fill="${hc}"/>`,`<circle cx="50" cy="14" r="11" fill="${hc}"/><path d="M27 44c-3 14-4 24-2 32M73 44c3 14 4 24 2 32" stroke="${hc}" stroke-width="6" stroke-linecap="round" fill="none"/>`,'',''][cfg.hair]||'';
   const front=[`<path d="M25 44c0-16 11-25 25-25s25 9 25 25c-8-8-18-11-27-11-9 0-16 4-23 11z" fill="${hc}"/>`,`<path d="M26 42c2-14 12-20 24-20s22 6 24 20c-7-6-15-9-24-9s-17 3-24 9z" fill="${hc}"/>`,`<path d="M26 42c1-14 11-21 24-21s23 7 24 21c-6-7-15-10-24-10s-18 3-24 10z" fill="${hc}"/>`,`<path d="M26 40c2-13 12-19 24-19s22 6 24 19c-3-3-8-7-12-7-4 4-12 5-20 4-6 0-11 1-16 3z" fill="${hc}"/>`,`<path d="M27 38c3-10 12-16 23-16s20 6 23 16c-6-4-14-6-23-6s-17 2-23 6z" fill="${hc}" opacity=".85"/>`][cfg.hair]||'';
-  const extra=[``,`<g fill="none" stroke="#3a1f2b" stroke-width="2.4"><circle cx="41" cy="46" r="7"/><circle cx="59" cy="46" r="7"/><path d="M48 46h4"/></g>`,`<g fill="${main}"><path d="M60 22l10-7v14z"/><path d="M60 22l-10-7v14z"/><circle cx="60" cy="22" r="3.5"/></g>`,`<circle cx="25.5" cy="54" r="3" fill="#ffb21f"/><circle cx="74.5" cy="54" r="3" fill="#ffb21f"/>`,`<path d="M24 38c2-14 13-20 26-20s24 6 26 20z" fill="${main}"/><path d="M50 38h30c0 3-3 5-6 5H50z" fill="${main}"/>`][cfg.extra]||'';
+  const mood=cfg.mood||0,E='<ellipse cx="41" cy="47" rx="2.6" ry="3.4" fill="#2a1712"/>',E2='<ellipse cx="59" cy="47" rx="2.6" ry="3.4" fill="#2a1712"/>',SH='<circle cx="42" cy="46" r=".9" fill="#fff"/><circle cx="60" cy="46" r=".9" fill="#fff"/>';
+  const eyes=mood===2?E+'<path d="M55 47q4-3 8 0" stroke="#2a1712" stroke-width="2.4" fill="none" stroke-linecap="round"/>':mood===3?'<circle cx="41" cy="47" r="4" fill="#fff" stroke="#2a1712" stroke-width="1.5"/><circle cx="59" cy="47" r="4" fill="#fff" stroke="#2a1712" stroke-width="1.5"/><circle cx="41" cy="47" r="2" fill="#2a1712"/><circle cx="59" cy="47" r="2" fill="#2a1712"/>':mood===1?'<path d="M37 48q4-5 8 0M55 48q4-5 8 0" stroke="#2a1712" stroke-width="2.4" fill="none" stroke-linecap="round"/>':E+E2+SH;
+  const mouth=[`<path d="M43 57c3 4 11 4 14 0" stroke="#2a1712" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,`<path d="M41 56h18c0 7-5 10-9 10s-9-3-9-10z" fill="#7a1f2b"/><path d="M43 56h14v2.5H43z" fill="#fff"/>`,`<path d="M43 57c3 4 11 4 14 0" stroke="#2a1712" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,`<ellipse cx="50" cy="59" rx="3.5" ry="4.5" fill="#7a1f2b"/>`,`<path d="M47 58q3-3 6 0q-3 3-6 0z" fill="#d6336c"/><path d="M68 40c0 0-3-2-4-4-.6-1.5.4-3 2-3 1 0 1.8.6 2 1.2.2-.6 1-1.2 2-1.2 1.6 0 2.6 1.5 2 3-1 2-4 4-4 4z" fill="#ff4f7e"/>`,`<path d="M43 57c3 4 11 4 14 0" stroke="#2a1712" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M48 59q2 5 5 0z" fill="#ff7d9a"/>`][mood]||'';
+  const extra=[``,`<g fill="none" stroke="#3a1f2b" stroke-width="2.4"><circle cx="41" cy="46" r="7"/><circle cx="59" cy="46" r="7"/><path d="M48 46h4"/></g>`,`<g fill="${main}"><path d="M60 22l10-7v14z"/><path d="M60 22l-10-7v14z"/><circle cx="60" cy="22" r="3.5"/></g>`,`<circle cx="25.5" cy="54" r="3" fill="#ffb21f"/><circle cx="74.5" cy="54" r="3" fill="#ffb21f"/>`,`<path d="M24 38c2-14 13-20 26-20s24 6 26 20z" fill="${main}"/><path d="M50 38h30c0 3-3 5-6 5H50z" fill="${main}"/>`,`<g fill="#1b1210"><rect x="31" y="41" width="16" height="10" rx="4"/><rect x="53" y="41" width="16" height="10" rx="4"/><rect x="46" y="43" width="8" height="2.5"/></g>`,`<path d="M32 26l6-12 6 9 6-12 6 12 6-9 6 12z" fill="#ffc531" stroke="#e59a00" stroke-width="1.5"/>`,`<g transform="translate(30 24)"><circle r="5" cx="0" cy="-5" fill="#ff8fab"/><circle r="5" cx="5" cy="0" fill="#ff8fab"/><circle r="5" cx="0" cy="5" fill="#ff8fab"/><circle r="5" cx="-5" cy="0" fill="#ff8fab"/><circle r="3.5" fill="#ffd23f"/></g>`,`<path d="M38 56c4-4 8-3 12 0 4-3 8-4 12 0-4 2-8 1-12-1-4 2-8 3-12 1z" fill="#2a1712"/>`,`<circle cx="50" cy="53" r="4.5" fill="#ef4444"/>`][cfg.extra]||'';
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="${bg}"/>${back}
   <path d="M18 100c2-18 15-26 32-26s30 8 32 26z" fill="${main}"/><rect x="43" y="62" width="14" height="14" rx="5" fill="${sk}"/>
   <ellipse cx="50" cy="47" rx="24" ry="26" fill="${sk}"/><circle cx="26" cy="50" r="4" fill="${sk}"/><circle cx="74" cy="50" r="4" fill="${sk}"/>${front}
-  <ellipse cx="41" cy="47" rx="2.6" ry="3.4" fill="#2a1712"/><ellipse cx="59" cy="47" rx="2.6" ry="3.4" fill="#2a1712"/><circle cx="42" cy="46" r=".9" fill="#fff"/><circle cx="60" cy="46" r=".9" fill="#fff"/>
+  ${eyes}
   <circle cx="35" cy="56" r="4" fill="#ff7d9a" opacity=".45"/><circle cx="65" cy="56" r="4" fill="#ff7d9a" opacity=".45"/>
-  <path d="M43 57c3 4 11 4 14 0" stroke="#2a1712" stroke-width="2.4" fill="none" stroke-linecap="round"/>${extra}</svg>`;
+  ${mouth}${extra}</svg>`;
 }
 const av=(role,size=36)=>`<span class="av" style="width:${size}px;height:${size}px">${avatarSVG(role,(S.avatars||{})[role])}</span>`;
 
@@ -199,7 +203,7 @@ function setupView(){return `<div class="card center" style="margin-top:16px"><h
 
 function subscribe(){
   watchDoc('pods/couple',d=>{S.couple=d;S.gotCouple=true;if(S.note.startsWith("Pods can't"))S.note='';refresh();});
-  watchDoc('pods/avatars',d=>{S.avatars=d||{};refresh();});
+  watchDoc('pods/avatars',d=>{const p=(S.avatars||{})[S.role];S.avatars=d||{};const n=S.avatars[S.role];if(S.role&&n&&n.by===other(S.role)&&(!p||p.at!==n.at)&&S.gotAv){floatHearts();toast(`${NAMES[other(S.role)]} gave you a new look!`);}S.gotAv=true;refresh();});
   watchCol('daily',l=>{S.daily=l;refresh();});
   watchDoc('pods/songs',d=>{S.songs=d||{};refresh();});
   watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role))floatHearts();lastTapAt=d?d.at:0;refresh();});
@@ -305,7 +309,7 @@ function jigCard(){
     let tray=(j.tray||[]).filter(i=>!placed.has(i));
     if(S.edgesOnly){const e=tray.filter(i=>sides(j,i).includes(0));if(e.length)tray=e;}
     const shown=tray.slice(0,30);
-    jig=`<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
+    jig=`${mine&&!placed.size?`<div class="givebar">You start this puzzle. <button class="btn sm" data-act="gGive" data-g="jigsaw">Let ${NAMES[other(me)]} go first</button></div>`:''}<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
     <div class="progress"><i style="width:${placed.size/total*100}%"></i></div>
     <div class="row" style="gap:6px"><button class="btn sm" data-act="peek">Peek at the picture</button><button class="btn sm ${S.zoom?'on':''}" data-act="zoom">${S.zoom?'Fit board':'Zoom in'}</button>${mine?`<button class="btn sm ${S.edgesOnly?'on':''}" data-act="edges">${S.edgesOnly?'All pieces':'Edges first'}</button>`:''}</div>
     <div class="boardwrap" id="boardwrap"><canvas id="board" aria-label="Puzzle board"></canvas></div>
@@ -323,6 +327,7 @@ function playView(){
   if(S.game==='jigsaw')return jigCard();
   if(S.game&&G[S.game]){const g=G[S.game],st=S.games[S.game];
     return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>${g.name}</h2></div><button class="btn sm ghost" data-act="gNew" data-g="${S.game}">${st?'New game':'Start'}</button></div>
+    ${st&&st.fresh&&st.turn===S.role&&!st.over?`<div class="givebar">${st.winnerStart?'You won last time, so you start.':'You start.'} <button class="btn sm" data-act="gGive" data-g="${S.game}">Let ${NAMES[other(S.role)]} go first</button></div>`:''}
     ${st?gameStatus(S.game,st)+g.view(st,S.role):`<p class="muted" style="margin:0">${g.desc}</p><button class="btn primary" data-act="gNew" data-g="${S.game}">Start a game</button>`}</section>`;}
   const tile=(id,name,desc,icon,st,isTurnGame)=>{let chip='<span class="chip">Start</span>';
     if(st&&st.over)chip='<span class="chip gold">Finished</span>';else if(st&&st.turn===S.role)chip='<span class="chip her">Your turn</span>';else if(st&&st.turn)chip=`<span class="chip him">${NAMES[st.turn]}'s turn</span>`;else if(st)chip='<span class="chip him">Open</span>';
@@ -503,12 +508,15 @@ function shuffled(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j
 const curSize=()=>{const v=Number((document.getElementById('jigSize')||{}).value||S.pickSize||60);S.pickSize=v;return SIZES.find(s=>s[0]==v)||SIZES[1];};
 
 /* ---------- avatar editor ---------- */
-function avatarSheet(){const me=S.role,cfg=Object.assign({},DEFAULT_AV[me],(S.avatars||{})[me]);S.avDraft=cfg;drawAvatarSheet();}
-function drawAvatarSheet(){const me=S.role,c=S.avDraft;const prev=Object.assign({},S.avatars);S.avatars={...S.avatars,[me]:c};
-  const opt=(key,vals,fn)=>`<div class="opts ${fn?'':'wide'}">${vals.map((v,i)=>`<button class="${c[key]===i?'on':''}" data-act="avSet" data-k="${key}" data-v="${i}" aria-label="${esc(typeof v==='string'?v:key+' '+(i+1))}" ${fn?`style="background:${v}"`:''}>${fn?'':esc(v)}</button>`).join('')}</div>`;
-  openSheet(`${sheetHead('Your avatar')}<div class="row" style="justify-content:center">${av(me,110)}</div>
-  <span class="eyebrow">Skin</span>${opt('skin',SKINS,true)}<span class="eyebrow">Hair</span>${opt('hair',HAIRS)}<span class="eyebrow">Hair colour</span>${opt('hc',HAIRC,true)}<span class="eyebrow">Extra</span>${opt('extra',EXTRAS)}
-  <button class="btn primary" data-act="avSave">Save my avatar</button><button class="btn" data-act="settings">Settings, invite code &amp; AI key</button>${S.mode==='demo'?`<button class="btn ghost" data-act="switch">Switch to ${NAMES[other(me)]}</button>`:''}`);
+function avatarSheet(who){who=who||S.avWho||S.role;S.avWho=who;const cfg=Object.assign({},DEFAULT_AV[who],(S.avatars||{})[who]);S.avDraft=cfg;drawAvatarSheet();}
+function drawAvatarSheet(){const me=S.role,who=S.avWho||me,c=S.avDraft;const prev=Object.assign({},S.avatars);S.avatars={...S.avatars,[who]:c};
+  const opt=(key,vals,fn)=>`<div class="opts ${fn?'':'wide'}">${vals.map((v,i)=>`<button class="${(c[key]||0)===i?'on':''}" data-act="avSet" data-k="${key}" data-v="${i}" aria-label="${esc(typeof v==='string'?v:key+' '+(i+1))}" ${fn?`style="background:${v}"`:''}>${fn?'':esc(v)}</button>`).join('')}</div>`;
+  const by=prev[who]&&prev[who].by&&prev[who].by!==who?`<p class="small muted center" style="margin:0">Last styled by ${NAMES[prev[who].by]}</p>`:'';
+  openSheet(`${sheetHead('Avatars')}<div class="seg"><button class="${who===me?'on':''}" data-act="avWho" data-r="${me}">Mine</button><button class="${who!==me?'on':''}" data-act="avWho" data-r="${other(me)}">Style ${NAMES[other(me)]}'s</button></div>
+  <div class="row" style="justify-content:center">${av(who,110)}</div>${by}
+  ${who!==me?`<p class="small center" style="margin:0;color:var(--her);font-weight:700">Have fun! ${NAMES[other(me)]} will see whatever you pick.</p>`:''}
+  <span class="eyebrow">Mood</span>${opt('mood',MOODS)}<span class="eyebrow">Skin</span>${opt('skin',SKINS,true)}<span class="eyebrow">Hair</span>${opt('hair',HAIRS)}<span class="eyebrow">Hair colour</span>${opt('hc',HAIRC,true)}<span class="eyebrow">Extra</span>${opt('extra',EXTRAS)}
+  <button class="btn primary" data-act="avSave">${who===me?'Save my avatar':'Save '+NAMES[who]+"'s new look"}</button><button class="btn" data-act="settings">Settings, invite code &amp; AI key</button>${S.mode==='demo'?`<button class="btn ghost" data-act="switch">Switch to ${NAMES[other(me)]}</button>`:''}`);
   S.avatars=prev;}
 
 /* ---------- actions ---------- */
@@ -519,9 +527,10 @@ const A={
   close:closeSheet,
   pick:async t=>{const r=t.dataset.r;S.role=r;try{localStorage.setItem('pods-role',r);}catch(e){}render();floatHearts();},
   switch:()=>{if(S.mode==='live'&&uid)return;closeSheet();S.role=other(S.role);S.sel=null;S.truthDraft=null;render();},
-  avatarSheet:()=>avatarSheet(),
+  avatarSheet:()=>{S.avWho=S.role;avatarSheet(S.role);},
   avSet:t=>{S.avDraft[t.dataset.k]=Number(t.dataset.v);drawAvatarSheet();},
-  avSave:async()=>{const c=S.avDraft;closeSheet();await mergeDoc('pods/avatars',{[S.role]:c});floatHearts();toast('Looking good!');},
+  avWho:t=>avatarSheet(t.dataset.r),
+  avSave:async()=>{const c={...S.avDraft,by:S.role,at:Date.now()},who=S.avWho||S.role;closeSheet();S.avWho=null;await mergeDoc('pods/avatars',{[who]:c});floatHearts();toast(who===S.role?'Looking good!':`${NAMES[who]} has a new look!`);},
   visitSheet:()=>openSheet(`${sheetHead('Next visit')}<label class="f" for="visitIn">When will you see each other?<input type="date" id="visitIn" value="${esc((S.couple&&S.couple.nextVisit)||'')}"></label><button class="btn primary" data-act="visitSave">Save</button>`),
   visitSave:async()=>{const v=val('visitIn');if(!v)return toast('Pick a date first');closeSheet();await mergeDoc('pods/couple',{nextVisit:v});confetti();toast('Countdown set!');},
   tap:async t=>{floatHearts();const day=todayKey();const prev=(S.tap&&S.tap.day===day&&S.tap.counts)||{};const counts={anthonia:prev.anthonia||0,ifeayomi:prev.ifeayomi||0};counts[S.role]++;
@@ -556,7 +565,9 @@ const A={
   game:t=>{S.game=t.dataset.g;render();window.scrollTo(0,0);},
   gameBack:()=>{S.game=null;render();window.scrollTo(0,0);},
   g:t=>{const id=t.dataset.g,g=G[id];if(!g)return;const fn=g.act[t.dataset.a];if(fn)return fn(S.games[id]?JSON.parse(JSON.stringify(S.games[id])):null,t);},
-  gNew:t=>{const id=t.dataset.g;if(t.dataset.sure!=='1'&&S.games[id]&&!S.games[id].over){t.dataset.sure='1';t.textContent='Tap again to restart';return;}saveGame(id,G[id].start(S.role));toast('New game started');},
+  gNew:t=>{const id=t.dataset.g;if(t.dataset.sure!=='1'&&S.games[id]&&!S.games[id].over){t.dataset.sure='1';t.textContent='Tap again to restart';return;}newGame(id);},
+  gGive:t=>{const id=t.dataset.g;if(id==='jigsaw'){const j=S.jig;if(!j||j.turn!==S.role||(j.placed||[]).length)return;mergeDoc('games/jigsaw',{turn:other(S.role)});toast(`${NAMES[other(S.role)]} goes first`);return;}
+    const st=JSON.parse(JSON.stringify(S.games[id]||{}));if(!st.fresh||st.turn!==S.role)return;st.turn=other(S.role);if(st.asker)st.asker=st.turn;st.msg=`${NAMES[st.turn]} goes first`;saveGame(id,st,true);toast(st.msg);},
   /* jigsaw */
   jigSheet:()=>drawPicker(),
   pickCat:t=>{S.pickCat=t.dataset.k;S.pickSize=Number(val('jigSize'))||S.pickSize;drawPicker();},
@@ -569,7 +580,7 @@ const A={
   edges:()=>{S.edgesOnly=!S.edgesOnly;render(true);},
   peek:()=>{const j=S.jig;if(!j)return;openSheet(`${sheetHead('The picture')}<img src="${jigSrc(j)}" alt="The full puzzle picture" style="width:100%;border-radius:18px">`);},
   winClose:t=>{const w=t.closest('.win');if(w)w.remove();},
-  winAgain:t=>{const w=t.closest('.win');if(w)w.remove();if(t.dataset.g){S.tab='play';S.game=t.dataset.g;saveGame(t.dataset.g,G[t.dataset.g].start(S.role));return;}S.tab='play';S.game='jigsaw';location.hash='play';render();drawPicker();},
+  winAgain:t=>{const w=t.closest('.win');if(w)w.remove();if(t.dataset.g){S.tab='play';S.game=t.dataset.g;render();newGame(t.dataset.g);return;}S.tab='play';S.game='jigsaw';location.hash='play';render();drawPicker();},
   winGallery:t=>{const w=t.closest('.win');if(w)w.remove();S.tab='us';S.galFilter='puzzle';location.hash='us';render();window.scrollTo(0,0);},
   /* gallery */
   galFilter:t=>{S.galFilter=t.dataset.k;render(true);},
@@ -627,7 +638,10 @@ const A={
   letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lWhen');closeSheet();await addDoc('letters',{from:S.role,to:other(S.role),when,body,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');},
   openLetter:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l)return;openSheet(`${sheetHead(esc(l.when))}<div class="row">${av(l.from,40)}<span class="small muted">From ${NAMES[l.from]}</span></div><div style="white-space:pre-wrap;font-size:1.08rem;background:var(--blush);border-radius:18px;padding:16px">${esc(l.body)}</div>`);if(!l.opened){floatHearts();await mergeDoc('letters/'+l.id,{opened:true});}},
 };
-async function startJig(src,c,r){closeSheet();const doc={photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:S.role,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast('Puzzle ready. You go first!');}
+async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const doc={photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
+function winnerOfJig(j){const c=j.counts||{},a=c.anthonia||0,i=c.ifeayomi||0;return a===i?null:a>i?'anthonia':'ifeayomi';}
+function newGame(id){const prev=S.games[id],w=prev&&prev.over&&prev.winner&&prev.winner!=='tie'?prev.winner:null,first=w||S.role;const st=G[id].start(first);st.winnerStart=!!w;saveGame(id,st,true);
+  toast(w?`${NAMES[w]} won last time, so ${w===S.role?'you start':NAMES[w]+' starts'}`:'New game started');}
 function drawPicker(memId){const cat=S.pickCat||'animals',size=S.pickSize||60;const ours=S.memories.filter(m=>m.kind!=='puzzle');
   openSheet(`${sheetHead('New jigsaw')}<label class="f" for="jigSize">How many pieces?<select id="jigSize">${SIZES.map(([n,c,r])=>`<option value="${n}" ${n===size?'selected':''}>${n} pieces (${c} × ${r})</option>`).join('')}</select></label>
   <div class="cats">${CATS.map(([k,l])=>`<button class="${cat===k?'on':''}" data-act="pickCat" data-k="${k}">${l}</button>`).join('')}</div>
