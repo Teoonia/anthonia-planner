@@ -18,6 +18,7 @@ function gamesChanged(prev, cur) {
     const p = prev[id]; if (!G[id] || !g) continue;
     if (p && !p.over && g.over && g.winner) setTimeout(() => showWin(id, g), 250);
     else if (p && p.turn !== g.turn && g.turn === S.role && !g.over) toast(`Your turn in ${G[id].name}!`);
+    if (g.cancelReq && g.cancelReq.by !== S.role && !(p && p.cancelReq)) toast(`${NAMES[g.cancelReq.by]} wants to start a new ${G[id].name} game`);
   }
 }
 function showWin(id, st) {
@@ -267,7 +268,7 @@ G.words = {
   name: 'Word Tiles', short: 'Our own word board', icon: ICON('<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><path d="M6 9l1-4 1 4M16 5h2.5a1.5 1.5 0 0 1 0 3H16zm0 3h2.5a1.5 1.5 0 0 1 0 3H16z"/>'),
   desc: 'Build crossword-style words on a 15×15 board. Coloured squares double or triple letters and words. Using all 7 tiles earns 50 extra points.',
   start(me) { const bag = []; for (const [l, [n]] of Object.entries(LETTERS)) for (let k = 0; k < n; k++) bag.push(l); shuffleArr(bag);
-    const st = { kind: 'words', board: Array(225).fill(''), bag, racks: { anthonia: bag.splice(0, 7), ifeayomi: bag.splice(0, 7) }, scores: { anthonia: 0, ifeayomi: 0 }, turn: me, passes: 0, last: [] };
+    const st = { kind: 'words', board: Array(225).fill(''), bag, racks: { anthonia: bag.splice(0, 7), ifeayomi: bag.splice(0, 7) }, scores: { anthonia: 0, ifeayomi: 0 }, turn: me, passes: 0, last: [], limit: 180, turnStart: null };
     st.msg = `${NAMES[me]} goes first`; S.wt = null; return st; },
   score: (st) => [st.scores.anthonia, st.scores.ifeayomi],
   view(st, me) {
@@ -280,7 +281,10 @@ G.words = {
       return `<button class="wc ${pm || ''}${i === 112 ? ' star' : ''}" data-act="g" data-g="words" data-a="place" data-x="${i}" ${mine ? '' : 'disabled'}>${i === 112 ? '★' : pm || ''}</button>`; }).join('');
     const prev = mine && w.pend.length && WORDS ? wordMove(st.board, w.pend) : null;
     const prevTxt = prev ? (prev.err ? `<span class="small muted">${prev.err}</span>` : `<span class="small">${prev.words.map((x) => `<b style="color:${WORDS.has(x) ? 'var(--him)' : '#e11d48'}">${x}</b>`).join(', ')} · ${prev.score} pts</span>`) : '';
-    return `<div class="row between"><div class="row">${av('anthonia', 28)}<b>${st.scores.anthonia}</b></div><span class="small muted">${st.bag.length} tiles in bag</span><div class="row"><b>${st.scores.ifeayomi}</b>${av('ifeayomi', 28)}</div></div>
+    const lim = st.limit || 0, opts = [0, 60, 120, 180, 300];
+    const timer = st.over ? '' : st.fresh && mine ? `<div class="row small"><span class="muted">Turn timer:</span>${opts.map((v) => gbtn('words', 'limit', v ? v / 60 + ' min' : 'Off', 'sm' + (lim === v ? ' on' : ''), `data-x="${v}"`)).join('')}</div>`
+      : lim ? `<div class="wtimer ${mine ? 'mine' : ''}" id="wtimer"><span class="wt-bar"><i id="wtbar"></i></span><b id="wttxt">${mine ? (st.turnStart ? '' : G.words.fmt(lim)) : NAMES[st.turn] + "'s clock"}</b></div>` : '';
+    return `${timer}<div class="row between"><div class="row">${av('anthonia', 28)}<b>${st.scores.anthonia}</b></div><span class="small muted">${st.bag.length} tiles in bag</span><div class="row"><b>${st.scores.ifeayomi}</b>${av('ifeayomi', 28)}</div></div>
     ${WORDS ? '' : '<div class="locked">Loading the dictionary…</div>'}
     <div class="boardwrap2 ${S.wzoom ? 'zoom' : ''}"><div class="wboard">${cells}</div></div>
     <div class="row">${gbtn('words', 'zoom', S.wzoom ? 'Fit board' : 'Zoom in', 'sm')}${prevTxt}</div>
@@ -292,7 +296,9 @@ G.words = {
   },
   act: {
     zoom() { S.wzoom = !S.wzoom; render(true); },
-    sel(st, t) { const w = wtState(), k = +t.dataset.x; if (w.swapping) { w.swap = w.swap.includes(k) ? w.swap.filter((x) => x !== k) : [...w.swap, k]; } else w.sel = w.sel === k ? null : k; render(true); },
+    limit(st, t) { if (!st.fresh || st.turn !== S.role) return; st.limit = +t.dataset.x; saveGame('words', st, true); },
+    sel(st, t) { if (st.fresh && st.limit && !st.turnStart && st.turn === S.role) { st.turnStart = Date.now(); saveGame('words', st); }
+      const w = wtState(), k = +t.dataset.x; if (w.swapping) { w.swap = w.swap.includes(k) ? w.swap.filter((x) => x !== k) : [...w.swap, k]; } else w.sel = w.sel === k ? null : k; render(true); },
     place(st, t) { const w = wtState(), me = S.role; if (st.turn !== me) return; if (w.sel === null) return toast('Tap one of your tiles first'); const i = +t.dataset.x, ch = st.racks[me][w.sel];
       if (ch === '?') { const ri = w.sel; return openSheet(`${sheetHead('Blank tile: pick a letter')}<div class="letters">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((l) => `<button data-act="g" data-g="words" data-a="blank" data-x="${i}" data-r="${ri}" data-l="${l}">${l}</button>`).join('')}</div>`); }
       w.pend.push({ i, ch, ri: w.sel }); w.sel = null; render(true); },
@@ -303,16 +309,29 @@ G.words = {
     swapMode() { const w = wtState(); w.swapping = !w.swapping; w.swap = []; w.pend = []; render(true); },
     doSwap(st) { const w = wtState(), me = S.role; if (st.turn !== me || st.bag.length < 7 || !w.swap.length) return; const out = w.swap.map((k) => st.racks[me][k]);
       st.racks[me] = st.racks[me].filter((_, k) => !w.swap.includes(k)); st.bag.push(...out); shuffleArr(st.bag); st.racks[me].push(...st.bag.splice(0, out.length));
-      st.turn = other(me); st.passes = (st.passes || 0) + 1; st.last = []; logLine(st, `${NAMES[me]} swapped ${out.length} tiles`); w.swapping = false; w.swap = []; G.words.checkEnd(st); saveGame('words', st); },
-    pass(st) { const me = S.role; if (st.turn !== me) return; st.turn = other(me); st.passes = (st.passes || 0) + 1; st.last = []; logLine(st, `${NAMES[me]} passed`); G.words.checkEnd(st); saveGame('words', st); },
+      st.turn = other(me); st.turnStart = null; st.passes = (st.passes || 0) + 1; st.last = []; logLine(st, `${NAMES[me]} swapped ${out.length} tiles`); w.swapping = false; w.swap = []; G.words.checkEnd(st); saveGame('words', st); },
+    pass(st) { const me = S.role; if (st.turn !== me) return; st.turn = other(me); st.turnStart = null; st.passes = (st.passes || 0) + 1; st.last = []; logLine(st, `${NAMES[me]} passed`); G.words.checkEnd(st); saveGame('words', st); },
     async play(st) { const me = S.role, w = wtState(); if (st.turn !== me) return; await loadWords(); const r = wordMove(st.board, w.pend);
       if (r.err) return toast(r.err); const bad = r.words.filter((x) => !WORDS.has(x)); if (bad.length) return toast(`${bad.join(', ')} isn't in the dictionary`);
       st.board = r.board; const usedIdx = new Set(w.pend.map((p) => p.ri)); st.racks[me] = st.racks[me].filter((_, k) => !usedIdx.has(k)); st.racks[me].push(...st.bag.splice(0, 7 - st.racks[me].length));
-      st.scores[me] += r.score; st.last = w.pend.map((p) => p.i); st.passes = 0; st.turn = other(me); logLine(st, `${NAMES[me]} played ${r.words.join(', ')} for ${r.score}`);
+      st.scores[me] += r.score; st.last = w.pend.map((p) => p.i); st.passes = 0; st.turn = other(me); st.turnStart = null; logLine(st, `${NAMES[me]} played ${r.words.join(', ')} for ${r.score}`);
       if (w.pend.length === 7) toast('BINGO! +50'); w.pend = [];
       if (!st.bag.length && !st.racks[me].length) { const left = st.racks[other(me)].reduce((a, ch) => a + tileVal(ch), 0); st.scores[me] += left; st.scores[other(me)] -= left; G.words.end(st); }
       saveGame('words', st); },
   },
+  fmt: (s) => `${Math.floor(s / 60)}:${String(Math.max(0, Math.floor(s % 60))).padStart(2, '0')}`,
+  post(st, me) { if (!st || st.over || !st.limit) return;
+    if (st.turn === me && !st.turnStart && !st.fresh) { mergeDoc('games/words', { turnStart: Date.now() }); return; }
+    if (st.turn === me && !st.turnStart && st.fresh) return;
+    if (!G.words.iv) G.words.iv = setInterval(G.words.tick, 500); G.words.tick(); },
+  tick() { const st = S.games.words, el = document.getElementById('wttxt'), bar = document.getElementById('wtbar');
+    if (!st || st.over || !st.limit || !st.turnStart || !el) { if (!document.getElementById('wtimer')) { clearInterval(G.words.iv); G.words.iv = null; } return; }
+    const left = st.limit - (Date.now() - st.turnStart) / 1000, mine = st.turn === S.role;
+    el.textContent = mine ? `${G.words.fmt(left)} left` : `${NAMES[st.turn]}: ${G.words.fmt(left)}`; if (bar) bar.style.width = Math.max(0, left / st.limit * 100) + '%';
+    document.getElementById('wtimer').classList.toggle('low', left < 30);
+    if (left <= 0 && (mine || left < -15) && !G.words.firing) { G.words.firing = true; const s2 = JSON.parse(JSON.stringify(st)); const who = s2.turn;
+      wtState().pend = []; s2.turn = other(who); s2.turnStart = null; s2.passes = (s2.passes || 0) + 1; s2.last = []; logLine(s2, `${NAMES[who]} ran out of time`);
+      G.words.checkEnd(s2); toast(mine ? "Time's up! Your turn passed" : `${NAMES[who]} ran out of time`); saveGame('words', s2).finally(() => { G.words.firing = false; }); } },
   checkEnd(st) { if ((st.passes || 0) >= 4) { for (const r of ['anthonia', 'ifeayomi']) st.scores[r] -= st.racks[r].reduce((a, ch) => a + tileVal(ch), 0); G.words.end(st); } },
   end(st) { st.over = true; st.turn = null; const a = st.scores.anthonia, i = st.scores.ifeayomi; st.winner = a === i ? 'tie' : a > i ? 'anthonia' : 'ifeayomi'; },
 };
@@ -548,7 +567,7 @@ function simulate(balls, angle, power, onFrame) {
     if (onFrame && step % 3 === 0) frames.push(B.filter((b) => !b.out).map((b) => ({ n: b.n, x: b.x, y: b.y })));
     if (!moving) break; }
   return { balls: B.filter((b) => !b.out).map((b) => ({ n: b.n, x: Math.round(b.x * 10) / 10, y: Math.round(b.y * 10) / 10 })), potted, firstHit, frames }; }
-function poolGeom(cv) { const full = cv.parentElement.clientWidth, vert = full < 640, maxH = Math.max(320, window.innerHeight * .64); let sc = vert ? full / (PH + 60) : full / (PW + 60); sc = Math.min(sc, maxH / (vert ? PW + 60 : PH + 60)); const w = (vert ? PH + 60 : PW + 60) * sc; return { w, vert, sc, h: (vert ? PW + 60 : PH + 60) * sc }; }
+function poolGeom(cv) { const full = cv.parentElement.clientWidth, vert = full < 640, maxH = Math.max(320, window.innerHeight * .74); let sc = vert ? full / (PH + 60) : full / (PW + 60); sc = Math.min(sc, maxH / (vert ? PW + 60 : PH + 60)); const w = (vert ? PH + 60 : PW + 60) * sc; return { w, vert, sc, h: (vert ? PW + 60 : PH + 60) * sc }; }
 function poolToTable(cv, e) { const r = cv.getBoundingClientRect(), g = poolGeom(cv); const u = (e.clientX - r.left) / g.sc - 30, v = (e.clientY - r.top) / g.sc - 30; return g.vert ? { x: PW - v, y: u } : { x: u, y: v }; }
 function drawTable(cv, balls, aim) {
   const g = poolGeom(cv), dpr = Math.min(2, devicePixelRatio || 1); cv.style.height = g.h + 'px'; cv.style.width = g.w + 'px'; cv.width = g.w * dpr; cv.height = g.h * dpr;
@@ -572,15 +591,16 @@ function drawTable(cv, balls, aim) {
 const groupBalls = (g) => (g === 'solids' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]);
 let poolAim = { a: 0, p: .6 }, poolAnim = null, poolSeen = null;
 G.pool = {
-  name: 'Pool', short: '8-ball, shot by shot', icon: ICON('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 9v6"/>'),
+  name: 'Pool', short: '8-ball, shot by shot', statusBelow: true, icon: ICON('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 9v6"/>'),
   desc: '8-ball pool. Hold and pull the cue back from the white ball, aim, and let go to shoot: the further you pull, the harder the shot. Pot a ball to claim solids or stripes, clear your group, then sink the black 8 to win. Potting the white or missing every ball is a foul.',
   start(first) { return { kind: 'pool', balls: rack(), groups: { anthonia: null, ifeayomi: null }, turn: first, shot: 0, msg: `${NAMES[first]} breaks` }; },
   view(st, me) { const mine = st.turn === me && !st.over;
     const left = (r) => (st.groups[r] ? groupBalls(st.groups[r]).filter((n) => st.balls.some((b) => b.n === n)).length : null);
-    return `<div class="row between small"><span class="row">${av('anthonia', 26)}${st.groups.anthonia ? `<b>${st.groups.anthonia}</b> · ${left('anthonia')} left` : 'open'}</span><span class="row">${st.groups.ifeayomi ? `<b>${st.groups.ifeayomi}</b> · ${left('ifeayomi')} left` : 'open'}${av('ifeayomi', 26)}</span></div>
+    return `<canvas id="pool" class="pool"></canvas>
       ${mine ? `<p class="small muted center" style="margin:0">Touch the table and pull back away from the white ball to aim. Let go to shoot.</p>` : ''}
-      <canvas id="pool" class="pool"></canvas>`; },
+      <div class="row between small"><span class="row">${av('anthonia', 26)}${st.groups.anthonia ? `<b>${st.groups.anthonia}</b> · ${left('anthonia')} left` : 'open'}</span><span class="row">${st.groups.ifeayomi ? `<b>${st.groups.ifeayomi}</b> · ${left('ifeayomi')} left` : 'open'}${av('ifeayomi', 26)}</span></div>`; },
   post(st, me) { const cv = document.getElementById('pool'); if (!cv || !st) return;
+    if (S.poolOpened !== S.game + S.tab) { S.poolOpened = S.game + S.tab; setTimeout(() => { const c = document.getElementById('pool'); if (c) c.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }
     if (st.shot && poolSeen !== null && st.shot !== poolSeen && st.last && st.last.by !== me && st.last.before && !poolAnim) G.pool.replay(st);
     poolSeen = st.shot; const myTurn = () => st.turn === me && !st.over && !poolAnim;
     if (!poolAnim) drawTable(cv, st.balls, myTurn() ? poolAim : null);

@@ -209,7 +209,7 @@ function subscribe(){
   watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role))floatHearts();lastTapAt=d?d.at:0;refresh();});
   watchCol('games',l=>{const prev=S.games||{};S.games=Object.fromEntries(l.filter(x=>x.id!=='jigsaw').map(x=>[x.id,x]));gamesChanged(prev,S.games);refresh();});
   watchCol('voice',l=>{S.voice=l;refresh();},{order:'at',dir:'desc',limit:12});
-  watchDoc('games/jigsaw',d=>{const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done)setTimeout(()=>showWinner(d),300);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();});
+  watchDoc('games/jigsaw',d=>{const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done&&!d.cancelled)setTimeout(()=>showWinner(d),300);if(d&&d.cancelReq&&d.cancelReq.by!==S.role&&!(prev&&prev.cancelReq))toast(`${NAMES[d.cancelReq.by]} wants to start a new puzzle`);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();});
   watchDoc('months/'+monthKey(),d=>{S.month=d;refresh();});
   watchDoc('years/'+todayKey().slice(0,4),d=>{S.year=d;refresh();});
   watchCol('dates',l=>{S.dates=l;refresh();});
@@ -301,7 +301,7 @@ function waitingCard(){
 function jigCard(){
   const j=S.jig,me=S.role;let jig;
   if(!j||j.done){
-    const res=j&&j.done?`<div class="row" style="justify-content:center">${av('anthonia',44)}<b style="font-family:var(--display);font-size:1.5rem">${(j.counts||{}).anthonia||0} – ${(j.counts||{}).ifeayomi||0}</b>${av('ifeayomi',44)}</div><p class="muted center" style="margin:0">${winnerOf(j.counts)?NAMES[winnerOf(j.counts)]+' won the last puzzle.':'The last puzzle was a tie.'} It's saved in the gallery.</p>`
+    const res=j&&j.done&&!j.cancelled?`<div class="row" style="justify-content:center">${av('anthonia',44)}<b style="font-family:var(--display);font-size:1.5rem">${(j.counts||{}).anthonia||0} – ${(j.counts||{}).ifeayomi||0}</b>${av('ifeayomi',44)}</div><p class="muted center" style="margin:0">${winnerOf(j.counts)?NAMES[winnerOf(j.counts)]+' won the last puzzle.':'The last puzzle was a tie.'} It's saved in the gallery.</p>`
       :`<p class="muted" style="margin:0">Pick a piece and place it. Right spot? Keep going. Wrong spot? Your turn passes. Most pieces placed wins.</p>`;
     jig=`${res}<button class="btn primary" data-act="jigSheet">Start a new puzzle</button>`;
   }else{
@@ -309,7 +309,7 @@ function jigCard(){
     let tray=(j.tray||[]).filter(i=>!placed.has(i));
     if(S.edgesOnly){const e=tray.filter(i=>sides(j,i).includes(0));if(e.length)tray=e;}
     const shown=tray.slice(0,30);
-    jig=`${mine&&!placed.size?`<div class="givebar">You start this puzzle. <button class="btn sm" data-act="gGive" data-g="jigsaw">Let ${NAMES[other(me)]} go first</button></div>`:''}<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
+    jig=`${cancelBar('jigsaw',{cancelReq:j.cancelReq})}${mine&&!placed.size?`<div class="givebar">You start this puzzle. <button class="btn sm" data-act="gGive" data-g="jigsaw">Let ${NAMES[other(me)]} go first</button></div>`:''}<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
     <div class="progress"><i style="width:${placed.size/total*100}%"></i></div>
     <div class="row" style="gap:6px"><button class="btn sm" data-act="peek">Peek at the picture</button><button class="btn sm ${S.zoom?'on':''}" data-act="zoom">${S.zoom?'Fit board':'Zoom in'}</button>${mine?`<button class="btn sm ${S.edgesOnly?'on':''}" data-act="edges">${S.edgesOnly?'All pieces':'Edges first'}</button>`:''}</div>
     <div class="boardwrap" id="boardwrap"><canvas id="board" aria-label="Puzzle board"></canvas></div>
@@ -319,16 +319,20 @@ function jigCard(){
     :`<div class="locked">${av(j.turn,28)} ${NAMES[j.turn]} is playing. Your turn comes when they miss.</div>`}
     <div class="row" style="justify-content:space-around"><div class="row">${av('anthonia',32)}<b>${c.anthonia||0}</b></div><span class="small muted">pieces placed</span><div class="row"><b>${c.ifeayomi||0}</b>${av('ifeayomi',32)}</div></div>
     ${j.best?`<p class="small muted center" style="margin:0">Best run: ${NAMES[j.best.by]}, ${j.best.n} in a row</p>`:''}
-    <button class="btn sm ghost" style="align-self:center" data-act="jigSheet">Start a different puzzle</button>`;
+    <button class="btn sm ghost" style="align-self:center" data-act="jigNew">Start a different puzzle</button>`;
   }
   return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>Jigsaw</h2></div>${j&&!j.done?`<span class="chip gold">${j.cols*j.rows} pieces</span>`:''}</div>${j&&!j.done&&j.photo?`<div class="small muted">${esc(photoTitle(j.photo))}</div>`:''}${jig}</section>`;
 }
+function cancelBar(id,st){const r=st.cancelReq;if(!r||st.over)return '';const you=other(S.role);
+  return r.by===S.role?`<div class="givebar">Waiting for ${NAMES[you]} to agree to a new game. <button class="btn sm" data-act="gDecline" data-g="${id}">Never mind</button></div>`
+    :`<div class="givebar ask">${av(r.by,26)} ${NAMES[r.by]} wants to end this game and start a new one. <button class="btn sm primary" data-act="gAgree" data-g="${id}">Agree</button><button class="btn sm" data-act="gDecline" data-g="${id}">Keep playing</button></div>`;}
 function playView(){
   if(S.game==='jigsaw')return jigCard();
   if(S.game&&G[S.game]){const g=G[S.game],st=S.games[S.game];
     return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>${g.name}</h2></div><button class="btn sm ghost" data-act="gNew" data-g="${S.game}">${st?'New game':'Start'}</button></div>
     ${st&&st.fresh&&st.turn===S.role&&!st.over?`<div class="givebar">${st.winnerStart?'You won last time, so you start.':'You start.'} <button class="btn sm" data-act="gGive" data-g="${S.game}">Let ${NAMES[other(S.role)]} go first</button></div>`:''}
-    ${st?gameStatus(S.game,st)+g.view(st,S.role):`<p class="muted" style="margin:0">${g.desc}</p><button class="btn primary" data-act="gNew" data-g="${S.game}">Start a game</button>`}</section>`;}
+    ${st?cancelBar(S.game,st):''}
+    ${st?(g.statusBelow?g.view(st,S.role)+gameStatus(S.game,st):gameStatus(S.game,st)+g.view(st,S.role)):`<p class="muted" style="margin:0">${g.desc}</p><button class="btn primary" data-act="gNew" data-g="${S.game}">Start a game</button>`}</section>`;}
   const tile=(id,name,desc,icon,st,isTurnGame)=>{let chip='<span class="chip">Start</span>';
     if(st&&st.over)chip='<span class="chip gold">Finished</span>';else if(st&&st.turn===S.role)chip='<span class="chip her">Your turn</span>';else if(st&&st.turn)chip=`<span class="chip him">${NAMES[st.turn]}'s turn</span>`;else if(st)chip='<span class="chip him">Open</span>';
     return `<button class="gtile" data-act="game" data-g="${id}"><span class="gico">${icon}</span><b>${name}</b><span class="small muted">${desc}</span>${chip}</button>`;};
@@ -565,11 +569,15 @@ const A={
   game:t=>{S.game=t.dataset.g;render();window.scrollTo(0,0);},
   gameBack:()=>{S.game=null;render();window.scrollTo(0,0);},
   g:t=>{const id=t.dataset.g,g=G[id];if(!g)return;const fn=g.act[t.dataset.a];if(fn)return fn(S.games[id]?JSON.parse(JSON.stringify(S.games[id])):null,t);},
-  gNew:t=>{const id=t.dataset.g;if(t.dataset.sure!=='1'&&S.games[id]&&!S.games[id].over){t.dataset.sure='1';t.textContent='Tap again to restart';return;}newGame(id);},
+  gNew:t=>{const id=t.dataset.g,st=S.games[id];if(st&&!st.over&&!st.fresh){if(st.cancelReq)return toast(st.cancelReq.by===S.role?`Waiting for ${NAMES[other(S.role)]} to agree`:'Answer the request above first');
+      mergeDoc('games/'+id,{cancelReq:{by:S.role,at:Date.now()}});toast(`Asked ${NAMES[other(S.role)]} to agree to a new game`);return;}newGame(id);},
+  gAgree:t=>{const id=t.dataset.g;if(id==='jigsaw'){mergeDoc('games/jigsaw',{done:true,cancelled:true,cancelReq:null});toast('Puzzle ended. Pick a new one!');return;}const st=S.games[id];newGame(id,st&&st.cancelReq?st.cancelReq.by:null);},
+  gDecline:t=>{const id=t.dataset.g;mergeDoc('games/'+id,{cancelReq:null});},
   gGive:t=>{const id=t.dataset.g;if(id==='jigsaw'){const j=S.jig;if(!j||j.turn!==S.role||(j.placed||[]).length)return;mergeDoc('games/jigsaw',{turn:other(S.role)});toast(`${NAMES[other(S.role)]} goes first`);return;}
     const st=JSON.parse(JSON.stringify(S.games[id]||{}));if(!st.fresh||st.turn!==S.role)return;st.turn=other(S.role);if(st.asker)st.asker=st.turn;st.msg=`${NAMES[st.turn]} goes first`;saveGame(id,st,true);toast(st.msg);},
   /* jigsaw */
   jigSheet:()=>drawPicker(),
+  jigNew:()=>{const j=S.jig;if(j&&!j.done&&(j.placed||[]).length){if(j.cancelReq)return toast(j.cancelReq.by===S.role?`Waiting for ${NAMES[other(S.role)]} to agree`:'Answer the request above first');mergeDoc('games/jigsaw',{cancelReq:{by:S.role,at:Date.now()}});toast(`Asked ${NAMES[other(S.role)]} to agree to a new puzzle`);return;}drawPicker();},
   pickCat:t=>{S.pickCat=t.dataset.k;S.pickSize=Number(val('jigSize'))||S.pickSize;drawPicker();},
   jigPhoto:async t=>{const [n,c,r]=curSize();closeSheet();toast('Getting the pieces ready…');await startJig({photo:t.dataset.k},c,r);},
   jigMem:async t=>{const m=S.memories.find(x=>x.id===t.dataset.id);if(!m)return;const [n,c,r]=curSize();closeSheet();toast('Getting the pieces ready…');
@@ -640,7 +648,7 @@ const A={
 };
 async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const doc={photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
 function winnerOfJig(j){const c=j.counts||{},a=c.anthonia||0,i=c.ifeayomi||0;return a===i?null:a>i?'anthonia':'ifeayomi';}
-function newGame(id){const prev=S.games[id],w=prev&&prev.over&&prev.winner&&prev.winner!=='tie'?prev.winner:null,first=w||S.role;const st=G[id].start(first);st.winnerStart=!!w;saveGame(id,st,true);
+function newGame(id,starter){const prev=S.games[id],w=prev&&prev.over&&prev.winner&&prev.winner!=='tie'?prev.winner:null,first=starter||w||S.role;const st=G[id].start(first);st.winnerStart=!!w;saveGame(id,st,true);
   toast(w?`${NAMES[w]} won last time, so ${w===S.role?'you start':NAMES[w]+' starts'}`:'New game started');}
 function drawPicker(memId){const cat=S.pickCat||'animals',size=S.pickSize||60;const ours=S.memories.filter(m=>m.kind!=='puzzle');
   openSheet(`${sheetHead('New jigsaw')}<label class="f" for="jigSize">How many pieces?<select id="jigSize">${SIZES.map(([n,c,r])=>`<option value="${n}" ${n===size?'selected':''}>${n} pieces (${c} × ${r})</option>`).join('')}</select></label>
