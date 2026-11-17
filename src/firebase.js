@@ -35,6 +35,8 @@ export const signUp = (email, pw) => createUserWithEmailAndPassword(auth, email,
 export const resetPassword = (email) => sendPasswordResetEmail(auth, email);
 export const logOut = () => signOut(auth);
 
+/* includeMetadataChanges: also tell us when cached data is confirmed by the
+   server (fromCache → false), even if nothing changed. One-time updates wait for that. */
 /* Small adapter so the planner code talks to Firestore the same way it
    talked to the Claude artifact store. Everything lives under users/{uid}. */
 export function makeDb(uid) {
@@ -46,14 +48,14 @@ export function makeDb(uid) {
       set: (d) => setDoc(r, d),
       update: (d) => updateDoc(r, d),
       delete: () => deleteDoc(r),
-      onSnapshot: (cb, err) => onSnapshot(r, (s) => cb(wrapDoc(s)), err)
+      onSnapshot: (cb, err) => onSnapshot(r, { includeMetadataChanges: true }, (s) => cb(wrapDoc(s)), err)
     };
   };
   return {
     collection: (name) => ({
       add: (d) => addDoc(collection(fs, `${base}/${name}`), d),
       doc: (id) => docRef(`${name}/${id}`),
-      onSnapshot: (cb, err) => onSnapshot(collection(fs, `${base}/${name}`), cb, err)
+      onSnapshot: (cb, err) => onSnapshot(collection(fs, `${base}/${name}`), { includeMetadataChanges: true }, cb, err)
     }),
     doc: (path) => docRef(path),
     /* one-time import of the plan built in Claude */
