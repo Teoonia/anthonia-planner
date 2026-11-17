@@ -321,6 +321,20 @@ canvas.pool{display:block;margin:0 auto;touch-action:none;border-radius:16px}
 .wt-bar{flex:1;height:10px;background:#fff;border-radius:99px;overflow:hidden}.wt-bar i{display:block;height:100%;width:100%;background:var(--him);transition:width .5s linear}
 .wtimer.mine .wt-bar i{background:var(--her)}.wtimer.low{animation:beat 1s infinite}.wtimer.low .wt-bar i{background:#e11d48}
 .givebar.ask{background:#ffe4ec}
+
+/* bigger cards for Whot! and Crazy Eights */
+.hand{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px}
+.hand .pc{width:100%;height:auto;aspect-ratio:5/7}
+.hand .pc .cn{font-size:1rem}
+.hand .pc.whot svg.big{inset:24% 18%;width:64%;height:auto}
+.hand .pc .wtxt{top:32%;font-size:.95rem}.hand .pc .wn{top:50%;font-size:1.3rem}
+.hand .pc.std .pip{font-size:2.6rem}
+.table{padding:26px 18px;gap:34px;min-height:230px}
+.pc.top{width:128px;height:180px}.pc.top .cn{font-size:1.15rem}.pc.top .pip{font-size:3.6rem}
+.pc.whot.top svg.big{inset:46px 26px;width:76px;height:76px}.pc.top .wtxt{top:58px;font-size:1.1rem}.pc.top .wn{top:84px;font-size:1.6rem}
+.deckpile .pc.back{width:96px;height:136px}
+.backs .pc{width:40px;height:58px;margin-right:-14px;border-radius:7px}
+.pc.ok{transform:translateY(-6px)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
