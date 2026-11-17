@@ -3,7 +3,7 @@
    act: {name: (state, button) => …}, optional post(state, me) after render. */
 const G = {};
 const NAMESX = () => NAMES;
-function saveGame(id, st) { st.updatedAt = Date.now(); return setDoc('games/' + id, st); }
+function saveGame(id, st, fresh) { st.updatedAt = Date.now(); st.fresh = !!fresh; return setDoc('games/' + id, st); }
 function shuffleArr(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const gbtn = (g, a, label, cls = '', extra = '') => `<button class="btn ${cls}" data-act="g" data-g="${g}" data-a="${a}" ${extra}>${label}</button>`;
 function logLine(st, msg) { st.log = [msg, ...(st.log || [])].slice(0, 6); st.msg = msg; }
@@ -66,11 +66,43 @@ const QBANK = [
   ["Where I'd love us to live is…", ["Lagos", "Ibadan", "Abroad", "Anywhere together"]],
   ["The first thing I notice in people is…", ["Smile", "Eyes", "How they talk", "How they dress"]],
   ["My sleep style is…", ["Night owl", "Early bird", "Napper", "I can sleep anywhere"]],
+,
+  ["My favourite snack is…", ["Chin chin", "Plantain chips", "Popcorn", "Chocolate"]],
+  ["When I travel I always pack…", ["Too many clothes", "Snacks", "Chargers", "Only the basics"]],
+  ["My favourite Nigerian dish to cook is…", ["Fried rice", "Efo riro", "Ofada stew", "Moi moi"]],
+  ["My worst habit is…", ["Procrastinating", "Phone addiction", "Overthinking", "Being late"]],
+  ["The superpower I'd pick is…", ["Teleporting to you", "Reading minds", "Flying", "Stopping time"]],
+  ["My favourite time of day is…", ["Early morning", "Afternoon", "Evening", "Midnight"]],
+  ["The app I use most is…", ["WhatsApp", "TikTok", "Instagram", "YouTube"]],
+  ["I'd rather live in…", ["A big city", "A quiet town", "By the sea", "On a farm"]],
+  ["When I'm stressed I…", ["Eat", "Sleep", "Clean", "Call someone"]],
+  ["My dream job, if money didn't matter…", ["Travel creator", "Business owner", "Teacher", "Chef"]],
+  ["What makes me laugh the most…", ["Silly memes", "Skits", "Your jokes", "Funny animal videos"]],
+  ["My favourite thing about Christmas is…", ["Food", "Family", "Church", "Gifts"]],
+  ["The way I like to say sorry is…", ["Words", "A gift", "Doing something nice", "A long hug"]],
+  ["My favourite weather is…", ["Sunny and hot", "Cool breeze", "Rainy", "Snow"]],
+  ["I'm secretly scared of…", ["Lizards", "The dark", "Dogs", "Flying"]],
+  ["My ideal number of children is…", ["One or two", "Three", "Four or more", "Still deciding"]],
+  ["My favourite kind of movie night is…", ["Nollywood", "Hollywood action", "K-drama", "Cartoons"]],
+  ["If I had a free day tomorrow I'd…", ["Sleep all day", "Go shopping", "Start a new project", "Spend it on calls with you"]],
+  ["The sport I enjoy watching is…", ["Football", "Basketball", "Athletics", "None"]],
+  ["My favourite fruit is…", ["Mango", "Pineapple", "Watermelon", "Banana"]],
+  ["The first thing I do when I wake up is…", ["Check my phone", "Pray", "Brush my teeth", "Go back to sleep"]],
+  ["I'd describe my cooking as…", ["Chef level", "Good enough", "Learning", "Please don't ask"]],
+  ["My favourite way to receive love is…", ["Surprise gifts", "Sweet messages", "Phone calls", "Planned dates"]],
+  ["The thing I'd never share is…", ["My food", "My phone", "My clothes", "My bed"]],
+  ["My favourite memory of us is…", ["Our first date", "Our first trip", "A random fun day", "Every day together"]],
+  ["When I get money, I first…", ["Save it", "Spend it", "Pay bills", "Invest it"]],
+  ["The country I want to visit most is…", ["Ghana", "USA", "Japan", "Brazil"]],
+  ["I'm most likely to cry at…", ["Sad movies", "Weddings", "Arguments", "Never, I'm strong"]],
+  ["My favourite type of music to relax to is…", ["Soft R&B", "Worship songs", "Highlife", "Lo-fi"]],
+  ["My perfect birthday is…", ["Big party", "Quiet dinner", "A trip", "Surprises from you"]],
 ];
 G.quiz = {
   name: 'Couple quiz', short: 'How well do you know me?', icon: ICON('<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/>'),
   desc: 'One of you answers 5 questions about yourself. The other guesses your answers. 4 rounds, swapping each time. Most correct guesses wins.',
-  start(me) { return { kind: 'quiz', round: 1, rounds: 4, asker: me, phase: 'answer', turn: me, qs: shuffleArr([...QBANK.keys()]).slice(0, 5), answers: [], guesses: [], scores: { anthonia: 0, ifeayomi: 0 }, msg: `${NAMES[me]} answers first` }; },
+  start(me) { let seen = (S.games.quiz && S.games.quiz.seen) || []; if (QBANK.length - seen.length < 20) seen = []; const qs = G.quiz.pick(seen); return { kind: 'quiz', round: 1, rounds: 4, asker: me, phase: 'answer', turn: me, qs, seen: [...seen, ...qs], answers: [], guesses: [], scores: { anthonia: 0, ifeayomi: 0 }, msg: `${NAMES[me]} answers first` }; },
+  pick: (seen) => shuffleArr([...QBANK.keys()].filter((i) => !seen.includes(i))).slice(0, 5),
   score: (st) => [st.scores.anthonia, st.scores.ifeayomi],
   view(st, me) {
     const guesser = other(st.asker), opts = (qi, a) => QBANK[st.qs[qi]][1].map((o, k) => gbtn('quiz', a, esc(o), 'opt', `data-x="${k}"`)).join('');
@@ -94,7 +126,7 @@ G.quiz = {
       saveGame('quiz', st); },
     next(st) { if (st.phase !== 'reveal') return;
       if (st.round >= st.rounds) { st.over = true; const a = st.scores.anthonia, i = st.scores.ifeayomi; st.winner = a === i ? 'tie' : a > i ? 'anthonia' : 'ifeayomi'; st.turn = null; return saveGame('quiz', st); }
-      st.round++; st.asker = other(st.asker); st.turn = st.asker; st.phase = 'answer'; st.answers = []; st.guesses = []; st.qs = shuffleArr([...QBANK.keys()]).slice(0, 5); st.msg = `${NAMES[st.asker]} answers this round`; saveGame('quiz', st); },
+      st.round++; st.asker = other(st.asker); st.turn = st.asker; st.phase = 'answer'; st.answers = []; st.guesses = []; st.seen = st.seen || []; if (QBANK.length - st.seen.length < 5) st.seen = []; st.qs = G.quiz.pick(st.seen); st.seen.push(...st.qs); st.msg = `${NAMES[st.asker]} answers this round`; saveGame('quiz', st); },
   },
 };
 
@@ -288,134 +320,191 @@ G.words = {
 /* =================================== PROPERTY GAME =================================== */
 const PSP = [
   { n: 'Start', t: 'start' }, { n: 'Oyo Town', t: 'p', g: 'brown', p: 60 }, { n: 'Love Note', t: 'card' }, { n: 'Ogbomoso', t: 'p', g: 'brown', p: 80 },
-  { n: 'Flight Tax', t: 'tax', p: 100 }, { n: 'Bus 522', t: 'tr', p: 150 }, { n: 'Missed Call', t: 'jail' }, { n: 'Bodija', t: 'p', g: 'sky', p: 100 },
-  { n: 'Pig Farm', t: 'ut', p: 150 }, { n: 'Ring Road', t: 'p', g: 'sky', p: 110 }, { n: 'Dugbe', t: 'p', g: 'sky', p: 120 }, { n: 'Train to Rome', t: 'tr', p: 150 },
-  { n: 'Free Hug', t: 'free' }, { n: 'Falconara', t: 'p', g: 'pink', p: 140 }, { n: 'Love Note', t: 'card' }, { n: 'Ancona Port', t: 'p', g: 'pink', p: 160 },
-  { n: 'Passetto', t: 'p', g: 'pink', p: 180 }, { n: 'Data Bill', t: 'tax', p: 75 }, { n: 'Go to Missed Call', t: 'gojail' }, { n: 'Lekki', t: 'p', g: 'orange', p: 220 },
-  { n: 'Love Note', t: 'card' }, { n: 'Victoria Island', t: 'p', g: 'orange', p: 240 }, { n: 'Rome', t: 'p', g: 'gold', p: 300 }, { n: 'Venice', t: 'p', g: 'gold', p: 350 },
+  { n: 'Flight Tax', t: 'tax', p: 100 }, { n: 'Bus 522', t: 'tr', p: 150 }, { n: 'Bodija', t: 'p', g: 'sky', p: 100 }, { n: 'Lucky Jar', t: 'jar' },
+  { n: 'Missed Call', t: 'jail' }, { n: 'Ring Road', t: 'p', g: 'sky', p: 110 }, { n: 'Dugbe', t: 'p', g: 'sky', p: 120 }, { n: 'Pig Farm', t: 'ut', p: 150 },
+  { n: 'Iwo Road', t: 'p', g: 'purple', p: 140 }, { n: 'Date Night', t: 'date' }, { n: 'Mokola', t: 'p', g: 'purple', p: 150 }, { n: 'Train to Rome', t: 'tr', p: 150 },
+  { n: 'Free Hug', t: 'free' }, { n: 'Falconara', t: 'p', g: 'pink', p: 160 }, { n: 'Love Note', t: 'card' }, { n: 'Ancona Port', t: 'p', g: 'pink', p: 180 },
+  { n: 'Passetto', t: 'p', g: 'pink', p: 200 }, { n: 'Lucky Jar', t: 'jar' }, { n: 'Senigallia', t: 'p', g: 'red', p: 220 }, { n: 'Loreto', t: 'p', g: 'red', p: 240 },
+  { n: 'Go to Missed Call', t: 'gojail' }, { n: 'Lekki', t: 'p', g: 'orange', p: 260 }, { n: 'Victoria Island', t: 'p', g: 'orange', p: 280 }, { n: 'Data Bill', t: 'tax', p: 75 },
+  { n: 'Flight to Italy', t: 'tr', p: 200 }, { n: 'Rome', t: 'p', g: 'gold', p: 320 }, { n: 'Love Note', t: 'card' }, { n: 'Venice', t: 'p', g: 'gold', p: 380 },
 ];
-const PCOL = { brown: '#a0612f', sky: '#6cc6ff', pink: '#ff7fb0', orange: '#ff9f43', gold: '#f5b700' };
+const PN = PSP.length, TRANS = [5, 15, 28];
+const PCOL = { brown: '#a0612f', sky: '#6cc6ff', purple: '#9b6cff', pink: '#ff7fb0', red: '#ef4444', orange: '#ff9f43', gold: '#f5b700' };
 const LOVE = [
   ['Your partner sent you flowers. Collect ₦100.', 100], ['You forgot to call back. Pay ₦50.', -50], ['Surprise data top-up from your love. Collect ₦60.', 60],
   ['Long-distance call bill. Pay ₦40.', -40], ['You won the daily question streak. Collect ₦80.', 80], ['Advance to Start.', 'start'],
-  ['Surprise visit! Move to Ancona Port.', 15], ['Go to Missed Call. Do not pass Start.', 'jail'], ['Date night was on you. Pay ₦70.', -70],
+  ['Surprise visit! Move to Ancona Port.', 'm19'], ['Go to Missed Call. Do not pass Start.', 'jail'], ['Date night was on you. Pay ₦70.', -70],
   ['Your pigs had piglets! Collect ₦120.', 120], ['Birthday gift from your partner: they pay you ₦50.', 'gift'], ['You bought matching jerseys. Pay ₦30.', -30],
+  ['TrendX had a great week. Collect ₦150.', 150], ['Romantic trip! Move to Venice.', 'm31'], ['Get-out-of-Missed-Call card: keep it for later.', 'free'],
 ];
-const ringPos = (i) => (i <= 6 ? [6, 6 - i] : i <= 12 ? [12 - i, 0] : i <= 18 ? [0, i - 12] : [i - 18, 6]);
+const JAR = [
+  ['Found ₦100 in your old jeans!', 100], ['Bought suya for everyone. Pay ₦40.', -40], ['Your partner owes you a kiss and ₦50.', 'gift'],
+  ['Swap places with your partner!', 'swap'], ['Lucky breeze: move forward 3.', 'fwd3'], ['Collect ₦20 for every place you own.', 'perprop'],
+  ['Pay ₦25 for every house you own. Repairs!', 'repairs'], ['Jackpot! Collect ₦200.', 200], ['Oops, you dropped your phone. Pay ₦80.', -80],
+];
+const ringPos = (i) => (i <= 8 ? [8, 8 - i] : i <= 16 ? [16 - i, 0] : i <= 24 ? [0, i - 16] : [i - 24, 8]);
 const groupOf = (g) => PSP.map((s, i) => (s.g === g ? i : -1)).filter((i) => i >= 0);
+const HOUSE_MULT = [1, 5, 15, 35, 60];
 function propRent(st, i, dice) { const s = PSP[i], o = st.own[i]; if (!o) return 0;
-  if (s.t === 'tr') { const n = [5, 11].filter((k) => st.own[k] && st.own[k].by === o.by).length; return 25 * n * n; }
+  if (s.t === 'tr') { const n = TRANS.filter((k) => st.own[k] && st.own[k].by === o.by).length; return 25 * 2 ** (n - 1); }
   if (s.t === 'ut') return 6 * dice;
   const base = Math.round(s.p / 10), full = groupOf(s.g).every((k) => st.own[k] && st.own[k].by === o.by), h = o.houses || 0;
-  return h ? base * [1, 5, 15, 35][h] : full ? base * 2 : base; }
+  return h ? base * HOUSE_MULT[h] : full ? base * 2 : base; }
 function worth(st, r) { let w = st.cash[r]; for (const [i, o] of Object.entries(st.own)) if (o.by === r) w += PSP[i].p + (o.houses || 0) * Math.round(PSP[i].p / 2); return w; }
+const DOTS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const dieFace = (n, cls = '') => `<span class="dface ${cls}">${Array.from({ length: 9 }, (_, k) => `<i class="${(DOTS[n] || []).includes(k) ? 'on' : ''}"></i>`).join('')}</span>`;
+function spinDice(sel, faces, ms = 700) { return new Promise((res) => { const els = [...document.querySelectorAll(sel)]; els.forEach((e) => e.classList.add('rolling'));
+  const iv = setInterval(() => els.forEach((e) => { const n = 1 + Math.floor(Math.random() * 6); e.querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', DOTS[n].includes(k))); }), 80);
+  setTimeout(() => { clearInterval(iv); els.forEach((e, k) => { e.classList.remove('rolling'); if (faces[k]) e.querySelectorAll('i').forEach((d, j) => d.classList.toggle('on', DOTS[faces[k]].includes(j))); }); res(); }, ms); }); }
+let propAnim = null, propSeen = null;
 G.property = {
-  name: 'Pods Property', short: 'Buy Ancona, Ibadan and Oyo', icon: ICON('<path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/>'),
-  desc: 'Roll, move and buy places from Oyo to Venice. Charge rent when your partner lands on yours. Own a whole colour to double rent and build houses. Love Notes bring surprises. Run your partner out of money, or end the game and the richest wins.',
-  start(me) { return { kind: 'property', pos: { anthonia: 0, ifeayomi: 0 }, cash: { anthonia: 1500, ifeayomi: 1500 }, own: {}, turn: me, phase: 'roll', dice: [1, 1], dbl: 0, jail: { anthonia: 0, ifeayomi: 0 }, msg: `${NAMES[me]} rolls first` }; },
+  name: 'Pods Property', short: 'Buy Oyo, Ibadan, Ancona & Venice', icon: ICON('<path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/>'),
+  desc: 'Tap your avatar to roll, watch your piece hop round 32 places from Oyo Town to Venice, buy them and charge rent. Own a whole colour to double rent and build up to 4 houses. Love Notes, Lucky Jars and Date Nights bring surprises. Run your partner out of money, or end the game and the richest wins.',
+  start(first) { return { kind: 'property', pos: { anthonia: 0, ifeayomi: 0 }, cash: { anthonia: 2000, ifeayomi: 2000 }, own: {}, turn: first, phase: 'roll', dice: [3, 4], dbl: 0, jail: { anthonia: 0, ifeayomi: 0 }, free: {}, laps: { anthonia: 0, ifeayomi: 0 }, mv: null, msg: `${NAMES[first]} rolls first` }; },
   score: (st) => ['₦' + worth(st, 'anthonia'), '₦' + worth(st, 'ifeayomi')],
   view(st, me) {
-    const mine = st.turn === me && !st.over, cells = [];
-    for (let i = 0; i < 24; i++) { const s = PSP[i], [r, c] = ringPos(i), o = st.own[i];
-      const tok = ['anthonia', 'ifeayomi'].filter((x) => st.pos[x] === i).map((x) => av(x, 18)).join('');
-      cells.push(`<button class="pcell ${s.t}" style="grid-row:${r + 1};grid-column:${c + 1}" data-act="g" data-g="property" data-a="info" data-x="${i}">${s.g ? `<i style="background:${PCOL[s.g]}"></i>` : ''}<span>${s.n}</span>${s.p && s.t !== 'tax' ? `<em>₦${s.p}</em>` : s.t === 'tax' ? `<em>-₦${s.p}</em>` : ''}${o ? `<u class="${o.by}">${'⌂'.repeat(o.houses || 0)}</u>` : ''}<div class="toks">${tok}</div></button>`); }
+    const mine = st.turn === me && !st.over, cells = [], shown = { ...st.pos, ...(propAnim ? { [propAnim.who]: propAnim.at } : {}) };
+    for (let i = 0; i < PN; i++) { const s = PSP[i], [r, c] = ringPos(i), o = st.own[i];
+      const tok = ['anthonia', 'ifeayomi'].filter((x) => shown[x] === i).map((x) => `<span class="ptok ${propAnim && propAnim.who === x ? 'hop' : ''}">${av(x, 20)}</span>`).join('');
+      cells.push(`<button class="pcell ${s.t}${st.mv && st.mv.to === i && !propAnim ? ' landed' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}" data-act="g" data-g="property" data-a="info" data-x="${i}">${s.g ? `<i style="background:${PCOL[s.g]}"></i>` : ''}<span>${s.n}</span>${s.p && s.t !== 'tax' ? `<em>₦${s.p}</em>` : s.t === 'tax' ? `<em>-₦${s.p}</em>` : ''}${o ? `<u class="${o.by}">${o.houses ? '<b>' + '⌂'.repeat(o.houses) + '</b>' : ''}</u>` : ''}<div class="toks">${tok}</div></button>`); }
     const here = PSP[st.pos[me]], d = st.dice;
-    const buildable = Object.entries(st.own).filter(([i, o]) => o.by === me && PSP[i].g && (o.houses || 0) < 3 && groupOf(PSP[i].g).every((k) => st.own[k] && st.own[k].by === me));
-    const center = `<div class="pcenter"><div class="dice"><span>${d[0]}</span><span>${d[1]}</span></div>
-      <div class="row" style="justify-content:center;gap:12px"><span class="row">${av('anthonia', 22)}<b>₦${st.cash.anthonia}</b></span><span class="row">${av('ifeayomi', 22)}<b>₦${st.cash.ifeayomi}</b></span></div>
-      ${st.card ? `<div class="lovecard">${esc(st.card)}</div>` : ''}
-      ${mine ? (st.phase === 'roll' ? gbtn('property', 'roll', st.jail[me] ? 'Roll for doubles' : 'Roll dice', 'primary')
-        : st.phase === 'buy' ? `<div class="row" style="justify-content:center">${gbtn('property', 'buy', `Buy ${here.n} ₦${here.p}`, 'primary sm')}${gbtn('property', 'skip', 'No thanks', 'sm')}</div>`
-        : gbtn('property', 'end', 'End turn', 'teal')) : ''}
-      ${mine && st.jail[me] && st.phase === 'roll' && st.cash[me] >= 50 ? gbtn('property', 'bail', 'Pay ₦50 to leave', 'sm') : ''}</div>`;
-    return `<div class="pboard">${cells.join('')}${center}</div>
-    ${mine && buildable.length ? `<span class="eyebrow">Build a house</span><div class="row">${buildable.map(([i]) => gbtn('property', 'build', `${PSP[i].n} ₦${Math.round(PSP[i].p / 2)}`, 'sm', `data-x="${i}"`)).join('')}</div>` : ''}
-    <div class="row between small"><span class="muted">${(st.log || []).slice(0, 2).map(esc).join('<br>')}</span>${!st.over ? gbtn('property', 'finish', 'End game & count', 'sm ghost') : ''}</div>`;
+    const buildable = Object.entries(st.own).filter(([i, o]) => o.by === me && PSP[i].g && (o.houses || 0) < 4 && groupOf(PSP[i].g).every((k) => st.own[k] && st.own[k].by === me));
+    const wallet = (r) => { const n = Object.values(st.own).filter((o) => o.by === r).length; const canRoll = r === me && mine && st.phase === 'roll';
+      return `<button class="wallet ${r} ${st.turn === r && !st.over ? 'active' : ''} ${canRoll ? 'canroll' : ''}" ${canRoll ? 'data-act="g" data-g="property" data-a="roll"' : 'disabled'}>${av(r, 44)}<span><b>${NAMES[r]}</b><span class="cash">₦${st.cash[r].toLocaleString()}</span><span class="small muted">${n} place${n === 1 ? '' : 's'}${st.jail[r] ? ' · on a missed call' : ''}${st.free && st.free[r] ? ' · free card' : ''}</span></span>${canRoll ? '<em class="tap">Tap to roll</em>' : ''}</button>`; };
+    const center = `<div class="pcenter"><div class="pdice">${dieFace(d[0], 'pd')}${dieFace(d[1], 'pd')}</div>
+      ${st.card ? `<div class="lovecard">${esc(st.card)}</div>` : `<div class="small muted center">${esc(st.msg || '')}</div>`}
+      ${mine && !propAnim ? (st.phase === 'buy' ? `<div class="row" style="justify-content:center">${gbtn('property', 'buy', `Buy ${here.n} ₦${here.p}`, 'primary sm')}${gbtn('property', 'skip', 'No thanks', 'sm')}</div>`
+        : st.phase === 'end' ? gbtn('property', 'end', 'End turn', 'teal sm') : st.phase === 'roll' ? '<span class="small" style="color:var(--her);font-weight:800">Tap your avatar to roll</span>' : '') : ''}
+      ${mine && st.jail[me] && st.phase === 'roll' ? (st.free && st.free[me] ? gbtn('property', 'useFree', 'Use free card', 'sm') : st.cash[me] >= 50 ? gbtn('property', 'bail', 'Pay ₦50 to leave', 'sm') : '') : ''}</div>`;
+    return `<div class="wallets">${wallet('anthonia')}${wallet('ifeayomi')}</div>
+    <div class="pboardwrap ${S.pzoom ? 'zoom' : ''}"><div class="pboard">${cells.join('')}${center}</div></div>
+    <div class="row">${gbtn('property', 'zoom', S.pzoom ? 'Fit board' : 'Zoom in', 'sm')}${!st.over ? gbtn('property', 'finish', 'End game & count', 'sm ghost') : ''}</div>
+    ${mine && buildable.length ? `<span class="eyebrow">Build a house (up to 4)</span><div class="row">${buildable.map(([i]) => gbtn('property', 'build', `${PSP[i].n} ₦${Math.round(PSP[i].p / 2)}`, 'sm', `data-x="${i}"`)).join('')}</div>` : ''}
+    <div class="small muted">${(st.log || []).slice(0, 3).map(esc).join('<br>')}</div>`;
   },
+  post(st) { if (!st || !st.mv || propAnim) return; if (propSeen === null) { propSeen = st.mv.id; return; } if (st.mv.id === propSeen) return; propSeen = st.mv.id;
+    const mv = st.mv; spinDice('.pdice .dface', mv.dice, 650).then(() => { if (!mv.steps) { render(true); return; } propAnim = { who: mv.who, at: mv.from }; let k = 0;
+      const hop = () => { k++; propAnim.at = (mv.from + k) % PN; render(true); if (k < mv.steps) setTimeout(hop, 170); else setTimeout(() => { propAnim = null; render(true); }, 260); }; setTimeout(hop, 120); }); },
   act: {
+    zoom() { S.pzoom = !S.pzoom; render(true); },
     info(st, t) { const i = +t.dataset.x, s = PSP[i], o = st.own[i]; openSheet(`${sheetHead(s.n)}${s.g ? `<div class="chip" style="background:${PCOL[s.g]};color:#fff">${s.g} group</div>` : ''}
-      <p class="muted" style="margin:0">${s.t === 'p' ? `Price ₦${s.p}. Rent ₦${Math.round(s.p / 10)}, doubled with the whole colour. Houses cost ₦${Math.round(s.p / 2)} and raise rent ×5, ×15, ×35.` : s.t === 'tr' ? 'Transport: rent ₦25 with one, ₦100 with both.' : s.t === 'ut' ? 'Pig Farm: rent is 6× the dice.' : s.t === 'card' ? 'Pick a Love Note card.' : s.t === 'tax' ? `Pay ₦${s.p}.` : s.t === 'jail' ? 'Stuck on a missed call: roll doubles or pay ₦50 to leave. Leave free after 3 tries.' : s.t === 'gojail' ? 'Go straight to Missed Call.' : s.t === 'start' ? 'Collect ₦200 each time you pass.' : 'Nothing happens. Enjoy the hug.'}</p>
+      <p class="muted" style="margin:0">${s.t === 'p' ? `Price ₦${s.p}. Rent ₦${Math.round(s.p / 10)}, doubled with the whole colour. Houses cost ₦${Math.round(s.p / 2)} and raise rent ×5, ×15, ×35, ×60.` : s.t === 'tr' ? 'Transport: rent ₦25, ₦50 or ₦100 for owning 1, 2 or 3.' : s.t === 'ut' ? 'Pig Farm: rent is 6× the dice.' : s.t === 'card' ? 'Pick a Love Note card.' : s.t === 'jar' ? 'Open the Lucky Jar for a surprise.' : s.t === 'date' ? 'Date Night: you treat your partner. Pay them ₦50.' : s.t === 'tax' ? `Pay ₦${s.p}.` : s.t === 'jail' ? 'Stuck on a missed call: roll doubles, use a free card or pay ₦50. Free after 3 tries.' : s.t === 'gojail' ? 'Go straight to Missed Call.' : s.t === 'start' ? 'Collect ₦200 every time you pass.' : 'Nothing happens. Enjoy the hug.'}</p>
       ${o ? `<div class="row">${av(o.by, 28)}<b>Owned by ${NAMES[o.by]}</b>${o.houses ? ` · ${o.houses} house${o.houses > 1 ? 's' : ''}` : ''}</div>` : ''}`); },
-    roll(st) { const me = S.role; if (st.turn !== me || st.phase !== 'roll') return; const d = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)], dbl = d[0] === d[1]; st.dice = d; st.card = null;
+    async roll(st) { const me = S.role; if (st.turn !== me || st.phase !== 'roll' || propAnim) return; const d = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)], dbl = d[0] === d[1];
+      st.dice = d; st.card = null; const from = st.pos[me]; let steps = 0;
       if (st.jail[me]) { if (dbl) { st.jail[me] = 0; logLine(st, `${NAMES[me]} rolled doubles and left Missed Call`); }
         else if (st.jail[me] >= 3) { st.jail[me] = 0; st.cash[me] -= 50; logLine(st, `${NAMES[me]} paid ₦50 after 3 tries`); }
-        else { st.jail[me]++; st.phase = 'end'; logLine(st, `${NAMES[me]} is still on a missed call`); return saveGame('property', st); }
-        G.property.move(st, d[0] + d[1], false); return saveGame('property', st); }
-      if (dbl) { st.dbl = (st.dbl || 0) + 1; if (st.dbl >= 3) { st.pos[me] = 6; st.jail[me] = 1; st.dbl = 0; st.phase = 'end'; logLine(st, 'Three doubles! Straight to Missed Call'); return saveGame('property', st); } } else st.dbl = 0;
-      G.property.move(st, d[0] + d[1], dbl); saveGame('property', st); },
+        else { st.jail[me]++; st.phase = 'end'; logLine(st, `${NAMES[me]} is still on a missed call`); st.mv = { id: Date.now(), who: me, from, steps: 0, dice: d }; return saveGame('property', st); }
+        steps = d[0] + d[1]; G.property.move(st, steps, false); }
+      else { if (dbl) { st.dbl = (st.dbl || 0) + 1; if (st.dbl >= 3) { st.pos[me] = 8; st.jail[me] = 1; st.dbl = 0; st.phase = 'end'; logLine(st, 'Three doubles! Straight to Missed Call'); st.mv = { id: Date.now(), who: me, from, steps: 0, dice: d }; return saveGame('property', st); } } else st.dbl = 0;
+        steps = d[0] + d[1]; G.property.move(st, steps, dbl); }
+      st.mv = { id: Date.now(), who: me, from, steps, dice: d, to: (from + steps) % PN }; saveGame('property', st); },
     bail(st) { const me = S.role; if (st.turn !== me || !st.jail[me]) return; st.cash[me] -= 50; st.jail[me] = 0; logLine(st, `${NAMES[me]} paid ₦50 to leave`); saveGame('property', st); },
+    useFree(st) { const me = S.role; if (st.turn !== me || !st.jail[me] || !st.free[me]) return; st.free[me] = 0; st.jail[me] = 0; logLine(st, `${NAMES[me]} used a free card`); saveGame('property', st); },
     buy(st) { const me = S.role, i = st.pos[me], s = PSP[i]; if (st.turn !== me || st.phase !== 'buy' || st.own[i] || st.cash[me] < s.p) return; st.cash[me] -= s.p; st.own[i] = { by: me, houses: 0 };
       logLine(st, `${NAMES[me]} bought ${s.n}`); st.phase = st.again ? 'roll' : 'end'; floatHearts(); saveGame('property', st); },
     skip(st) { if (st.turn !== S.role) return; st.phase = st.again ? 'roll' : 'end'; saveGame('property', st); },
-    build(st, t) { const me = S.role, i = +t.dataset.x, o = st.own[i], cost = Math.round(PSP[i].p / 2); if (st.turn !== me || !o || o.by !== me || (o.houses || 0) >= 3) return; if (st.cash[me] < cost) return toast('Not enough cash');
+    build(st, t) { const me = S.role, i = +t.dataset.x, o = st.own[i], cost = Math.round(PSP[i].p / 2); if (st.turn !== me || !o || o.by !== me || (o.houses || 0) >= 4) return; if (st.cash[me] < cost) return toast('Not enough cash');
       st.cash[me] -= cost; o.houses = (o.houses || 0) + 1; logLine(st, `${NAMES[me]} built a house on ${PSP[i].n}`); saveGame('property', st); },
     end(st) { const me = S.role; if (st.turn !== me) return; st.turn = other(me); st.phase = 'roll'; st.again = false; st.dbl = 0; st.card = null; st.msg = `${NAMES[st.turn]}'s turn to roll`; saveGame('property', st); },
     finish(st, t) { if (t.dataset.sure !== '1') { t.dataset.sure = '1'; t.textContent = 'Tap again to end and count'; return; } const a = worth(st, 'anthonia'), i = worth(st, 'ifeayomi');
       st.over = true; st.turn = null; st.winner = a === i ? 'tie' : a > i ? 'anthonia' : 'ifeayomi'; logLine(st, `Final worth: Anthonia ₦${a}, Ifeayomi ₦${i}`); saveGame('property', st); },
   },
-  move(st, steps, dbl) { const me = S.role, from = st.pos[me], to = (from + steps) % 24; if (from + steps >= 24) { st.cash[me] += 200; logLine(st, `${NAMES[me]} passed Start: +₦200`); }
+  move(st, steps, dbl) { const me = S.role, from = st.pos[me], to = (from + steps) % PN; if (from + steps >= PN) { st.cash[me] += 200; st.laps[me] = (st.laps[me] || 0) + 1; logLine(st, `${NAMES[me]} passed Start: +₦200`); }
     st.pos[me] = to; st.again = dbl; G.property.land(st, steps); },
   land(st, dice) { const me = S.role, you = other(me), i = st.pos[me], s = PSP[i]; st.phase = st.again ? 'roll' : 'end';
+    const toJail = () => { st.pos[me] = 8; st.jail[me] = 1; st.again = false; st.phase = 'end'; };
     if (s.t === 'p' || s.t === 'tr' || s.t === 'ut') { const o = st.own[i];
       if (!o) { if (st.cash[me] >= s.p) st.phase = 'buy'; logLine(st, `${NAMES[me]} landed on ${s.n}`); }
       else if (o.by === you) { const rent = propRent(st, i, dice); st.cash[me] -= rent; st.cash[you] += rent; logLine(st, `${NAMES[me]} paid ${NAMES[you]} ₦${rent} rent for ${s.n}`); }
       else logLine(st, `${NAMES[me]} is home at ${s.n}`); }
     else if (s.t === 'tax') { st.cash[me] -= s.p; logLine(st, `${s.n}: ${NAMES[me]} paid ₦${s.p}`); }
-    else if (s.t === 'gojail') { st.pos[me] = 6; st.jail[me] = 1; st.again = false; st.phase = 'end'; logLine(st, `${NAMES[me]} went to Missed Call`); }
-    else if (s.t === 'card') { const [txt, eff] = LOVE[Math.floor(Math.random() * LOVE.length)]; st.card = txt;
-      if (typeof eff === 'number' && Math.abs(eff) > 24) st.cash[me] += eff;
+    else if (s.t === 'date') { st.cash[me] -= 50; st.cash[you] += 50; st.card = `Date Night! ${NAMES[me]} treats ${NAMES[you]}: ₦50.`; logLine(st, st.card); }
+    else if (s.t === 'gojail') { toJail(); logLine(st, `${NAMES[me]} went to Missed Call`); }
+    else if (s.t === 'card' || s.t === 'jar') { const deck = s.t === 'card' ? LOVE : JAR; const [txt, eff] = deck[Math.floor(Math.random() * deck.length)]; st.card = (s.t === 'card' ? 'Love Note: ' : 'Lucky Jar: ') + txt;
+      if (typeof eff === 'number') st.cash[me] += eff;
       else if (eff === 'start') { st.pos[me] = 0; st.cash[me] += 200; }
-      else if (eff === 'jail') { st.pos[me] = 6; st.jail[me] = 1; st.again = false; st.phase = 'end'; }
+      else if (eff === 'jail') toJail();
       else if (eff === 'gift') { st.cash[me] += 50; st.cash[you] -= 50; }
-      else if (typeof eff === 'number') { if (eff < st.pos[me]) st.cash[me] += 200; st.pos[me] = eff; G.property.land(st, dice); }
-      logLine(st, `Love Note: ${txt}`); }
+      else if (eff === 'free') { st.free = st.free || {}; st.free[me] = 1; }
+      else if (eff === 'swap') { const t = st.pos[me]; st.pos[me] = st.pos[you]; st.pos[you] = t; }
+      else if (eff === 'fwd3') { st.pos[me] = (st.pos[me] + 3) % PN; logLine(st, st.card); return G.property.land(st, dice); }
+      else if (eff === 'perprop') st.cash[me] += 20 * Object.values(st.own).filter((o) => o.by === me).length;
+      else if (eff === 'repairs') st.cash[me] -= 25 * Object.values(st.own).filter((o) => o.by === me).reduce((a, o) => a + (o.houses || 0), 0);
+      else if (typeof eff === 'string' && eff[0] === 'm') { const to = +eff.slice(1); if (to < st.pos[me]) st.cash[me] += 200; st.pos[me] = to; logLine(st, st.card); return G.property.land(st, dice); }
+      logLine(st, st.card); }
     else logLine(st, `${NAMES[me]} landed on ${s.n}`);
     for (const r of [me, you]) if (st.cash[r] < 0) { st.over = true; st.turn = null; st.winner = other(r); logLine(st, `${NAMES[r]} ran out of money!`); } },
 };
 
-/* =================================== LUDO =================================== */
+/* =================================== LUDO (4 houses, 2 dice) =================================== */
 const LPATH = [[6, 1], [6, 2], [6, 3], [6, 4], [6, 5], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6], [0, 7], [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14], [7, 14], [8, 14], [8, 13], [8, 12], [8, 11], [8, 10], [8, 9], [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8], [14, 7], [14, 6], [13, 6], [12, 6], [11, 6], [10, 6], [9, 6], [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0], [7, 0], [6, 0]];
-const LSTART = { anthonia: 0, ifeayomi: 26 }, LSAFE = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
-const LHOME = { anthonia: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]], ifeayomi: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]] };
-const LYARD = { anthonia: [[1, 1], [1, 4], [4, 1], [4, 4]], ifeayomi: [[10, 10], [10, 13], [13, 10], [13, 13]] };
-const lAbs = (r, step) => (LSTART[r] + step) % 52;
-function lCell(r, step, k) { if (step < 0) return LYARD[r][k]; if (step <= 50) return LPATH[lAbs(r, step)]; if (step <= 55) return LHOME[r][step - 51]; return [7, 7]; }
-function lMovable(st, r) { const d = st.dice; return st.tok[r].map((s, k) => (s < 0 ? (d === 6 ? k : -1) : s + d <= 56 ? k : -1)).filter((k) => k >= 0); }
+const LH = [ // the four houses: top-left, top-right, bottom-right, bottom-left
+  { start: 0, col: '#ff4f7e', name: 'Rose', home: [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]], yard: [[1, 1], [1, 4], [4, 1], [4, 4]], box: [0, 0] },
+  { start: 13, col: '#22b3a3', name: 'Teal', home: [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]], yard: [[1, 10], [1, 13], [4, 10], [4, 13]], box: [0, 9] },
+  { start: 26, col: '#f5a300', name: 'Gold', home: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]], yard: [[10, 10], [10, 13], [13, 10], [13, 13]], box: [9, 9] },
+  { start: 39, col: '#5b8cff', name: 'Blue', home: [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]], yard: [[10, 1], [10, 4], [13, 1], [13, 4]], box: [9, 0] },
+];
+const LSAFE = new Set([0, 8, 13, 21, 26, 34, 39, 47]);
+const lAbs = (h, step) => (LH[h].start + step) % 52;
+function lCell(h, step, k) { if (step < 0) return LH[h].yard[k]; if (step <= 50) return LPATH[lAbs(h, step)]; if (step <= 55) return LH[h].home[step - 51]; return [7, 7]; }
+const lMine = (st, r) => [0, 1, 2, 3].filter((h) => st.owner[h] === r);
+const lCan = (st, h, k, d) => { const s = st.tok[h][k]; return s < 0 ? d === 6 : s + d <= 56 && s !== 56; };
+function lAnyMove(st, r) { for (let di = 0; di < 2; di++) { if (st.used[di]) continue; for (const h of lMine(st, r)) for (let k = 0; k < 4; k++) if (lCan(st, h, k, st.dice[di])) return true; } return false; }
+let ludoSeen = null, ludoSpin = false;
 G.ludo = {
-  name: 'Ludo', short: 'Race your seeds home', icon: ICON('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>'),
-  desc: 'Roll a 6 to bring a seed out. Move round the board and up your home lane. Land on your partner\'s seed to send it back (stars are safe). A 6 or a capture gives you another roll. Get all 4 home to win.',
-  start(me) { return { kind: 'ludo', tok: { anthonia: [-1, -1, -1, -1], ifeayomi: [-1, -1, -1, -1] }, turn: me, dice: 0, rolled: false, msg: `${NAMES[me]} rolls first` }; },
-  score: (st) => [st.tok.anthonia.filter((s) => s === 56).length + ' home', st.tok.ifeayomi.filter((s) => s === 56).length + ' home'],
+  name: 'Ludo', short: '4 houses, 2 dice', icon: ICON('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><circle cx="16" cy="16" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>'),
+  desc: 'Naija Ludo with two dice. Each of you plays two houses on opposite corners. A 6 brings a seed out. Use each die on any of your seeds. Land on your partner\'s seed to send it home (stars are safe). Rolling a 6 or capturing gives you another roll. Get all 8 seeds home to win.',
+  start(first) { return { kind: 'ludo', phase: 'pick', owner: [null, null, null, null], tok: [[-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1], [-1, -1, -1, -1]], turn: first, dice: [6, 6], used: [true, true], rolled: false, sel: 0, msg: `${NAMES[first]} picks colours first` }; },
+  score: (st) => ['anthonia', 'ifeayomi'].map((r) => lMine(st, r).reduce((a, h) => a + st.tok[h].filter((s) => s === 56).length, 0) + '/8 home'),
   view(st, me) {
-    const mine = st.turn === me && !st.over, mov = mine && st.rolled ? new Set(lMovable(st, me)) : new Set();
-    const grid = [];
-    const pathIdx = {}; LPATH.forEach(([r, c], i) => { pathIdx[r * 15 + c] = i; });
-    for (let r = 0; r < 15; r++) for (let c = 0; c < 15; c++) { let cls = 'lc';
-      if (r < 6 && c < 6) cls += ' yard a'; else if (r > 8 && c > 8) cls += ' yard i'; else if (r < 6 && c > 8) cls += ' yard x1'; else if (r > 8 && c < 6) cls += ' yard x2';
-      else if (r >= 6 && r <= 8 && c >= 6 && c <= 8) cls += r === 7 && c === 7 ? ' center' : ' mid';
-      else if (r === 7 && c >= 1 && c <= 5) cls += ' homeA'; else if (r === 7 && c >= 9 && c <= 13) cls += ' homeI';
-      else if (pathIdx[r * 15 + c] !== undefined) { const i = pathIdx[r * 15 + c]; cls += ' path' + (LSAFE.has(i) ? ' safe' : '') + (i === 0 ? ' startA' : i === 26 ? ' startI' : ''); }
-      grid.push(`<div class="${cls}" style="grid-row:${r + 1};grid-column:${c + 1}">${cls.includes('safe') && !cls.includes('start') ? '★' : ''}</div>`); }
-    const toks = []; const stack = {};
-    for (const r of ['anthonia', 'ifeayomi']) st.tok[r].forEach((s, k) => { const [y, x] = lCell(r, s, k); const key = y * 15 + x; const n = (stack[key] = (stack[key] || 0) + 1) - 1;
-      const can = r === me && mov.has(k); toks.push(`<button class="ltok ${r} ${can ? 'can' : ''}" style="grid-row:${y + 1};grid-column:${x + 1};transform:translate(${n * 4}px,${-n * 4}px)" ${can ? `data-act="g" data-g="ludo" data-a="move" data-x="${k}"` : 'disabled'} aria-label="Seed">${s === 56 ? '✓' : ''}</button>`); });
-    return `<div class="lboard">${grid.join('')}${toks.join('')}</div>
-      <div class="row" style="justify-content:center;gap:14px"><div class="die ${st.rolled || !mine ? '' : 'pulse'}">${st.dice || '–'}</div>${mine && !st.rolled ? gbtn('ludo', 'roll', 'Roll', 'primary') : mine ? '<span class="small muted">Tap a glowing seed to move it</span>' : ''}</div>
-      <div class="row" style="justify-content:space-around"><span class="row">${av('anthonia', 26)}${st.tok.anthonia.filter((s) => s === 56).length}/4 home</span><span class="row">${st.tok.ifeayomi.filter((s) => s === 56).length}/4 home${av('ifeayomi', 26)}</span></div>`;
+    const mine = st.turn === me && !st.over;
+    if (st.phase === 'pick') {
+      if (!mine) return `<div class="locked">${av(st.turn, 28)} ${NAMES[st.turn]} is picking colours…</div>`;
+      const pair = (a, b) => `<button class="lpair" data-act="g" data-g="ludo" data-a="pick" data-x="${a}"><span style="background:${LH[a].col}"></span><span style="background:${LH[b].col}"></span><b>${LH[a].name} & ${LH[b].name}</b></button>`;
+      return `<span class="eyebrow">Pick your two houses (opposite corners)</span><div class="row">${pair(0, 2)}${pair(1, 3)}</div><p class="small muted" style="margin:0">${NAMES[other(me)]} gets the other two.</p>`; }
+    const sel = st.used[st.sel] ? (st.used[0] ? 1 : 0) : st.sel, die = st.dice[sel];
+    const grid = []; const pathIdx = {}; LPATH.forEach(([r, c], i) => { pathIdx[r * 15 + c] = i; });
+    const homeOf = {}; LH.forEach((h, hi) => h.home.forEach(([r, c]) => { homeOf[r * 15 + c] = hi; }));
+    const startOf = {}; LH.forEach((h, hi) => { const [r, c] = LPATH[h.start]; startOf[r * 15 + c] = hi; });
+    for (let r = 0; r < 15; r++) for (let c = 0; c < 15; c++) { const key = r * 15 + c; let style = '', cls = 'lc', txt = '';
+      const box = LH.findIndex((h) => r >= h.box[0] && r < h.box[0] + 6 && c >= h.box[1] && c < h.box[1] + 6);
+      if (box >= 0) { cls += ' yard'; style = `background:${LH[box].col}22`; if (LH[box].yard.some(([y, x]) => y === r && x === c)) { cls += ' spot'; style = `background:#fff;box-shadow:inset 0 0 0 2px ${LH[box].col}55`; } }
+      else if (r === 7 && c === 7) cls += ' center';
+      else if (r >= 6 && r <= 8 && c >= 6 && c <= 8) cls += ' mid';
+      else if (homeOf[key] !== undefined) style = `background:${LH[homeOf[key]].col}`;
+      else if (startOf[key] !== undefined) style = `background:${LH[startOf[key]].col}`;
+      else if (pathIdx[key] !== undefined && LSAFE.has(pathIdx[key])) txt = '★';
+      grid.push(`<div class="${cls}" style="grid-row:${r + 1};grid-column:${c + 1};${style}">${txt}</div>`); }
+    const toks = [], stack = {};
+    for (let h = 0; h < 4; h++) st.tok[h].forEach((s, k) => { const [y, x] = lCell(h, s, k); const key = y * 15 + x; const n = (stack[key] = (stack[key] || 0) + 1) - 1;
+      const own = st.owner[h], can = mine && st.rolled && own === me && !st.used[sel] && lCan(st, h, k, die);
+      toks.push(`<button class="ltok ${can ? 'can' : ''}" style="grid-row:${y + 1};grid-column:${x + 1};background:${LH[h].col};border-color:${own === 'anthonia' ? 'var(--her)' : own === 'ifeayomi' ? 'var(--him)' : '#fff'};transform:translate(${n * 4}px,${-n * 4}px)" ${can ? `data-act="g" data-g="ludo" data-a="move" data-h="${h}" data-x="${k}"` : 'disabled'} aria-label="${LH[h].name} seed">${s === 56 ? '✓' : ''}</button>`); });
+    const dieBtn = (i) => `<button class="ldie ${st.rolled && !st.used[i] && i === sel ? 'sel' : ''} ${st.rolled && st.used[i] ? 'used' : ''}" ${mine && st.rolled && !st.used[i] ? `data-act="g" data-g="ludo" data-a="selDie" data-x="${i}"` : 'disabled'}>${dieFace(st.dice[i], 'ld')}</button>`;
+    const home = (r) => lMine(st, r).reduce((a, h) => a + st.tok[h].filter((s) => s === 56).length, 0);
+    return `<div class="row" style="justify-content:space-around">${['anthonia', 'ifeayomi'].map((r) => `<span class="row">${av(r, 28)}${lMine(st, r).map((h) => `<span class="lsw" style="background:${LH[h].col}"></span>`).join('')}<b>${home(r)}/8</b></span>`).join('')}</div>
+      <div class="lboard">${grid.join('')}${toks.join('')}</div>
+      <div class="row" style="justify-content:center;gap:10px"><div class="ldice">${dieBtn(0)}${dieBtn(1)}</div>${mine && !st.rolled ? gbtn('ludo', 'roll', 'Roll dice', 'primary') : ''}</div>
+      ${mine && st.rolled ? `<p class="small muted center" style="margin:0">Using the <b>${die}</b>. Tap a glowing seed of any of your colours${!st.used[0] && !st.used[1] ? ', or tap the other die first' : ''}.</p>` : ''}`;
   },
+  post(st) { if (!st || !st.rollId) return; if (ludoSeen === null) { ludoSeen = st.rollId; return; } if (st.rollId === ludoSeen) return; ludoSeen = st.rollId; if (st.rollBy !== S.role) spinDice('.ldice .dface', st.dice, 650); },
   act: {
-    roll(st) { const me = S.role; if (st.turn !== me || st.rolled || st.over) return; st.dice = 1 + Math.floor(Math.random() * 6); const mv = lMovable(st, me);
-      if (!mv.length) { logLine(st, `${NAMES[me]} rolled ${st.dice}: no move`); st.turn = other(me); st.rolled = false; }
-      else { st.rolled = true; st.msg = `${NAMES[me]} rolled ${st.dice}`; if (mv.length === 1 && st.tok[me].filter((s) => s >= 0 && s < 56).length <= 1 && st.tok[me][mv[0]] >= 0) { return G.ludo.doMove(st, mv[0]); } }
+    pick(st, t) { const me = S.role; if (st.turn !== me || st.phase !== 'pick') return; const a = +t.dataset.x, b = (a + 2) % 4; st.owner = [0, 1, 2, 3].map((h) => (h === a || h === b ? me : other(me))); st.phase = 'play'; logLine(st, `${NAMES[me]} took ${LH[a].name} & ${LH[b].name}`); saveGame('ludo', st); },
+    selDie(st, t) { if (st.turn !== S.role) return; st.sel = +t.dataset.x; S.games.ludo.sel = st.sel; render(true); },
+    async roll(st) { const me = S.role; if (st.turn !== me || st.rolled || st.over || ludoSpin) return; ludoSpin = true;
+      const d = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]; await spinDice('.ldice .dface', d, 650); ludoSpin = false;
+      st.dice = d; st.used = [false, false]; st.rolled = true; st.sel = 0; st.rollId = Date.now(); st.rollBy = me; ludoSeen = st.rollId;
+      if (!lAnyMove(st, me)) { st.rolled = false; st.used = [true, true]; if (d[0] === 6 && d[1] === 6) logLine(st, `${NAMES[me]} rolled double 6 but can't move. Roll again`); else { st.turn = other(me); logLine(st, `${NAMES[me]} rolled ${d[0]} and ${d[1]}: no move`); } }
+      else { if (!lMine(st, me).some((h) => [0, 1, 2, 3].some((k) => lCan(st, h, k, d[0])))) st.sel = 1; st.msg = `${NAMES[me]} rolled ${d[0]} and ${d[1]}`; }
       saveGame('ludo', st); },
-    move(st, t) { const me = S.role; if (st.turn !== me || !st.rolled) return; const k = +t.dataset.x; if (!lMovable(st, me).includes(k)) return; G.ludo.doMove(st, k); },
+    move(st, t) { const me = S.role; if (st.turn !== me || !st.rolled) return; const h = +t.dataset.h, k = +t.dataset.x; let sel = st.used[st.sel] ? (st.used[0] ? 1 : 0) : st.sel; const d = st.dice[sel];
+      if (st.owner[h] !== me || !lCan(st, h, k, d)) return; const s = st.tok[h][k], ns = s < 0 ? 0 : s + d; st.tok[h][k] = ns; st.used[sel] = true; let cap = false;
+      if (ns <= 50) { const a = lAbs(h, ns); if (!LSAFE.has(a)) for (let oh = 0; oh < 4; oh++) { if (st.owner[oh] === me) continue; st.tok[oh].forEach((o, j) => { if (o >= 0 && o <= 50 && lAbs(oh, o) === a) { st.tok[oh][j] = -1; cap = true; } }); } }
+      st.bonus = st.bonus || cap; let msg = s < 0 ? `${NAMES[me]} brought a ${LH[h].name} seed out` : ns === 56 ? `${NAMES[me]} got a ${LH[h].name} seed home!` : `${NAMES[me]} moved ${LH[h].name} ${d}`; if (cap) { msg += ` and sent ${NAMES[other(me)]}'s seed home!`; toast('Captured!'); }
+      if (lMine(st, me).every((hh) => st.tok[hh].every((x) => x === 56))) { st.over = true; st.winner = me; st.turn = null; }
+      else { st.sel = st.used[0] ? 1 : 0; if (st.used[0] && st.used[1] || !lAnyMove(st, me)) { const again = st.dice.includes(6) || st.bonus; st.rolled = false; st.used = [true, true]; st.bonus = false; if (!again) st.turn = other(me); else msg += '. Roll again!'; } }
+      logLine(st, msg); saveGame('ludo', st); },
   },
-  doMove(st, k) { const me = S.role, you = other(me), s = st.tok[me][k]; const ns = s < 0 ? 0 : s + st.dice; st.tok[me][k] = ns; let cap = false;
-    if (ns <= 50) { const a = lAbs(me, ns); if (!LSAFE.has(a)) st.tok[you].forEach((o, j) => { if (o >= 0 && o <= 50 && lAbs(you, o) === a) { st.tok[you][j] = -1; cap = true; } }); }
-    let msg = s < 0 ? `${NAMES[me]} brought a seed out` : ns === 56 ? `${NAMES[me]} got a seed home!` : `${NAMES[me]} moved ${st.dice}`; if (cap) msg += ` and sent ${NAMES[you]}'s seed back!`;
-    if (st.tok[me].every((x) => x === 56)) { st.over = true; st.winner = me; st.turn = null; }
-    else if (!(st.dice === 6 || cap || ns === 56)) st.turn = you;
-    st.rolled = false; logLine(st, msg); if (cap && !st.over) toast('Captured!'); saveGame('ludo', st); },
 };
 
 /* =================================== POOL (8-ball) =================================== */
@@ -444,46 +533,55 @@ function simulate(balls, angle, power, onFrame) {
       const nearPocket = POCKETS.some(([px, py]) => (b.x - px) ** 2 + (b.y - py) ** 2 < 40 * 40);
       if (!nearPocket) { if (b.x < BR) { b.x = BR; b.vx = Math.abs(b.vx) * .8; } if (b.x > PW - BR) { b.x = PW - BR; b.vx = -Math.abs(b.vx) * .8; } if (b.y < BR) { b.y = BR; b.vy = Math.abs(b.vy) * .8; } if (b.y > PH - BR) { b.y = PH - BR; b.vy = -Math.abs(b.vy) * .8; } }
       const s = Math.hypot(b.vx, b.vy); if (s > 0) { const ns = Math.max(0, s - .028); b.vx *= ns / s; b.vy *= ns / s; if (ns > 0.02) moving = true; else b.vx = b.vy = 0; } }
-    if (onFrame && step % 2 === 0) frames.push(B.filter((b) => !b.out).map((b) => ({ n: b.n, x: b.x, y: b.y })));
+    if (onFrame && step % 3 === 0) frames.push(B.filter((b) => !b.out).map((b) => ({ n: b.n, x: b.x, y: b.y })));
     if (!moving) break; }
   return { balls: B.filter((b) => !b.out).map((b) => ({ n: b.n, x: Math.round(b.x * 10) / 10, y: Math.round(b.y * 10) / 10 })), potted, firstHit, frames }; }
+function poolGeom(cv) { const full = cv.parentElement.clientWidth, vert = full < 640, maxH = Math.max(320, window.innerHeight * .64); let sc = vert ? full / (PH + 60) : full / (PW + 60); sc = Math.min(sc, maxH / (vert ? PW + 60 : PH + 60)); const w = (vert ? PH + 60 : PW + 60) * sc; return { w, vert, sc, h: (vert ? PW + 60 : PH + 60) * sc }; }
+function poolToTable(cv, e) { const r = cv.getBoundingClientRect(), g = poolGeom(cv); const u = (e.clientX - r.left) / g.sc - 30, v = (e.clientY - r.top) / g.sc - 30; return g.vert ? { x: PW - v, y: u } : { x: u, y: v }; }
 function drawTable(cv, balls, aim) {
-  const w = cv.clientWidth, dpr = Math.min(2, devicePixelRatio || 1), sc = w / (PW + 60), h = (PH + 60) * sc; cv.style.height = h + 'px'; cv.width = w * dpr; cv.height = h * dpr;
-  const x = cv.getContext('2d'); x.scale(dpr * sc, dpr * sc); x.fillStyle = '#7a4a2a'; x.beginPath(); x.roundRect ? x.roundRect(0, 0, PW + 60, PH + 60, 26) : x.rect(0, 0, PW + 60, PH + 60); x.fill();
-  x.translate(30, 30); const g = x.createRadialGradient(PW / 2, PH / 2, 50, PW / 2, PH / 2, PW / 1.6); g.addColorStop(0, '#2fa36b'); g.addColorStop(1, '#17714a'); x.fillStyle = g; x.fillRect(0, 0, PW, PH);
-  x.strokeStyle = 'rgba(255,255,255,.15)'; x.beginPath(); x.moveTo(250, 0); x.lineTo(250, PH); x.stroke();
+  const g = poolGeom(cv), dpr = Math.min(2, devicePixelRatio || 1); cv.style.height = g.h + 'px'; cv.style.width = g.w + 'px'; cv.width = g.w * dpr; cv.height = g.h * dpr;
+  const x = cv.getContext('2d'); x.scale(dpr * g.sc, dpr * g.sc); const TW = g.vert ? PH + 60 : PW + 60, TH = g.vert ? PW + 60 : PH + 60;
+  x.fillStyle = '#7a4a2a'; x.beginPath(); x.roundRect ? x.roundRect(0, 0, TW, TH, 26) : x.rect(0, 0, TW, TH); x.fill();
+  x.translate(30, 30); if (g.vert) { x.translate(0, PW); x.rotate(-Math.PI / 2); }
+  const gr = x.createRadialGradient(PW / 2, PH / 2, 50, PW / 2, PH / 2, PW / 1.6); gr.addColorStop(0, '#2fa36b'); gr.addColorStop(1, '#17714a'); x.fillStyle = gr; x.fillRect(0, 0, PW, PH);
+  x.strokeStyle = 'rgba(255,255,255,.15)'; x.lineWidth = 2; x.beginPath(); x.moveTo(250, 0); x.lineTo(250, PH); x.stroke();
   x.fillStyle = '#111'; for (const [px, py] of POCKETS) { x.beginPath(); x.arc(px, Math.min(PH, Math.max(0, py)), 24, 0, 7); x.fill(); }
-  if (aim) { const c = balls.find((b) => b.n === 0); if (c) { x.setLineDash([10, 10]); x.strokeStyle = 'rgba(255,255,255,.75)'; x.lineWidth = 3; x.beginPath(); x.moveTo(c.x, c.y); x.lineTo(c.x + Math.cos(aim.a) * 420, c.y + Math.sin(aim.a) * 420); x.stroke(); x.setLineDash([]);
-    x.strokeStyle = '#e8c48a'; x.lineWidth = 9; x.lineCap = 'round'; const back = 30 + aim.p * 90; x.beginPath(); x.moveTo(c.x - Math.cos(aim.a) * back, c.y - Math.sin(aim.a) * back); x.lineTo(c.x - Math.cos(aim.a) * (back + 300), c.y - Math.sin(aim.a) * (back + 300)); x.stroke(); } }
+  const c = balls.find((b) => b.n === 0);
+  if (aim && c) { const dx = Math.cos(aim.a), dy = Math.sin(aim.a);
+    x.setLineDash([12, 12]); x.strokeStyle = 'rgba(255,255,255,.8)'; x.lineWidth = 3; x.beginPath(); x.moveTo(c.x, c.y); x.lineTo(c.x + dx * 520, c.y + dy * 520); x.stroke(); x.setLineDash([]);
+    const back = 22 + aim.p * 150; x.lineCap = 'round'; x.strokeStyle = '#3b2412'; x.lineWidth = 12; x.beginPath(); x.moveTo(c.x - dx * (back + 340), c.y - dy * (back + 340)); x.lineTo(c.x - dx * (back + 60), c.y - dy * (back + 60)); x.stroke();
+    x.strokeStyle = '#e8c48a'; x.lineWidth = 9; x.beginPath(); x.moveTo(c.x - dx * (back + 60), c.y - dy * (back + 60)); x.lineTo(c.x - dx * back, c.y - dy * back); x.stroke(); x.strokeStyle = '#6cc6ff'; x.lineWidth = 9; x.beginPath(); x.moveTo(c.x - dx * (back + 4), c.y - dy * (back + 4)); x.lineTo(c.x - dx * back, c.y - dy * back); x.stroke(); }
   for (const b of balls) { x.save(); x.beginPath(); x.arc(b.x, b.y, BR, 0, 7); x.clip(); x.fillStyle = b.n > 8 ? '#fff' : ballCol(b.n); x.fillRect(b.x - BR, b.y - BR, BR * 2, BR * 2);
     if (b.n > 8) { x.fillStyle = ballCol(b.n); x.fillRect(b.x - BR, b.y - BR * .55, BR * 2, BR * 1.1); }
-    if (b.n) { x.fillStyle = '#fff'; x.beginPath(); x.arc(b.x, b.y, BR * .48, 0, 7); x.fill(); x.fillStyle = '#111'; x.font = `bold ${BR * .62}px sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(b.n, b.x, b.y + .5); }
-    x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.arc(b.x - BR * .35, b.y - BR * .4, BR * .25, 0, 7); x.fill(); x.restore(); }
+    if (b.n) { x.fillStyle = '#fff'; x.beginPath(); x.arc(b.x, b.y, BR * .5, 0, 7); x.fill(); x.translate(b.x, b.y); if (g.vert) x.rotate(Math.PI / 2); x.fillStyle = '#111'; x.font = `bold ${BR * .66}px sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(b.n, 0, .5); x.setTransform(1, 0, 0, 1, 0, 0); }
+    x.restore(); x.fillStyle = 'rgba(255,255,255,.35)'; x.beginPath(); x.arc(b.x - BR * .35, b.y - BR * .4, BR * .25, 0, 7); x.fill(); }
+  if (aim && aim.drag) { x.setTransform(dpr, 0, 0, dpr, 0, 0); const bw = g.w * .5, bx = (g.w - bw) / 2, by = 8; x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(bx, by, bw, 10); x.fillStyle = aim.p > .75 ? '#ff4f7e' : '#ffd166'; x.fillRect(bx, by, bw * aim.p, 10); }
 }
 const groupBalls = (g) => (g === 'solids' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]);
 let poolAim = { a: 0, p: .6 }, poolAnim = null, poolSeen = null;
 G.pool = {
   name: 'Pool', short: '8-ball, shot by shot', icon: ICON('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 9v6"/>'),
-  desc: '8-ball pool. Pot a ball to claim solids or stripes, clear your group, then sink the black 8 to win. Potting the white or missing every ball is a foul. Pot the 8 too early and you lose.',
-  start(me) { return { kind: 'pool', balls: rack(), groups: { anthonia: null, ifeayomi: null }, turn: me, shot: 0, msg: `${NAMES[me]} breaks` }; },
-  view(st, me) { const mine = st.turn === me && !st.over, g = st.groups[me];
+  desc: '8-ball pool. Hold and pull the cue back from the white ball, aim, and let go to shoot: the further you pull, the harder the shot. Pot a ball to claim solids or stripes, clear your group, then sink the black 8 to win. Potting the white or missing every ball is a foul.',
+  start(first) { return { kind: 'pool', balls: rack(), groups: { anthonia: null, ifeayomi: null }, turn: first, shot: 0, msg: `${NAMES[first]} breaks` }; },
+  view(st, me) { const mine = st.turn === me && !st.over;
     const left = (r) => (st.groups[r] ? groupBalls(st.groups[r]).filter((n) => st.balls.some((b) => b.n === n)).length : null);
-    return `<div class="row between small"><span class="row">${av('anthonia', 24)}${st.groups.anthonia ? `${st.groups.anthonia} · ${left('anthonia')} left` : 'open'}</span><span class="row">${st.groups.ifeayomi ? `${st.groups.ifeayomi} · ${left('ifeayomi')} left` : 'open'}${av('ifeayomi', 24)}</span></div>
-      <canvas id="pool" class="pool"></canvas>
-      ${mine ? `<p class="small muted" style="margin:0">Drag on the table to aim, set the power, then shoot.${g ? ` You're on <b>${g}</b>.` : ''}</p>
-        <div class="row" style="flex-wrap:nowrap"><span class="small muted">Power</span><input type="range" id="poolPow" min="5" max="100" value="${Math.round(poolAim.p * 100)}" style="flex:1"><button class="btn primary" data-act="g" data-g="pool" data-a="shoot">Shoot</button></div>` : ''}`; },
+    return `<div class="row between small"><span class="row">${av('anthonia', 26)}${st.groups.anthonia ? `<b>${st.groups.anthonia}</b> · ${left('anthonia')} left` : 'open'}</span><span class="row">${st.groups.ifeayomi ? `<b>${st.groups.ifeayomi}</b> · ${left('ifeayomi')} left` : 'open'}${av('ifeayomi', 26)}</span></div>
+      ${mine ? `<p class="small muted center" style="margin:0">Touch the table and pull back away from the white ball to aim. Let go to shoot.</p>` : ''}
+      <canvas id="pool" class="pool"></canvas>`; },
   post(st, me) { const cv = document.getElementById('pool'); if (!cv || !st) return;
-    if (st.shot && poolSeen !== null && st.shot !== poolSeen && st.last && st.last.by !== me && st.last.before && !poolAnim) { G.pool.replay(st); }
-    poolSeen = st.shot;
-    if (!poolAnim) drawTable(cv, st.balls, st.turn === me && !st.over ? poolAim : null);
-    const pw = document.getElementById('poolPow'); if (pw) pw.oninput = () => { poolAim.p = pw.value / 100; drawTable(cv, st.balls, poolAim); };
-    const aimAt = (e) => { if (st.turn !== me || st.over || poolAnim) return; const r = cv.getBoundingClientRect(), sc = r.width / (PW + 60); const px = (e.clientX - r.left) / sc - 30, py = (e.clientY - r.top) / sc - 30; const c = st.balls.find((b) => b.n === 0); if (!c) return; poolAim.a = Math.atan2(py - c.y, px - c.x); drawTable(cv, st.balls, poolAim); };
-    cv.onpointerdown = (e) => { cv.setPointerCapture(e.pointerId); aimAt(e); }; cv.onpointermove = (e) => { if (e.buttons || e.pointerType === 'touch') aimAt(e); }; },
+    if (st.shot && poolSeen !== null && st.shot !== poolSeen && st.last && st.last.by !== me && st.last.before && !poolAnim) G.pool.replay(st);
+    poolSeen = st.shot; const myTurn = () => st.turn === me && !st.over && !poolAnim;
+    if (!poolAnim) drawTable(cv, st.balls, myTurn() ? poolAim : null);
+    const upd = (e) => { const p = poolToTable(cv, e), c = st.balls.find((b) => b.n === 0); if (!c) return; const dx = c.x - p.x, dy = c.y - p.y, d = Math.hypot(dx, dy);
+      if (d > 4) poolAim.a = Math.atan2(dy, dx); poolAim.p = Math.max(0, Math.min(1, (d - 30) / 420)); poolAim.drag = true; drawTable(cv, st.balls, poolAim); };
+    cv.onpointerdown = (e) => { if (!myTurn()) return; cv.setPointerCapture(e.pointerId); upd(e); };
+    cv.onpointermove = (e) => { if (!myTurn() || !poolAim.drag) return; upd(e); };
+    cv.onpointerup = cv.onpointercancel = (e) => { if (!poolAim.drag) return; poolAim.drag = false; if (e.type === 'pointerup' && poolAim.p > .04 && myTurn()) G.pool.act.shoot(JSON.parse(JSON.stringify(S.games.pool))); else drawTable(cv, st.balls, myTurn() ? poolAim : null); }; },
+
   replay(st) { if (!document.getElementById('pool')) return; const r = simulate(st.last.before, st.last.a, st.last.p, true); let k = 0;
     poolAnim = setInterval(() => { const cv = document.getElementById('pool'); if (!cv) { clearInterval(poolAnim); poolAnim = null; return; } if (k >= r.frames.length) { clearInterval(poolAnim); poolAnim = null; const cur = S.games.pool || st; drawTable(cv, cur.balls, cur.turn === S.role && !cur.over ? poolAim : null); return; } drawTable(cv, r.frames[k], null); k++; }, 16); },
   act: {
-    shoot(st) { const me = S.role, you = other(me); if (st.turn !== me || st.over || poolAnim) return; const pw = document.getElementById('poolPow'); poolAim.p = (pw ? pw.value : 60) / 100;
-      const before = st.balls.map((b) => ({ ...b })); const r = simulate(before, poolAim.a, poolAim.p, true); const cv = document.getElementById('pool'); let k = 0;
+    shoot(st) { const me = S.role, you = other(me); if (st.turn !== me || st.over || poolAnim) return;       const before = st.balls.map((b) => ({ ...b })); const r = simulate(before, poolAim.a, poolAim.p, true); const cv = document.getElementById('pool'); let k = 0;
       const finish = () => {
         const pot = r.potted, cueIn = pot.includes(0), eight = pot.includes(8); let mg = st.groups[me];
         let foul = cueIn || r.firstHit === null; if (mg && r.firstHit !== null && r.firstHit !== 8 && !groupBalls(mg).includes(r.firstHit)) foul = true;
@@ -499,7 +597,7 @@ G.pool = {
           else if (scored) { msg = msg || `${NAMES[me]} potted ${scored}! Shoot again`; }
           else { st.turn = you; msg = msg || `${NAMES[me]} missed`; } }
         logLine(st, msg); poolSeen = st.shot; saveGame('pool', st); };
-      poolAnim = setInterval(() => { if (k >= r.frames.length || !cv) { clearInterval(poolAnim); poolAnim = null; finish(); return; } drawTable(cv, r.frames[k], null); k++; }, 16); },
+      poolAnim = setInterval(() => { if (k >= r.frames.length || !cv) { clearInterval(poolAnim); poolAnim = null; finish(); return; } { const c2 = document.getElementById('pool'); if (c2) drawTable(c2, r.frames[k], null); } k++; }, 16); },
   },
 };
 
