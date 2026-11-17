@@ -203,7 +203,7 @@ function setupView(){return `<div class="card center" style="margin-top:16px"><h
   <button class="btn ghost sm" data-act="signOut">Sign out (${esc(S.email||'')})</button></div>`;}
 
 function subscribe(){
-  watchDoc('pods/couple',d=>{S.couple=d;S.gotCouple=true;applyNick();if(S.note.startsWith("Pods can't"))S.note='';refresh();maybeAskNick();});
+  watchDoc('pods/couple',d=>{const pn=S.role&&S.couple&&S.couple.nick?S.couple.nick[other(S.role)]:undefined;S.couple=d;{const nn=S.role&&d&&d.nick?d.nick[other(S.role)]:undefined;if(S.gotCouple&&S.role&&nn&&nn!==pn){setTimeout(()=>{floatHearts();toast(`${NAMES[other(S.role)]} now calls you "${nn}"`);},400);}}S.gotCouple=true;applyNick();if(S.note.startsWith("Pods can't"))S.note='';refresh();maybeAskNick();});
   watchCol('messages',l=>{const prev=S.msgs;S.msgs=l;if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role);if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();},{order:'at',dir:'desc',limit:120});
   watchDoc('pods/chatread',d=>{S.chatRead=d||{};refresh();});
   watchCol('checkins',l=>{S.checkins=l;refresh();},{order:'at',dir:'desc',limit:20});
@@ -487,6 +487,7 @@ function settingsSheet(){const cfg=aiCfg();openSheet(`${sheetHead('Settings')}
   <div class="row"><button class="btn primary sm" data-act="aiSave">Save key</button>${cfg.key?'<button class="btn sm" data-act="aiClear">Remove key</button>':''}</div>
   <span class="eyebrow">Names</span>
   <div class="item"><div class="grow">You call ${BASE_NAMES[other(S.role)]}<br><b>${esc(NAMES[other(S.role)])}</b></div><button class="btn sm" data-act="nickOpen">Change</button></div>
+  <div class="item">${av(other(S.role),32)}<div class="grow">${esc(NAMES[other(S.role)])} calls you<br><b>${esc(theirNick()||BASE_NAMES[S.role])}</b>${theirNick()?"":' <span class="small muted">(hasn\'t picked a name yet)</span>'}</div></div>
   <span class="eyebrow">Account</span>
   <div class="item"><span class="grow small">${esc(S.email||'')}</span><button class="btn sm" data-act="signOut">Sign out</button></div>`);}
 /* ---------- voice notes (MediaRecorder → small audio saved with the note) ---------- */
@@ -505,6 +506,7 @@ const voicePlayer=(src,secs)=>`<audio controls preload="none" src="${src}" style
 
 /* ---------- nicknames: each of you picks what you call the other ---------- */
 const BASE_NAMES={...NAMES};
+function theirNick(){const n=S.couple&&S.couple.nick&&S.couple.nick[other(S.role)];return n&&String(n).trim()?String(n).trim():'';}
 function applyNick(){if(!S.role)return;const you=other(S.role),n=S.couple&&S.couple.nick&&S.couple.nick[S.role];NAMES[you]=(n&&String(n).trim())||BASE_NAMES[you];NAMES[S.role]=BASE_NAMES[S.role];}
 function nickSheet(first){const you=other(S.role),cur=(S.couple&&S.couple.nick&&S.couple.nick[S.role])||'';
   openSheet(`${sheetHead(first?'One quick thing':'What you call '+BASE_NAMES[you])}<div class="row" style="justify-content:center">${av(you,84)}</div>
