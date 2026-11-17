@@ -32,3 +32,20 @@ and a timed weekly test.
   https://aistudio.google.com/apikey (or a Claude API key) → **Save & connect**. The app checks the key
   and picks the newest Gemini Flash model it offers. The key is saved only on that phone.
 - Progress is saved on the device (localStorage).
+
+## Pods ❤️ couple app (`/pods/`)
+A private app for Anthonia and Ifeayomi, served at https://anthonia-board.netlify.app/pods/
+(lives in `public/pods/`, no build step).
+
+- **Us**: visit countdown, Ancona/Ibadan clocks, "Thinking of you" taps, daily question (text or voice note), voice notes, songs of the moment.
+- **Play**: Jigsaw (real piece shapes, 26 HD CC0 photos or your own), Couple quiz, Whot!, Crazy Eights, Word Tiles (dictionary from the MIT-licensed `an-array-of-english-words`), Pods Property, Ludo, Pool (8-ball) and Movie night (YouTube in sync). All turn-based, so each of you plays when free.
+- **Plan**: monthly planning date with host rotation, to-dos, date nights (host pays both bills), year goals, mood board.
+- **Truth**: AI softens honest messages (Gemini or Claude key pasted in Settings, kept on that phone only).
+- **Gallery**: every uploaded photo, finished puzzles, wishlist, open-when letters.
+
+**Setup (once):**
+1. Firebase console → Firestore → Rules: paste the whole `firestore.rules` from this repo → **Publish** (adds the `pods` rules; the planner rules are unchanged).
+2. Open `/pods/` → sign in (Anthonia: same login as Weekly Board) → pick your name → **Create our Pod** → copy the invite code from Settings.
+3. Ifeayomi opens the same link in Safari → **Create a login** → picks his name → types the code → **Join**. Then Share → **Add to Home Screen**.
+
+Data lives under `pods/{code}/…` in Firestore. Photos are stored inside Firestore documents (no Firebase Storage needed, free plan).
