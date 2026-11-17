@@ -2,25 +2,26 @@
    Anthonia's class timetable (UNIVPM, EHDRM). Bump `version` whenever it changes:
    the app replaces the classes in Firestore once, on the next open, on every device. */
 export const TIMETABLE = {
-  version: "2026-11-09d",
-  label: "week of 9 November",
+  version: "2026-11-16",
+  label: "week of 16 November",
   classes: {
     "bio-mon":  { title: "Biological and Ecological Risk", day: 0, start: "08:30", end: "11:30", room: "B12" },
     "es-mon":   { title: "Environmental Sustainability", day: 0, start: "11:30", end: "13:30", room: "B12" },
     "chem-mon": { title: "Chemical and Industrial Risk", day: 0, start: "14:30", end: "17:30", room: "Aula Azzurra (Scienze 3)" },
-    "clim-wed": { title: "Climate Change and Natural Hazard", day: 2, start: "14:30", end: "16:30", room: "A5", from: "2026-11-16" },
+    "clim-wed": { title: "Climate Change and Natural Hazard", day: 2, start: "14:30", end: "16:30", room: "A5" },
     "ren-tue":  { title: "Renewables and Innovative Energy Systems", day: 1, start: "08:30", end: "10:30", room: "B12" },
     "bio-tue":  { title: "Biological and Ecological Risk", day: 1, start: "10:30", end: "13:30", room: "B12" },
     "es-tue":   { title: "Environmental Sustainability", day: 1, start: "14:30", end: "16:30", room: "S6 (Scienze 1)" },
-    "clim-thu": { title: "Climate Change and Natural Hazard", day: 3, start: "08:30", end: "10:30", room: "B12", from: "2026-11-16" },
+    "clim-thu": { title: "Climate Change and Natural Hazard", day: 3, start: "08:30", end: "10:30", room: "B12" },
     "geo-thu":  { title: "Geological Hazard in a Changing Climate", day: 3, start: "10:30", end: "12:30", room: "B12" },
     "chem-thu": { title: "Chemical and Industrial Risk", day: 3, start: "14:30", end: "17:30", room: "B12" },
     "ren-fri":  { title: "Renewables and Innovative Energy Systems", day: 4, start: "08:30", end: "10:30", room: "B12" },
     "geo-fri":  { title: "Geological Hazard in a Changing Climate", day: 4, start: "10:30", end: "12:30", room: "B12" },
-    "mercy-sun": { title: "Weekly meeting with Ms Mercy (assistant)", day: 6, start: "17:30", end: "18:30", room: "", kind: "meeting" },
-    "eq-fri":   { title: "Earthquake Risk Mitigation", day: 4, start: "12:30", end: "14:30", room: "B12" }
+    "mercy-sun": { title: "Weekly meeting with Ms Mercy (assistant)", day: 6, start: "17:30", end: "18:30", room: "", kind: "meeting" }
   },
-  // changes to existing routine blocks (merged into each block)
+  // One-time changes to routine blocks and days. Each patch applies once, on
+  // devices that last updated before its version, so later edits are kept.
+  patches: [{ version: "2026-11-09d",
   routine: {
     "v2-cx":  { order: 65 },                              // CMAX first thing Wednesday, after class Friday
     "v2-r60": { days: [1, 3], order: 66, notBefore: "17:00", title: "Study: review today's lectures" }, // Tue + Thu evenings
@@ -46,4 +47,11 @@ export const TIMETABLE = {
     "2027-01-06": { events: [] },
     "2027-02-03": { events: [] }
   }
+  }, { version: "2026-11-16",
+    // Friday ends at 12:30 now (no Earthquake Risk Mitigation): home ~14:00
+    routine: {
+      "v2-r30b": { notBefore: "14:30" },                  // Friday check-in calls, early afternoon
+      "v2-r40f": { title: "Lunch (after the ride home)", notBefore: "13:45" }
+    }
+  }]
 };

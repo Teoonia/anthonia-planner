@@ -91,7 +91,7 @@
     4
    ],
    "mins": 30,
-   "notBefore": "16:00",
+   "notBefore": "14:30",
    "order": 35,
    "title": "AGN staff check-in calls",
    "notAfter": "17:00"
@@ -197,9 +197,9 @@
     4
    ],
    "mins": 30,
-   "notBefore": "12:30",
+   "notBefore": "13:45",
    "order": 40,
-   "title": "Lunch (late, after the ride home)"
+   "title": "Lunch (after the ride home)"
   },
   "v2-u20": {
    "area": "rest",
@@ -423,7 +423,7 @@
    "sleep": "23:00",
    "wake": "06:00",
    "walkwait": 25,
-   "timetableVersion": "2026-11-09d"
+   "timetableVersion": "2026-11-16"
   }
  },
  "classes": {
@@ -497,28 +497,19 @@
    "end": "12:30",
    "room": "B12"
   },
-  "eq-fri": {
-   "title": "Earthquake Risk Mitigation",
-   "day": 4,
-   "start": "12:30",
-   "end": "14:30",
-   "room": "B12"
-  },
   "clim-wed": {
    "title": "Climate Change and Natural Hazard",
    "day": 2,
    "start": "14:30",
    "end": "16:30",
-   "room": "A5",
-   "from": "2026-11-16"
+   "room": "A5"
   },
   "clim-thu": {
    "title": "Climate Change and Natural Hazard",
    "day": 3,
    "start": "08:30",
    "end": "10:30",
-   "room": "B12",
-   "from": "2026-11-16"
+   "room": "B12"
   },
   "mercy-sun": {
    "title": "Weekly meeting with Ms Mercy (assistant)",
