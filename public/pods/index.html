@@ -338,6 +338,32 @@ canvas.pool{display:block;margin:0 auto;touch-action:none;border-radius:16px}
 .wboard .wc{aspect-ratio:4/5}
 .wc.t{font-size:clamp(11px,3.4vw,17px)}
 .wboard{gap:2px}
+
+/* movie full screen */
+.ytOverlay,.ytExit{display:none}
+.yt.fs{position:fixed;inset:0;z-index:90;border-radius:0;aspect-ratio:auto;background:#000;width:100vw;height:100vh}
+.yt.fs.rot{inset:auto;top:50%;left:50%;width:100vh;height:100vw;transform:translate(-50%,-50%) rotate(90deg)}
+.yt.fs .ytExit{display:block;position:absolute;top:10px;right:10px;z-index:3;border:none;border-radius:99px;padding:8px 14px;background:rgba(0,0,0,.55);color:#fff;font-weight:800}
+.yt.fs .ytOverlay{display:flex;flex-direction:column;gap:4px;position:absolute;left:12px;bottom:56px;z-index:3;max-width:50%;pointer-events:none}
+.ovl{background:rgba(0,0,0,.5);color:#fff;border-radius:12px;padding:4px 10px;font-size:.85rem}.ovl.anthonia b{color:#ff9fb4}.ovl.ifeayomi b{color:#7ee6d8}
+body.fsmode .tabs,body.fsmode .top{visibility:hidden}
+/* chat */
+.tabs button{position:relative}
+.badge{position:absolute;top:2px;right:calc(50% - 22px);background:var(--her);color:#fff;font-size:.65rem;font-weight:800;min-width:18px;height:18px;border-radius:99px;display:grid;place-items:center;padding:0 5px;box-shadow:0 0 0 2px #fff}
+.chatcard{gap:10px}
+.chatlist{display:flex;flex-direction:column;gap:6px;height:calc(100vh - 400px);height:calc(100dvh - 400px);min-height:240px;overflow-y:auto;padding:4px 2px}
+.daysep{align-self:center;font-size:.72rem;font-weight:800;color:var(--muted);background:var(--blush);border-radius:99px;padding:2px 10px;margin:6px 0}
+.msg{display:flex;flex-direction:column;max-width:80%}.msg.me{align-self:flex-end;align-items:flex-end}.msg.them{align-self:flex-start}
+.mb{all:unset;position:relative;cursor:pointer;padding:9px 13px;border-radius:18px;background:var(--blush);overflow-wrap:anywhere;white-space:pre-wrap;line-height:1.35}
+.msg.me .mb{background:var(--her);color:#fff;border-bottom-right-radius:6px}.msg.them .mb{border-bottom-left-radius:6px}
+.msg.me .mb .small{color:#fff}
+.mt{font-size:.66rem;color:var(--muted);margin:2px 6px 0}
+.mheart{position:absolute;bottom:-9px;right:-6px;width:20px;height:20px;color:var(--her);background:#fff;border-radius:50%;padding:2px;box-shadow:var(--shadow)}.mheart svg{width:100%;height:100%}
+.chatimg{max-width:220px;width:100%;border-radius:12px;display:block}
+.chatbar{display:flex;gap:6px;align-items:center}.chatbar input{flex:1}
+.cbtn{width:40px;height:40px;flex:none;border:none;border-radius:50%;background:var(--blush);color:var(--her);display:grid;place-items:center;cursor:pointer;padding:0}.cbtn svg{width:22px;height:22px}
+.moods{display:flex;flex-wrap:wrap;gap:6px}.mood{border:2px solid var(--mc);background:#fff;color:var(--ink);border-radius:99px;padding:7px 12px;font-weight:800;cursor:pointer}.mood.on{background:var(--mc);color:#fff}
+.moodtag{display:inline-block;background:var(--mc);color:#fff;border-radius:99px;padding:0 8px;font-weight:800;font-size:.75rem}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>

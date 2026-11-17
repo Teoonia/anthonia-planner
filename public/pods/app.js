@@ -8,7 +8,7 @@ const HEART=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><pa
 const QUESTIONS=["What made you smile today?","What's one thing you miss about being in the same room as me?","If we could teleport for one hour tonight, where would we go?","What's a small thing I do that makes you feel loved?","What's something you're worried about this week?","Describe your perfect lazy Sunday with me.","What's one goal you want us to hit before the year ends?","What song reminds you of us right now?","What food do you want us to eat together on our next visit?","What's one thing you're proud of yourself for lately?","What did you dream about recently?","What's a habit of mine you secretly love?","Where do you see us in five years?","What's one thing I could do this week to make you happier?","What was your first impression of me?","What's a memory of us you replay often?","If we opened a business together, what would it be?","What's something new you learned this week?","What's one thing you want to tell me but haven't yet?","Which of our plans are you most excited about?","What's your love language today: words, time, gifts, help or touch?","What's a place back home you want us to visit together?","What's a place in Italy you want us to explore together?","What stressed you today, and how can I help?","What would our dream home look like?","What's a silly thing that made you laugh recently?","What do you appreciate most about how we handle the distance?","What's one thing we should start doing as a couple?","What's one thing we should stop doing as a couple?","Finish this: I knew I loved you when…"];
 const OPEN_WHEN=["Open when you miss me","Open when you're sad","Open when you need a laugh","Open when you can't sleep","Open when you're stressed","Open when we've had a fight","Open on your birthday"];
 const SIZES=[[24,6,4],[60,10,6],[120,15,8],[260,20,13]];
-const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],["play","Play",'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>'],["plan","Plan",'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],["truth","Truth",'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h6"/>'],["us","Gallery",'<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5.5-5.5L7 19"/>']];
+const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],["chat","Chat",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/>'],["play","Play",'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>'],["plan","Plan",'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],["truth","Truth",'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h6"/>'],["us","Gallery",'<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5.5-5.5L7 19"/>']];
 
 /* ---------- avatars ---------- */
 const SKINS=['#4a2c1d','#6e4029','#91583a','#bf8459','#e8b892'];
@@ -121,7 +121,7 @@ function showWinner(j){
 }
 
 /* ---------- state ---------- */
-const S={tab:['home','play','plan','truth','us'].includes(location.hash.slice(1))?location.hash.slice(1):'home',
+const S={tab:['home','chat','play','plan','truth','us'].includes(location.hash.slice(1))?location.hash.slice(1):'home',
   mode:'loading',role:null,couple:null,daily:[],songs:{},tap:null,jig:null,month:null,year:null,dates:[],truths:[],
   memories:[],wish:null,letters:[],mood:[],avatars:{},games:{},voice:[],game:null,zoom:false,edgesOnly:false,pickCat:'animals',pickSize:60,galFilter:'all',lb:null,sel:null,truthDraft:null,truthBusy:false,gotCouple:false,note:'',lastPlaced:null};
 let uid=null,lastTapAt=null;
@@ -203,7 +203,10 @@ function setupView(){return `<div class="card center" style="margin-top:16px"><h
   <button class="btn ghost sm" data-act="signOut">Sign out (${esc(S.email||'')})</button></div>`;}
 
 function subscribe(){
-  watchDoc('pods/couple',d=>{S.couple=d;S.gotCouple=true;if(S.note.startsWith("Pods can't"))S.note='';refresh();});
+  watchDoc('pods/couple',d=>{S.couple=d;S.gotCouple=true;applyNick();if(S.note.startsWith("Pods can't"))S.note='';refresh();maybeAskNick();});
+  watchCol('messages',l=>{const prev=S.msgs;S.msgs=l;if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role);if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();},{order:'at',dir:'desc',limit:120});
+  watchDoc('pods/chatread',d=>{S.chatRead=d||{};refresh();});
+  watchCol('checkins',l=>{S.checkins=l;refresh();},{order:'at',dir:'desc',limit:20});
   watchDoc('pods/avatars',d=>{const p=(S.avatars||{})[S.role];S.avatars=d||{};const n=S.avatars[S.role];if(S.role&&n&&n.by===other(S.role)&&(!p||p.at!==n.at)&&S.gotAv){floatHearts();toast(`${NAMES[other(S.role)]} gave you a new look!`);}S.gotAv=true;refresh();});
   watchCol('daily',l=>{S.daily=l;refresh();});
   watchDoc('pods/songs',d=>{S.songs=d||{};refresh();});
@@ -223,11 +226,11 @@ function subscribe(){
 
 /* ---------- render plumbing ---------- */
 let pending=false,lastTab=null;
-function refresh(){if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
+function refresh(){if(S.tab==='chat'&&document.getElementById('chatList')&&document.activeElement&&document.activeElement.id==='chatIn'){const tmp=document.createElement('div');tmp.innerHTML=chatView();const nl=tmp.querySelector('#chatList');document.getElementById('chatList').innerHTML=nl?nl.innerHTML:'';chatAfterRender();return;}if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pending){const a=document.activeElement;if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))){pending=false;render(true);}}},0));
 function render(quiet){
   const v=document.getElementById('view');
-  document.getElementById('tabs').innerHTML=TABS.map(([k,l,p])=>`<button data-act="tab" data-k="${k}" class="${S.tab===k?'on':''}" aria-current="${S.tab===k?'page':'false'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round">${p}</svg>${l}</button>`).join('');
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l,p])=>`<button data-act="tab" data-k="${k}" class="${S.tab===k?'on':''}" aria-current="${S.tab===k?'page':'false'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round">${p}</svg>${l}${k==='chat'&&S.role&&unreadCount()?`<span class="badge">${unreadCount()}</span>`:''}</button>`).join('');
   document.getElementById('who').innerHTML=S.role?`<button class="who" data-act="avatarSheet">${av(S.role,32)}${NAMES[S.role]}</button>`:'';
   if(S.mode==='loading'){v.innerHTML=`<div class="loading">${HEART}<p class="muted">Opening Pods…</p></div>`;return;}
   if(S.mode==='offline'){v.innerHTML=`<div class="card center" style="margin-top:20px"><h2>Pods needs the internet to start</h2><p class="muted">Connect and reload the page.</p></div>`;return;}
@@ -235,14 +238,15 @@ function render(quiet){
   if(S.mode==='setup'){v.innerHTML=setupView();return;}
   if(!S.role){v.innerHTML=pickView();return;}
   const banners=(S.mode==='demo'?`<div class="banner">Demo mode: nothing is saved. <button class="btn sm ghost" data-act="switch">See ${NAMES[other(S.role)]}'s side</button></div>`:'')+(S.note?`<div class="banner">${esc(S.note)}</div>`:'');
-  v.innerHTML=banners+({home:homeView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
+  v.innerHTML=banners+({home:homeView,chat:chatView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
-  lastTab=S.tab;tickClocks();
+  lastTab=S.tab;tickClocks();chatAfterRender();if(S.role){maybeAskNick();maybeCheckin();}
   if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
   <div class="pick"><button class="a" data-act="pick" data-r="anthonia">${av('anthonia',72)}Anthonia<span class="small muted">in Ancona</span></button><button class="i" data-act="pick" data-r="ifeayomi">${av('ifeayomi',72)}Ifeayomi<span class="small muted">in Ibadan</span></button></div></div>`;}
+setInterval(()=>{try{maybeCheckin();}catch(e){}},60000);
 function tickClocks(){const a=document.getElementById('clkA'),i=document.getElementById('clkI');const now=new Date();if(a)a.textContent=romeClock.format(now);if(i)i.textContent=lagosClock.format(now);}
 function makeBgHearts(){const el=document.getElementById('bgHearts');let h='';for(let i=0;i<12;i++){const s=14+Math.random()*26;h+=`<span style="left:${Math.random()*96}%;width:${s}px;height:${s}px;animation-duration:${18+Math.random()*22}s;animation-delay:-${Math.random()*30}s">${HEART}</span>`;}el.innerHTML=h;}
 
@@ -278,6 +282,7 @@ function homeView(){
     <div class="row between"><span class="eyebrow">Today's question</span><span class="chip gold">${streak()} day streak</span></div>
     <h2>${esc(q)}</h2>${daily}
   </section>
+  ${checkinCard()}
   ${waitingCard()}
   ${voiceCard()}
   ${homeGallery()}
@@ -480,6 +485,8 @@ function settingsSheet(){const cfg=aiCfg();openSheet(`${sheetHead('Settings')}
   <span class="eyebrow">Truth Corner AI</span>
   <label class="f" for="aiKey">Paste a free Gemini key (aistudio.google.com/apikey) or a Claude key. It stays on this phone only.<input type="text" id="aiKey" value="${esc(cfg.key||'')}" placeholder="AIza… or sk-ant-…" autocomplete="off"></label>
   <div class="row"><button class="btn primary sm" data-act="aiSave">Save key</button>${cfg.key?'<button class="btn sm" data-act="aiClear">Remove key</button>':''}</div>
+  <span class="eyebrow">Names</span>
+  <div class="item"><div class="grow">You call ${BASE_NAMES[other(S.role)]}<br><b>${esc(NAMES[other(S.role)])}</b></div><button class="btn sm" data-act="nickOpen">Change</button></div>
   <span class="eyebrow">Account</span>
   <div class="item"><span class="grow small">${esc(S.email||'')}</span><button class="btn sm" data-act="signOut">Sign out</button></div>`);}
 /* ---------- voice notes (MediaRecorder → small audio saved with the note) ---------- */
@@ -495,6 +502,48 @@ async function startRec(onDone){
   mr.start();rec={mr,t0,timer:setTimeout(()=>{if(mr.state==='recording')mr.stop();},60000)};render(true);}
 function stopRec(){if(rec&&rec.mr.state==='recording'){clearTimeout(rec.timer);rec.mr.stop();}}
 const voicePlayer=(src,secs)=>`<audio controls preload="none" src="${src}" style="width:100%;height:36px"></audio>${secs?`<span class="small muted">${secs}s</span>`:''}`;
+
+/* ---------- nicknames: each of you picks what you call the other ---------- */
+const BASE_NAMES={...NAMES};
+function applyNick(){if(!S.role)return;const you=other(S.role),n=S.couple&&S.couple.nick&&S.couple.nick[S.role];NAMES[you]=(n&&String(n).trim())||BASE_NAMES[you];NAMES[S.role]=BASE_NAMES[S.role];}
+function nickSheet(first){const you=other(S.role),cur=(S.couple&&S.couple.nick&&S.couple.nick[S.role])||'';
+  openSheet(`${sheetHead(first?'One quick thing':'What you call '+BASE_NAMES[you])}<div class="row" style="justify-content:center">${av(you,84)}</div>
+  <label class="f" for="nickIn">What do you call ${BASE_NAMES[you]}? This is the name you'll see all over Pods.<input type="text" id="nickIn" maxlength="24" value="${esc(cur)}" placeholder="e.g. ${you==='anthonia'?'My Queen, Toni, Baby':'Yinka, Ife, My King'}"></label>
+  <button class="btn primary" data-act="nickSave">Save</button>${first?`<button class="btn ghost" data-act="nickSkip">Keep "${BASE_NAMES[you]}"</button>`:''}`);}
+function maybeAskNick(){if(S.nickAsked||!S.role||!S.gotCouple||!['live','demo'].includes(S.mode))return;if(S.couple&&S.couple.nick&&S.couple.nick[S.role]!==undefined)return;
+  if(!document.getElementById('sheet').classList.contains('hidden'))return;S.nickAsked=true;setTimeout(()=>nickSheet(true),500);}
+
+/* ---------- 9pm check-in ---------- */
+const MOODS_DAY=[['Amazing','#22b3a3'],['Happy','#7bd389'],['Okay','#ffd166'],['Tired','#9aa5b1'],['Missing you','#ff7fb0'],['Sad','#6c8cff'],['Stressed','#ff8a3d']];
+const localDay=()=>new Date().toLocaleDateString('en-CA');
+function maybeCheckin(){if(!S.role||!['live','demo'].includes(S.mode)||S.checkinShown===localDay())return;if(new Date().getHours()<21)return;
+  if((S.checkins||[]).some(c=>c.role===S.role&&c.date===localDay()))return;if(!document.getElementById('sheet').classList.contains('hidden'))return;
+  S.checkinShown=localDay();checkinSheet();}
+function checkinSheet(){S.ciMood=S.ciMood||null;openSheet(`${sheetHead('Good evening, '+BASE_NAMES[S.role])}<div class="row" style="justify-content:center">${av(S.role,70)}</div>
+  <label class="f" for="ciDay">How was your day?<textarea id="ciDay" placeholder="Tell ${NAMES[other(S.role)]} about it…"></textarea></label>
+  <span class="eyebrow">How do you feel right now?</span><div class="moods">${MOODS_DAY.map(([m,c])=>`<button class="mood ${S.ciMood===m?'on':''}" style="--mc:${c}" data-act="ciMood" data-m="${m}">${m}</button>`).join('')}</div>
+  <button class="btn primary" data-act="ciSend">Send to ${NAMES[other(S.role)]}</button><button class="btn ghost" data-act="close">Later</button>`);}
+function checkinCard(){const d=localDay(),c=(S.checkins||[]).filter(x=>x.date===d);if(!c.length&&new Date().getHours()<21)return '';
+  const row=r=>{const x=c.find(y=>y.role===r);return x?`<div class="bubble ${r}">${av(r,34)}<div class="b"><div class="who2">${r===S.role?'You':NAMES[r]} · <span class="moodtag" style="--mc:${(MOODS_DAY.find(m=>m[0]===x.mood)||[,'#ccc'])[1]}">${esc(x.mood||'')}</span></div>${esc(x.day||'')}</div></div>`:`<div class="locked">${av(r,26)} ${r===S.role?`<span>You haven't checked in yet.</span> <button class="btn sm primary" data-act="ciOpen">Check in</button>`:`Waiting for ${NAMES[r]}'s check-in…`}</div>`;};
+  return `<section class="card"><span class="eyebrow">Tonight's check-in</span>${row(S.role)}${row(other(S.role))}</section>`;}
+
+/* ---------- chat ---------- */
+function unreadCount(){const me=S.role,last=(S.chatRead||{})[me]||0;return (S.msgs||[]).filter(m=>m.by!==me&&m.at>last).length;}
+function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a,b)=>a.at-b.at),seen=(S.chatRead||{})[you]||0;let lastDay='';
+  const myLast=[...list].reverse().find(m=>m.by===me);
+  const items=list.map(m=>{const day=new Date(m.at).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});const sep=day!==lastDay?`<div class="daysep">${day}</div>`:'';lastDay=day;
+    const t=new Date(m.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    let body=m.kind==='voice'?voicePlayer(m.src,m.secs):m.kind==='photo'?`<img src="${m.img}" alt="Photo" class="chatimg" data-act="chatImgOpen" data-id="${m.id}">`:m.kind==='checkin'?`<div class="small"><b>Evening check-in</b> · <span class="moodtag" style="--mc:${(MOODS_DAY.find(x=>x[0]===m.mood)||[,'#ccc'])[1]}">${esc(m.mood||'')}</span></div>${esc(m.text||'')}`:esc(m.text);
+    return `${sep}<div class="msg ${m.by===me?'me':'them'}"><button class="mb" data-act="chatHeart" data-id="${m.id}" aria-label="Love this message">${body}${m.heart?`<span class="mheart">${HEART}</span>`:''}</button><span class="mt">${t}${m.by===me&&m===myLast&&seen>=m.at?' · Seen':''}</span></div>`;}).join('');
+  return `<section class="card chatcard"><div class="row">${av(you,40)}<div><h2>${esc(NAMES[you])}</h2><div class="small muted">Tap a message to send it a heart</div></div></div>
+    <div class="chatlist" id="chatList">${items||`<div class="empty">${HEART}<p class="muted" style="margin:0">Say hi to ${esc(NAMES[you])}!</p></div>`}</div>
+    ${rec&&S.recFor==='chat'?`<div class="locked" style="color:var(--her)"><span class="dot anthonia" style="animation:beat 1s infinite"></span> Recording… <button class="btn sm primary" data-act="recStop">Stop and send</button></div>`:''}
+    <div class="chatbar"><label class="cbtn" for="chatImg" aria-label="Send a photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5-8 8"/></svg></label><input type="file" id="chatImg" accept="image/*" hidden>
+      <button class="cbtn" data-act="recStart" data-k="chat" aria-label="Record a voice note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <input type="text" id="chatIn" placeholder="Message ${esc(NAMES[you])}" autocomplete="off" enterkeyhint="send"><button class="btn primary sm" data-act="chatSend">Send</button></div></section>`;}
+function chatAfterRender(){if(S.tab!=='chat')return;const l=document.getElementById('chatList');if(l)l.scrollTop=l.scrollHeight;const me=S.role,newest=Math.max(0,...(S.msgs||[]).filter(m=>m.by!==me).map(m=>m.at));
+  if(newest>((S.chatRead||{})[me]||0)&&S.markingRead!==newest){S.markingRead=newest;mergeDoc('pods/chatread',{[me]:newest});}}
+async function sendMsg(data){await addDoc('messages',{by:S.role,at:Date.now(),...data});}
 
 /* ---------- sheets, toast, effects ---------- */
 function openSheet(html){document.getElementById('panel').innerHTML=html;document.getElementById('sheet').classList.remove('hidden');}
@@ -545,6 +594,17 @@ const A={
     await mergeDoc('daily/'+todayKey(),{[S.role]:{text:v,at:Date.now()}});if(day[other(S.role)]){confetti();toast('Unlocked!');}else floatHearts();},
   songSheet:()=>{const s=S.songs[S.role]||{};openSheet(`${sheetHead('Song of the moment')}<label class="f" for="songT">Song and artist<input type="text" id="songT" value="${esc(s.title||'')}" placeholder="Song name and artist"></label><label class="f" for="songU">Spotify or YouTube link (optional)<input type="url" id="songU" value="${esc(s.url||'')}" placeholder="https://"></label><button class="btn primary" data-act="songSave">Pin it</button>`);},
   songSave:async()=>{const title=val('songT').trim(),url=val('songU').trim();if(!title&&!url)return toast('Add a song name or link');if(url&&!/^https?:\/\//i.test(url))return toast('Links start with https://');closeSheet();await mergeDoc('pods/songs',{[S.role]:{title,url,at:Date.now()}});},
+  /* names, check-in, chat */
+  nickOpen:()=>nickSheet(false),
+  nickSave:async()=>{const v=val('nickIn').trim().slice(0,24);closeSheet();await mergeDoc('pods/couple',{nick:{[S.role]:v}});toast(v?`Okay! You'll see "${v}" everywhere`:'Saved');floatHearts();},
+  nickSkip:async()=>{closeSheet();await mergeDoc('pods/couple',{nick:{[S.role]:''}});},
+  ciOpen:()=>checkinSheet(),
+  ciMood:t=>{S.ciMood=t.dataset.m;document.querySelectorAll('.mood').forEach(b=>b.classList.toggle('on',b.dataset.m===S.ciMood));},
+  ciSend:async()=>{const day=val('ciDay').trim(),mood=S.ciMood;if(!day&&!mood)return toast('Tell us a little about your day');closeSheet();const d=localDay();
+    await setDoc('checkins/'+d+'_'+S.role,{role:S.role,date:d,mood:mood||'',day,at:Date.now()});await sendMsg({kind:'checkin',mood:mood||'',text:day});S.ciMood=null;floatHearts();toast(`Sent to ${NAMES[other(S.role)]}`);},
+  chatSend:async()=>{const v=val('chatIn').trim();if(!v)return;clearIn('chatIn');await sendMsg({kind:'text',text:v});const i=document.getElementById('chatIn');if(i)i.focus();},
+  chatHeart:async t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(!m)return;await mergeDoc('messages/'+m.id,{heart:m.heart?null:S.role});if(!m.heart)floatHearts();},
+  chatImgOpen:t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(m)openSheet(`${sheetHead('Photo')}<img src="${m.img}" alt="Photo" style="width:100%;border-radius:16px">`);},
   /* account & pod */
   authToggle:()=>{S.authMode=S.authMode==='up'?'in':'up';render();},
   authReset:async()=>{const e=val('aEmail').trim();if(!e)return toast('Type your email first');try{await FB.reset(e);toast('Password reset email sent');}catch(err){toast("Couldn't send the reset email. Check the address.");}},
@@ -563,7 +623,8 @@ const A={
   aiSave:()=>{const k=val('aiKey').trim();if(!k)return toast('Paste a key first');localStorage.setItem(AIK,JSON.stringify({key:k}));closeSheet();toast('AI key saved on this phone');},
   aiClear:()=>{localStorage.removeItem(AIK);closeSheet();toast('AI key removed');},
   /* voice notes */
-  recStart:t=>{const kind=t.dataset.k;startRec(async(src,secs)=>{
+  recStart:t=>{const kind=t.dataset.k;S.recFor=kind;startRec(async(src,secs)=>{
+    if(kind==='chat'){await sendMsg({kind:'voice',src,secs});return;}
     if(kind==='daily'){const day=S.daily.find(d=>d.id===todayKey())||{};await mergeDoc('daily/'+todayKey(),{[S.role]:{text:'(voice note)',voice:src,secs,at:Date.now()}});if(day[other(S.role)])confetti();else floatHearts();}
     else{await addDoc('voice',{by:S.role,src,secs,at:Date.now()});floatHearts();toast('Voice note sent');}});},
   recStop:()=>stopRec(),
@@ -663,15 +724,16 @@ document.addEventListener('click',e=>{if(e.target.id==='board'){boardTap(e);retu
 document.addEventListener('submit',async e=>{if(e.target.id!=='authForm')return;e.preventDefault();const em=val('aEmail').trim(),pw=val('aPass');if(!em||!pw)return toast('Type your email and password');
   try{if(S.authMode==='up')await FB.signUp(em,pw);else await FB.signIn(em,pw);}catch(err){const c=err&&err.code||'';toast(/weak/.test(c)?'Use at least 6 characters':/in-use/.test(c)?'That email already has a login. Sign in instead.':/invalid|wrong|not-found/.test(c)?'Email or password is wrong':"Couldn't sign in. Check your connection.");}});
 document.addEventListener('input',e=>{if(e.target.id==='dDate'||e.target.id==='dTime')syncDateSheet();});
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){const m={todoIn:'todoAdd',goalIn:'goalAdd',wishIn:'wishAdd',moodIn:'moodAdd'}[e.target.id];if(m){e.preventDefault();A[m]();}}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){const m={todoIn:'todoAdd',goalIn:'goalAdd',wishIn:'wishAdd',moodIn:'moodAdd',chatIn:'chatSend'}[e.target.id];if(m){e.preventDefault();A[m]();}}});
 document.addEventListener('change',async e=>{const el=e.target;if(el.id==='dHost')el.dataset.touched='1';
   if(!el.files||!el.files[0])return;
+  if(el.id==='chatImg'){const f=el.files[0];el.value='';try{const url=URL.createObjectURL(f);const im=await loadImg(url);URL.revokeObjectURL(url);await sendMsg({kind:'photo',img:await compressPhoto(im)});await saveToGallery({thumb:cropTo(im,320,320,.74),img:await compressPhoto(im),caption:'From our chat',kind:'photo'});}catch(err){toast("That photo couldn't be sent. Try another one.");}return;}
   if(el.id==='memImg'||el.id==='memImg2'){const files=[...el.files];el.value='';await uploadFiles(files,'','photo');return;}
   const file=el.files[0];el.value='';
   try{const url=URL.createObjectURL(file);const im=await loadImg(url);URL.revokeObjectURL(url);
     if(el.id==='moodImg'){await addDoc('mood',{month:monthKey(),img:fitMax(im,480,.7),by:S.role,at:Date.now()});await saveToGallery({thumb:cropTo(im,320,320,.74),img:await compressPhoto(im),caption:'From our '+monthName(monthKey())+' mood board',kind:'mood'});toast('Pinned and saved to the gallery');}
     else if(el.id==='jigImg'){const [n,c,r]=curSize();closeSheet();toast('Saving to the gallery and cutting the pieces…');const img=await compressPhoto(im);await saveToGallery({thumb:cropTo(im,320,320,.74),img,caption:'',kind:'photo'});await startJig({img},c,r);}
   }catch(err){toast("That photo couldn't be opened. Try another one.");}});
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(['home','play','plan','truth','us'].includes(h)&&h!==S.tab){S.tab=h;render();}});
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(['home','chat','play','plan','truth','us'].includes(h)&&h!==S.tab){S.tab=h;render();}});
 window.addEventListener('resize',()=>{if(S.tab==='play'&&S.game==='jigsaw')drawJig();});
 window.addEventListener('DOMContentLoaded',boot);
