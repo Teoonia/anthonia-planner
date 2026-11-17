@@ -34,7 +34,7 @@ and a timed weekly test.
 - Progress is saved on the device (localStorage).
 
 ## Pods ❤️ couple app (`/pods/`)
-A private app for Anthonia and Ifeayomi, served at https://anthonia-board.netlify.app/pods/
+A private app for Anthonia and Ifeayomi, served free on GitHub Pages at https://teoonia.github.io/anthonia-planner/pods/ (workflow *Publish Pods on GitHub Pages*; one-time setup: Settings → Pages → Source: GitHub Actions). It is also part of the Netlify build at `/pods/`.
 (lives in `public/pods/`, no build step).
 
 - **Us**: visit countdown, Ancona/Ibadan clocks, "Thinking of you" taps, daily question (text or voice note), voice notes, songs of the moment.
@@ -46,9 +46,9 @@ A private app for Anthonia and Ifeayomi, served at https://anthonia-board.netlif
 **Setup (once):**
 1. Firebase console → Firestore → Rules: paste the whole `firestore.rules` from this repo → **Publish** (adds the `pods` rules; the planner rules are unchanged).
 2. Open `/pods/` → sign in (Anthonia: same login as Weekly Board) → pick your name → **Create our Pod** → copy the invite code from Settings.
-3. Ifeayomi opens the same link in Safari → **Create a login** → picks his name → types the code → **Join**. Then Share → **Add to Home Screen**.
+3. Ifeayomi opens https://teoonia.github.io/anthonia-planner/pods/ in Safari → **Create a login** → picks his name → types the code → **Join**. Then Share → **Add to Home Screen**.
 
-**Android app**: built by GitHub Actions (`pods-app/`, workflow *Build Pods Android app*). Download `pods.apk` from the newest **Pods** release and open it. The app loads `/pods/` from Netlify, so it always shows the newest version; reinstall only when a new Pods release appears.
+**Android app**: built by GitHub Actions (`pods-app/`, workflow *Build Pods Android app*). Download `pods.apk` from the newest **Pods** release and open it. The app loads Pods from GitHub Pages, so it always shows the newest version; reinstall only when a new Pods release appears.
 
 **iPhone**: a real App Store/TestFlight app needs an Apple Developer account. Until then, open `/pods/` in Safari → Share → Add to Home Screen.
 

@@ -3,9 +3,19 @@
   "appName": "Pods",
   "webDir": "www",
   "server": {
-    "url": "https://anthonia-board.netlify.app/pods/",
+    "url": "https://teoonia.github.io/anthonia-planner/pods/",
     "androidScheme": "https",
-    "allowNavigation": ["anthonia-board.netlify.app", "*.firebaseapp.com", "*.googleapis.com", "*.gstatic.com", "*.youtube.com", "*.ytimg.com", "*.google.com"]
+    "allowNavigation": [
+      "teoonia.github.io",
+      "*.firebaseapp.com",
+      "*.googleapis.com",
+      "*.gstatic.com",
+      "*.youtube.com",
+      "*.ytimg.com",
+      "*.google.com"
+    ]
   },
-  "android": { "backgroundColor": "#ffffff" }
+  "android": {
+    "backgroundColor": "#ffffff"
+  }
 }
