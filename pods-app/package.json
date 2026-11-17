@@ -1,0 +1,13 @@
+{
+  "name": "pods-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Android app for Pods (loads anthonia-board.netlify.app/pods/, so it always has the newest version)",
+  "dependencies": {
+    "@capacitor/android": "7.6.10",
+    "@capacitor/core": "7.6.10"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.10"
+  }
+}
