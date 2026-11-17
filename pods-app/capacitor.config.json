@@ -1,0 +1,11 @@
+{
+  "appId": "com.anthonia.pods",
+  "appName": "Pods",
+  "webDir": "www",
+  "server": {
+    "url": "https://anthonia-board.netlify.app/pods/",
+    "androidScheme": "https",
+    "allowNavigation": ["anthonia-board.netlify.app", "*.firebaseapp.com", "*.googleapis.com", "*.gstatic.com", "*.youtube.com", "*.ytimg.com", "*.google.com"]
+  },
+  "android": { "backgroundColor": "#ffffff" }
+}

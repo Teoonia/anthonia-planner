@@ -48,4 +48,8 @@ A private app for Anthonia and Ifeayomi, served at https://anthonia-board.netlif
 2. Open `/pods/` → sign in (Anthonia: same login as Weekly Board) → pick your name → **Create our Pod** → copy the invite code from Settings.
 3. Ifeayomi opens the same link in Safari → **Create a login** → picks his name → types the code → **Join**. Then Share → **Add to Home Screen**.
 
+**Android app**: built by GitHub Actions (`pods-app/`, workflow *Build Pods Android app*). Download `pods.apk` from the newest **Pods** release and open it. The app loads `/pods/` from Netlify, so it always shows the newest version; reinstall only when a new Pods release appears.
+
+**iPhone**: a real App Store/TestFlight app needs an Apple Developer account. Until then, open `/pods/` in Safari → Share → Add to Home Screen.
+
 Data lives under `pods/{code}/…` in Firestore. Photos are stored inside Firestore documents (no Firebase Storage needed, free plan).
