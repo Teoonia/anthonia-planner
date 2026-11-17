@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pw_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_bg">
+
+    <ImageView
+        android:id="@+id/pw_avatar"
+        android:layout_width="58dp"
+        android:layout_height="58dp"
+        android:src="@mipmap/ic_launcher_round"
+        android:contentDescription="Your partner" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:orientation="vertical">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/pw_name" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Pods" android:textColor="#FFFF4F7E" android:textSize="16sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+            <TextView android:id="@+id/pw_mood" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="6dp"
+                android:text="" android:textColor="#FF94737F" android:textSize="12sp" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <TextView android:id="@+id/pw_count" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Open Pods" android:textColor="#FF3A1F2B" android:textSize="14sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+        <TextView android:id="@+id/pw_msg" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="" android:textColor="#FF3A1F2B" android:textSize="13sp" android:maxLines="2" android:ellipsize="end" />
+        <TextView android:id="@+id/pw_turns" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="" android:textColor="#FF22B3A3" android:textSize="12sp" android:textStyle="bold" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>
