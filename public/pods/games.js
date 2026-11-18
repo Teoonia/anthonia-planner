@@ -263,6 +263,7 @@ function wordMove(board, pend) {
   if (pend.length === 7) total += 50;
   return { words: list, score: total, board: B };
 }
+const wLimit = (st) => (st && st.limit !== undefined && st.limit !== null ? st.limit : 60);
 function wtState() { return S.wt || (S.wt = { pend: [], sel: null, swap: [] }); }
 G.words = {
   name: 'Word Tiles', short: 'Our own word board', icon: ICON('<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><path d="M6 9l1-4 1 4M16 5h2.5a1.5 1.5 0 0 1 0 3H16zm0 3h2.5a1.5 1.5 0 0 1 0 3H16z"/>'),
@@ -281,7 +282,7 @@ G.words = {
       return `<button class="wc ${pm || ''}${i === 112 ? ' star' : ''}" data-act="g" data-g="words" data-a="place" data-x="${i}" ${mine ? '' : 'disabled'}>${i === 112 ? '★' : pm || ''}</button>`; }).join('');
     const prev = mine && w.pend.length && WORDS ? wordMove(st.board, w.pend) : null;
     const prevTxt = prev ? (prev.err ? `<span class="small muted">${prev.err}</span>` : `<span class="small">${prev.words.map((x) => `<b style="color:${WORDS.has(x) ? 'var(--him)' : '#e11d48'}">${x}</b>`).join(', ')} · ${prev.score} pts</span>`) : '';
-    const lim = st.limit || 0, opts = [0, 60, 120, 180, 300];
+    const lim = wLimit(st), opts = [0, 60, 120, 180, 300];
     const timer = st.over ? '' : st.fresh && mine ? `<div class="row small"><span class="muted">Turn timer:</span>${opts.map((v) => gbtn('words', 'limit', v ? v / 60 + ' min' : 'Off', 'sm' + (lim === v ? ' on' : ''), `data-x="${v}"`)).join('')}</div>`
       : lim ? `<div class="wtimer ${mine ? 'mine' : ''}" id="wtimer"><span class="wt-bar"><i id="wtbar"></i></span><b id="wttxt">${mine ? (st.turnStart ? '' : G.words.fmt(lim)) : NAMES[st.turn] + "'s clock"}</b></div>` : '';
     return `${timer}<div class="row between"><div class="row">${av('anthonia', 28)}<b>${st.scores.anthonia}</b></div><span class="small muted">${st.bag.length} tiles in bag</span><div class="row"><b>${st.scores.ifeayomi}</b>${av('ifeayomi', 28)}</div></div>
@@ -297,7 +298,7 @@ G.words = {
   act: {
     zoom() { S.wzoom = !S.wzoom; render(true); },
     limit(st, t) { if (!st.fresh || st.turn !== S.role) return; st.limit = +t.dataset.x; saveGame('words', st, true); },
-    sel(st, t) { if (st.fresh && st.limit && !st.turnStart && st.turn === S.role) { st.turnStart = Date.now(); saveGame('words', st); }
+    sel(st, t) { if (st.fresh && wLimit(st) && !st.turnStart && st.turn === S.role) { st.turnStart = Date.now(); saveGame('words', st); }
       const w = wtState(), k = +t.dataset.x; if (w.swapping) { w.swap = w.swap.includes(k) ? w.swap.filter((x) => x !== k) : [...w.swap, k]; } else w.sel = w.sel === k ? null : k; render(true); },
     place(st, t) { const w = wtState(), me = S.role; if (st.turn !== me) return; if (w.sel === null) return toast('Tap one of your tiles first'); const i = +t.dataset.x, ch = st.racks[me][w.sel];
       if (ch === '?') { const ri = w.sel; return openSheet(`${sheetHead('Blank tile: pick a letter')}<div class="letters">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((l) => `<button data-act="g" data-g="words" data-a="blank" data-x="${i}" data-r="${ri}" data-l="${l}">${l}</button>`).join('')}</div>`); }
@@ -320,14 +321,14 @@ G.words = {
       saveGame('words', st); },
   },
   fmt: (s) => `${Math.floor(s / 60)}:${String(Math.max(0, Math.floor(s % 60))).padStart(2, '0')}`,
-  post(st, me) { if (!st || st.over || !st.limit) return;
-    if (st.turn === me && !st.turnStart && !st.fresh) { mergeDoc('games/words', { turnStart: Date.now() }); return; }
+  post(st, me) { if (!st || st.over || !wLimit(st)) return;
+    if (st.turn === me && !st.turnStart && !st.fresh) { const k = (st.updatedAt || 0) + ':' + st.turn; if (G.words.startKey === k) return; G.words.startKey = k; setTimeout(() => mergeDoc('games/words', { turnStart: Date.now() }), 0); return; }
     if (st.turn === me && !st.turnStart && st.fresh) return;
     if (!G.words.iv) G.words.iv = setInterval(G.words.tick, 500); G.words.tick(); },
   tick() { const st = S.games.words, el = document.getElementById('wttxt'), bar = document.getElementById('wtbar');
-    if (!st || st.over || !st.limit || !st.turnStart || !el) { if (!document.getElementById('wtimer')) { clearInterval(G.words.iv); G.words.iv = null; } return; }
-    const left = st.limit - (Date.now() - st.turnStart) / 1000, mine = st.turn === S.role;
-    el.textContent = mine ? `${G.words.fmt(left)} left` : `${NAMES[st.turn]}: ${G.words.fmt(left)}`; if (bar) bar.style.width = Math.max(0, left / st.limit * 100) + '%';
+    if (!st || st.over || !wLimit(st) || !st.turnStart || !el) { if (!document.getElementById('wtimer')) { clearInterval(G.words.iv); G.words.iv = null; } return; }
+    const left = wLimit(st) - (Date.now() - st.turnStart) / 1000, mine = st.turn === S.role;
+    el.textContent = mine ? `${G.words.fmt(left)} left` : `${NAMES[st.turn]}: ${G.words.fmt(left)}`; if (bar) bar.style.width = Math.max(0, left / wLimit(st) * 100) + '%';
     document.getElementById('wtimer').classList.toggle('low', left < 30);
     if (left <= 0 && (mine || left < -15) && !G.words.firing) { G.words.firing = true; const s2 = JSON.parse(JSON.stringify(st)); const who = s2.turn;
       wtState().pend = []; s2.turn = other(who); s2.turnStart = null; s2.passes = (s2.passes || 0) + 1; s2.last = []; logLine(s2, `${NAMES[who]} ran out of time`);

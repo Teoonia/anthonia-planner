@@ -73,7 +73,7 @@ async function drawJig(){
   const j=S.jig;if(!j||j.done)return;let img;try{img=await getImg(jigSrc(j));}catch(e){return;}
   if(S.jig!==j&&(!S.jig||S.jig.at!==j.at))return;
   const cv=document.getElementById('board'),wrap=document.getElementById('boardwrap');if(!cv||!wrap)return;
-  const dpr=DPR(),avail=wrap.clientWidth-12;let s=Math.floor(avail/(j.cols+.5));if(S.zoom)s=Math.max(s,40);s=Math.max(s,12);
+  const dpr=DPR(),avail=wrap.clientWidth-6;let s=Math.floor(avail/(j.cols+.4));if(S.zoom)s=Math.max(s,54);s=Math.max(s,12);
   const pad=Math.round(s*.25),W=j.cols*s+pad*2,H=j.rows*s+pad*2;
   cv.style.width=W+'px';cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
   ctx.fillStyle='#f7eef2';ctx.beginPath();ctx.roundRect?ctx.roundRect(pad,pad,j.cols*s,j.rows*s,8):ctx.rect(pad,pad,j.cols*s,j.rows*s);ctx.fill();
@@ -202,12 +202,15 @@ function setupView(){return `<div class="card center" style="margin-top:16px"><h
   <div class="row" style="width:100%;flex-wrap:nowrap"><input type="text" id="joinCode" placeholder="Got a code? e.g. K7Q2XM" style="text-transform:uppercase"><button class="btn teal" data-act="podJoin" ${S.setupRole?'':'disabled'}>Join</button></div>
   <button class="btn ghost sm" data-act="signOut">Sign out (${esc(S.email||'')})</button></div>`;}
 
+function resubscribe(){if(S.mode!=='live'||!POD)return;unsubs.splice(0).forEach(u=>{try{u();}catch(e){}});subscribe();}
+let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();return;}if(Date.now()-hiddenAt>4000)resubscribe();});
+window.addEventListener('online',()=>resubscribe());
 function subscribe(){
   watchDoc('pods/couple',d=>{const pn=S.role&&S.couple&&S.couple.nick?S.couple.nick[other(S.role)]:undefined;S.couple=d;{const nn=S.role&&d&&d.nick?d.nick[other(S.role)]:undefined;if(S.gotCouple&&S.role&&nn&&nn!==pn){setTimeout(()=>{floatHearts();toast(`${NAMES[other(S.role)]} now calls you "${nn}"`);},400);}}S.gotCouple=true;applyNick();if(S.note.startsWith("Pods can't"))S.note='';refresh();maybeAskNick();});
-  watchCol('messages',l=>{const prev=S.msgs;S.msgs=l;if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role);if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();},{order:'at',dir:'desc',limit:120});
+  watchCol('messages',l=>{const prev=S.msgs;S.msgs=l;checkNews(prev,l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();},{order:'at',dir:'desc',limit:120});
   watchDoc('pods/chatread',d=>{S.chatRead=d||{};refresh();});
   watchCol('checkins',l=>{S.checkins=l;refresh();},{order:'at',dir:'desc',limit:20});
-  watchDoc('pods/avatars',d=>{const p=(S.avatars||{})[S.role];S.avatars=d||{};const n=S.avatars[S.role];if(S.role&&n&&n.by===other(S.role)&&(!p||p.at!==n.at)&&S.gotAv){floatHearts();toast(`${NAMES[other(S.role)]} gave you a new look!`);}S.gotAv=true;refresh();});
+  watchDoc('pods/avatars',d=>{const p=(S.avatars||{})[S.role];S.avatars=d||{};const n=S.avatars[S.role];S.gotAv=true;refresh();});
   watchCol('daily',l=>{S.daily=l;refresh();});
   watchDoc('pods/songs',d=>{S.songs=d||{};refresh();});
   watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role))floatHearts();lastTapAt=d?d.at:0;refresh();});
@@ -507,7 +510,7 @@ const voicePlayer=(src,secs)=>`<audio controls preload="none" src="${src}" style
 /* ---------- nicknames: each of you picks what you call the other ---------- */
 const BASE_NAMES={...NAMES};
 function theirNick(){const n=S.couple&&S.couple.nick&&S.couple.nick[other(S.role)];return n&&String(n).trim()?String(n).trim():'';}
-function applyNick(){if(!S.role)return;const you=other(S.role),n=S.couple&&S.couple.nick&&S.couple.nick[S.role];NAMES[you]=(n&&String(n).trim())||BASE_NAMES[you];NAMES[S.role]=BASE_NAMES[S.role];}
+function applyNick(){if(!S.role)return;const you=other(S.role),n=S.couple&&S.couple.nick&&S.couple.nick[S.role];NAMES[you]=(n&&String(n).trim())||BASE_NAMES[you];NAMES[S.role]=theirNick()||BASE_NAMES[S.role];}
 function nickSheet(first){const you=other(S.role),cur=(S.couple&&S.couple.nick&&S.couple.nick[S.role])||'';
   openSheet(`${sheetHead(first?'One quick thing':'What you call '+BASE_NAMES[you])}<div class="row" style="justify-content:center">${av(you,84)}</div>
   <label class="f" for="nickIn">What do you call ${BASE_NAMES[you]}? This is the name you'll see all over Pods.<input type="text" id="nickIn" maxlength="24" value="${esc(cur)}" placeholder="e.g. ${you==='anthonia'?'My Queen, Toni, Baby':'Yinka, Ife, My King'}"></label>
@@ -518,10 +521,10 @@ function maybeAskNick(){if(S.nickAsked||!S.role||!S.gotCouple||!['live','demo'].
 /* ---------- 9pm check-in ---------- */
 const MOODS_DAY=[['Amazing','#22b3a3'],['Happy','#7bd389'],['Okay','#ffd166'],['Tired','#9aa5b1'],['Missing you','#ff7fb0'],['Sad','#6c8cff'],['Stressed','#ff8a3d']];
 const localDay=()=>new Date().toLocaleDateString('en-CA');
-function maybeCheckin(){if(!S.role||!['live','demo'].includes(S.mode)||S.checkinShown===localDay())return;if(new Date().getHours()<21)return;
+function maybeCheckin(){let asked='';try{asked=localStorage.getItem('pods_ciAsked')||'';}catch(e){}if(!S.role||!['live','demo'].includes(S.mode)||S.checkinShown===localDay()||asked===localDay())return;if(new Date().getHours()<21)return;
   if((S.checkins||[]).some(c=>c.role===S.role&&c.date===localDay()))return;if(!document.getElementById('sheet').classList.contains('hidden'))return;
-  S.checkinShown=localDay();checkinSheet();}
-function checkinSheet(){S.ciMood=S.ciMood||null;openSheet(`${sheetHead('Good evening, '+BASE_NAMES[S.role])}<div class="row" style="justify-content:center">${av(S.role,70)}</div>
+  S.checkinShown=localDay();try{localStorage.setItem('pods_ciAsked',localDay());}catch(e){}checkinSheet();}
+function checkinSheet(){S.ciMood=S.ciMood||null;openSheet(`${sheetHead('Good evening, '+NAMES[S.role])}<div class="row" style="justify-content:center">${av(S.role,70)}</div>
   <label class="f" for="ciDay">How was your day?<textarea id="ciDay" placeholder="Tell ${NAMES[other(S.role)]} about it…"></textarea></label>
   <span class="eyebrow">How do you feel right now?</span><div class="moods">${MOODS_DAY.map(([m,c])=>`<button class="mood ${S.ciMood===m?'on':''}" style="--mc:${c}" data-act="ciMood" data-m="${m}">${m}</button>`).join('')}</div>
   <button class="btn primary" data-act="ciSend">Send to ${NAMES[other(S.role)]}</button><button class="btn ghost" data-act="close">Later</button>`);}
@@ -535,6 +538,7 @@ function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a
   const myLast=[...list].reverse().find(m=>m.by===me);
   const items=list.map(m=>{const day=new Date(m.at).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});const sep=day!==lastDay?`<div class="daysep">${day}</div>`:'';lastDay=day;
     const t=new Date(m.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    if(m.kind==='news')return `${sep}<div class="newspill">${esc(newsText(m))}</div>`;
     let body=m.kind==='voice'?voicePlayer(m.src,m.secs):m.kind==='photo'?`<img src="${m.img}" alt="Photo" class="chatimg" data-act="chatImgOpen" data-id="${m.id}">`:m.kind==='checkin'?`<div class="small"><b>Evening check-in</b> · <span class="moodtag" style="--mc:${(MOODS_DAY.find(x=>x[0]===m.mood)||[,'#ccc'])[1]}">${esc(m.mood||'')}</span></div>${esc(m.text||'')}`:esc(m.text);
     return `${sep}<div class="msg ${m.by===me?'me':'them'}"><button class="mb" data-act="chatHeart" data-id="${m.id}" aria-label="Love this message">${body}${m.heart?`<span class="mheart">${HEART}</span>`:''}</button><span class="mt">${t}${m.by===me&&m===myLast&&seen>=m.at?' · Seen':''}</span></div>`;}).join('');
   return `<section class="card chatcard"><div class="row">${av(you,40)}<div><h2>${esc(NAMES[you])}</h2><div class="small muted">Tap a message to send it a heart</div></div></div>
@@ -553,13 +557,22 @@ let widgetT=null,widgetLast='';
 function widgetPlugin(){const C=window.Capacitor;if(!C||!(C.isNativePlatform&&C.isNativePlatform()))return null;try{return (C.Plugins&&C.Plugins.PodsWidget)||(C.registerPlugin&&C.registerPlugin('PodsWidget'))||null;}catch(e){return null;}}
 function pushWidget(){if(!S.role||S.mode!=='live'||!widgetPlugin())return;clearTimeout(widgetT);widgetT=setTimeout(async()=>{const P=widgetPlugin();if(!P)return;const me=S.role,you=other(me);
   const ci=(S.checkins||[]).filter(c=>c.role===you).sort((a,b)=>b.at-a.at)[0];const fresh=ci&&Date.now()-ci.at<36*3600e3;
-  const lm=(S.msgs||[]).filter(m=>m.by===you).sort((a,b)=>b.at-a.at)[0];
+  const lm=(S.msgs||[]).filter(m=>m.by===you&&m.kind!=='news').sort((a,b)=>b.at-a.at)[0];
   const lastMsg=lm?(lm.kind==='voice'?'Sent you a voice note':lm.kind==='photo'?'Sent you a photo':lm.kind==='checkin'?('Day: '+(lm.text||lm.mood||'')):'"'+(lm.text||'')+'"')+' · '+ago(lm.at):'';
   const turns=[];if(S.jig&&!S.jig.done&&S.jig.turn===me)turns.push('Jigsaw');for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me&&!(G[id].legacy&&G[id].legacy(g)))turns.push(G[id].name);
   const data={name:NAMES[you],mood:fresh?(ci.mood||''):'',nextVisit:(S.couple&&S.couple.nextVisit)||'',lastMsg,turns:turns.join(', ')};
   const key=JSON.stringify(data)+JSON.stringify((S.avatars||{})[you]||{});if(key===widgetLast)return;widgetLast=key;
   try{const im=await loadImg('data:image/svg+xml;charset=utf-8,'+encodeURIComponent(avatarSVG(you,(S.avatars||{})[you]).replace('<svg ','<svg width="192" height="192" ')));const c=document.createElement('canvas');c.width=c.height=192;const x=c.getContext('2d');x.beginPath();x.arc(96,96,96,0,7);x.clip();x.drawImage(im,0,0,192,192);data.avatar=c.toDataURL('image/png');}catch(e){}
   try{await P.update(data);}catch(e){}},1500);}
+
+
+/* ---------- announcements: new look / new name ---------- */
+const newsText=m=>{const me=S.role,by=m.by,toYou=by!==me;return m.what==='avatar'?(toYou?`${NAMES[by]} gave you a new look!`:`You gave ${NAMES[other(me)]} a new look`):(toYou?`${NAMES[by]} now calls you "${m.name}"`:`You now call ${NAMES[other(me)]} "${m.name}"`);};
+function showNews(list){if(!list.length)return;const me=S.role;try{localStorage.setItem('pods_newsSeen',String(Math.max(...list.map(m=>m.at))));}catch(e){}
+  openSheet(`${sheetHead(list.length>1?'While you were away':'Guess what!')}${list.map(m=>`<div class="newsitem">${m.what==='avatar'?`<div class="newsav">${av(me,96)}</div>`:`<div class="newsname">${esc(m.name||'')}</div>`}<p style="margin:0;font-weight:800">${esc(newsText(m))}</p></div>`).join('')}<button class="btn primary" data-act="close">Aww, okay!</button>`);floatHearts();}
+function checkNews(prev,list){if(!S.role)return;const me=S.role;let seen=0;try{seen=Number(localStorage.getItem('pods_newsSeen')||0);}catch(e){}
+  const known=prev?new Set(prev.map(m=>m.id)):null;const fresh=list.filter(m=>m.kind==='news'&&m.by!==me&&m.at>seen&&(!known||!known.has(m.id))).sort((a,b)=>a.at-b.at);
+  if(fresh.length)setTimeout(()=>showNews(fresh),prev?200:900);}
 
 /* ---------- sheets, toast, effects ---------- */
 function openSheet(html){document.getElementById('panel').innerHTML=html;document.getElementById('sheet').classList.remove('hidden');}
@@ -596,12 +609,12 @@ const val=id=>(document.getElementById(id)||{}).value||'';
 const A={
   tab:t=>{S.tab=t.dataset.k;location.hash=S.tab;closeSheet();render();window.scrollTo(0,0);},
   close:closeSheet,
-  pick:async t=>{const r=t.dataset.r;S.role=r;try{localStorage.setItem('pods-role',r);}catch(e){}render();floatHearts();},
-  switch:()=>{if(S.mode==='live'&&uid)return;closeSheet();S.role=other(S.role);S.sel=null;S.truthDraft=null;render();},
+  pick:async t=>{const r=t.dataset.r;S.role=r;applyNick();try{localStorage.setItem('pods-role',r);}catch(e){}render();floatHearts();},
+  switch:()=>{if(S.mode==='live'&&uid)return;closeSheet();S.role=other(S.role);applyNick();S.sel=null;S.truthDraft=null;render();},
   avatarSheet:()=>{S.avWho=S.role;avatarSheet(S.role);},
   avSet:t=>{S.avDraft[t.dataset.k]=Number(t.dataset.v);drawAvatarSheet();},
   avWho:t=>avatarSheet(t.dataset.r),
-  avSave:async()=>{const c={...S.avDraft,by:S.role,at:Date.now()},who=S.avWho||S.role;closeSheet();S.avWho=null;await mergeDoc('pods/avatars',{[who]:c});floatHearts();toast(who===S.role?'Looking good!':`${NAMES[who]} has a new look!`);},
+  avSave:async()=>{const c={...S.avDraft,by:S.role,at:Date.now()},who=S.avWho||S.role;closeSheet();S.avWho=null;await mergeDoc('pods/avatars',{[who]:c});if(who!==S.role)sendMsg({kind:'news',what:'avatar'});floatHearts();toast(who===S.role?'Looking good!':`${NAMES[who]} has a new look!`);},
   visitSheet:()=>openSheet(`${sheetHead('Next visit')}<label class="f" for="visitIn">When will you see each other?<input type="date" id="visitIn" value="${esc((S.couple&&S.couple.nextVisit)||'')}"></label><button class="btn primary" data-act="visitSave">Save</button>`),
   visitSave:async()=>{const v=val('visitIn');if(!v)return toast('Pick a date first');closeSheet();await mergeDoc('pods/couple',{nextVisit:v});confetti();toast('Countdown set!');},
   tap:async t=>{floatHearts();const day=todayKey();const prev=(S.tap&&S.tap.day===day&&S.tap.counts)||{};const counts={anthonia:prev.anthonia||0,ifeayomi:prev.ifeayomi||0};counts[S.role]++;
@@ -612,7 +625,7 @@ const A={
   songSave:async()=>{const title=val('songT').trim(),url=val('songU').trim();if(!title&&!url)return toast('Add a song name or link');if(url&&!/^https?:\/\//i.test(url))return toast('Links start with https://');closeSheet();await mergeDoc('pods/songs',{[S.role]:{title,url,at:Date.now()}});},
   /* names, check-in, chat */
   nickOpen:()=>nickSheet(false),
-  nickSave:async()=>{const v=val('nickIn').trim().slice(0,24);closeSheet();await mergeDoc('pods/couple',{nick:{[S.role]:v}});toast(v?`Okay! You'll see "${v}" everywhere`:'Saved');floatHearts();},
+  nickSave:async()=>{const v=val('nickIn').trim().slice(0,24);closeSheet();const oldN=(S.couple&&S.couple.nick&&S.couple.nick[S.role])||'';await mergeDoc('pods/couple',{nick:{[S.role]:v}});if(v&&v!==oldN)sendMsg({kind:'news',what:'name',name:v});toast(v?`Okay! You'll see "${v}" everywhere`:'Saved');floatHearts();},
   nickSkip:async()=>{closeSheet();await mergeDoc('pods/couple',{nick:{[S.role]:''}});},
   ciOpen:()=>checkinSheet(),
   ciMood:t=>{S.ciMood=t.dataset.m;document.querySelectorAll('.mood').forEach(b=>b.classList.toggle('on',b.dataset.m===S.ciMood));},
