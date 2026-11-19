@@ -1,7 +1,8 @@
 name: Publish on GitHub Pages
 
 # Free hosting with no monthly limit (Netlify's free credits ran out):
-#   Weekly Board  https://teoonia.github.io/anthonia-planner/
+# Each app lives in its own folder with its own storage, so they never affect each other:
+#   Weekly Board  https://teoonia.github.io/anthonia-planner/board/
 #   Pods          https://teoonia.github.io/anthonia-planner/pods/
 #   Parla!        https://teoonia.github.io/anthonia-planner/parla/
 on:
@@ -39,11 +40,18 @@ jobs:
       - name: Build Weekly Board (Pods and Parla come along from public/)
         run: npm run build
         env:
-          BASE: /anthonia-planner/
-      - run: touch dist/.nojekyll
+          BASE: /anthonia-planner/board/
+      - name: Put each app in its own folder
+        run: |
+          mkdir -p site
+          mv dist/pods site/pods
+          mv dist/parla site/parla
+          mv dist site/board
+          printf '<!DOCTYPE html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=pods/"><title>Pods</title><a href="pods/">Open Pods</a>\n' > site/index.html
+          touch site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4

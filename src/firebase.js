@@ -14,7 +14,9 @@ export const configured = !String(firebaseConfig.apiKey || "").includes("PASTE")
 export let app = null;
 let auth = null, fs = null;
 if (configured) {
-  app = initializeApp(firebaseConfig);
+  // Own app name = own sign-in and offline cache, so Weekly Board never
+  // shares or swaps a login with Pods on the same web address
+  app = initializeApp(firebaseConfig, "weekly-board");
   auth = getAuth(app);
   // offline cache: the plan keeps working on the train without signal
   // multi-tab: the installed app window and a browser tab can be open at the same time

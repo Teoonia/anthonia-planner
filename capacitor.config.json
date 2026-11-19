@@ -3,7 +3,7 @@
   "appName": "Weekly Board",
   "webDir": "dist",
   "server": {
-    "url": "https://teoonia.github.io/anthonia-planner/",
+    "url": "https://teoonia.github.io/anthonia-planner/board/",
     "androidScheme": "https",
     "cleartext": false
   }
