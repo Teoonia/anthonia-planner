@@ -64,6 +64,7 @@ Likes cheap rewards and trying new affordable things in Italy, movie nights, and
 let db = null, loaded = false;
 let tasks = [], reviews = {}, routine = [], days = {}, settings = { ...DEFAULT_SET }, chatDays = {}, projects = [];
 let selOff = 0, weekOffset = 0, lastView = "today", scrolledToNow = false;
+let calSig = "", calKey = "", nowSig = ""; // redraw the calendar only when something in it changed
 const fresh = new Set();
 const $ = (s) => document.querySelector(s);
 const state = () => ({ classes: CLASSES, routine, days, settings });
@@ -344,7 +345,7 @@ function renderToday() {
   const workStart = toMin(settings.workStart) ?? 540;
 
   /* now card */
-  const nc = $("#nowCard"); nc.innerHTML = "";
+  const nc = $("#nowCard"); const ncOld = nc.textContent; nc.innerHTML = "";
   if (isToday && loaded) {
     const n = nowMin(), real = p.blocks.filter((b) => b.kind !== "break");
     const cur = real.find((b) => b.s <= n && b.e > n), next = real.find((b) => b.s > n && !b.done);
@@ -357,20 +358,34 @@ function renderToday() {
       if (next) nc.append(h("div", "next", "Next at " + toHM(next.s) + ": " + next.title));
     } else nc.hidden = true;
   } else nc.hidden = true;
+  nc.classList.toggle("calm", nc.textContent === ncOld);
 
   /* cancelled classes (tap to bring back) */
-  $("#cancelRow")?.remove();
   const canc = (p.dd.cancelled || []).map((id) => CLASSES.find((c) => c.id === id)).filter(Boolean);
-  if (canc.length) {
-    const row = h("div", "row"); row.id = "cancelRow"; row.style.marginTop = "12px";
+  const cancSig = canc.map((c) => c.id).join();
+  if ($("#cancelRow")?.dataset.sig !== cancSig) $("#cancelRow")?.remove();
+  if (canc.length && !$("#cancelRow")) {
+    const row = h("div", "row"); row.dataset.sig = cancSig; row.id = "cancelRow"; row.style.marginTop = "12px";
     row.append(h("span", "muted small", "Cancelled today:"));
     canc.forEach((c) => row.append(button(c.title + " · undo", () => toggleCancelled(key, c.id), "btn ghost small")));
     $("#cal").before(row);
   }
 
   /* calendar */
-  const cal = $("#cal"); cal.innerHTML = "";
-  if (!loaded) { cal.style.height = "120px"; cal.append(h("p", "muted", "Loading your plan…")); $("#overTray").hidden = true; return; }
+  const cal = $("#cal");
+  if (!loaded) { calSig = ""; cal.innerHTML = ""; cal.style.height = "120px"; cal.append(h("p", "muted", "Loading your plan…")); $("#overTray").hidden = true; return; }
+  const vis = p.blocks.filter((b) => b.kind !== "break").map((b) => ({ ...b }));
+  layoutColumns(vis);
+  const nMin = nowMin();
+  const sig = [key, wake, sleep, workStart, [...fresh].join(), isToday ? vis.findIndex((b) => b.s <= nMin && b.e > nMin) : -1,
+    JSON.stringify(vis.map((b) => [b.id, b.kind, b.title, b.s, b.e, b.done, b.col, b.ncol, b.squeezed, b.room]))].join("|");
+  if (sig === calSig) {
+    // nothing changed: just slide the now-line
+    const nl = cal.querySelector(".nowline"); if (nl) nl.style.top = (nMin - wake) * PX + "px";
+  } else {
+  const animate = key !== calKey;   // entrance animation only when you switch days
+  calSig = sig; calKey = key;
+  cal.innerHTML = ""; cal.classList.toggle("calm", !animate);
   cal.style.height = (sleep - wake) * PX + 20 + "px";
   for (let m = Math.ceil(wake / 60) * 60; m <= sleep; m += 60) {
     const line = h("div", "hour"); line.style.top = (m - wake) * PX + "px"; line.append(h("span", "", toHM(m))); cal.append(line);
@@ -386,8 +401,6 @@ function renderToday() {
   };
   cal.append(slots);
   const flexIds = p.queue.map((q) => q.id);
-  const vis = p.blocks.filter((b) => b.kind !== "break").map((b) => ({ ...b }));
-  layoutColumns(vis);
   vis.forEach((b, i) => {
     const el = h("div", blockClass(b)); el.setAttribute("role", "button"); el.tabIndex = 0;
     el.style.setProperty("--i", i);
@@ -413,13 +426,11 @@ function renderToday() {
     el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openBlock(key, b, flexIds); } };
     cal.append(el);
   });
-  if (isToday) {
-    const n = nowMin();
-    if (n >= wake && n <= sleep) { const nl = h("div", "nowline"); nl.style.top = (n - wake) * PX + "px"; cal.append(nl); }
-    if (!scrolledToNow && lastView === "today") {
-      scrolledToNow = true;
-      requestAnimationFrame(() => { const y = cal.getBoundingClientRect().top + scrollY + (Math.max(wake, n) - wake) * PX - 220; if (y > 200) scrollTo({ top: y, behavior: "smooth" }); });
-    }
+  if (isToday && nMin >= wake && nMin <= sleep) { const nl = h("div", "nowline"); nl.style.top = (nMin - wake) * PX + "px"; cal.append(nl); }
+  }
+  if (isToday && !scrolledToNow && lastView === "today") {
+    scrolledToNow = true;
+    requestAnimationFrame(() => { const y = cal.getBoundingClientRect().top + scrollY + (Math.max(wake, nMin) - wake) * PX - 220; if (y > 200) scrollTo({ top: y, behavior: "smooth" }); });
   }
 
   /* didn't fit */
@@ -509,7 +520,10 @@ function rituals(mon) {
   return out.map((r) => ({ ...r, id: "ritual-" + wk + "-" + r.key, week: wk, ritual: true }));
 }
 function renderProjects() {
-  const box = $("#projects"); if (!box) return; box.innerHTML = "";
+  const box = $("#projects"); if (!box) return;
+  const psig = JSON.stringify(projects.map((p) => [p.id, p.name, horizonOf(p), projectPulse(p).label, projectPulse(p).state, p.order]));
+  if (box.dataset.sig === psig) return;
+  box.classList.toggle("calm", !!box.dataset.sig); box.dataset.sig = psig; box.innerHTML = "";
   if (!projects.length) { box.append(h("p", "muted small", loaded ? "Nothing written down yet. Add your first project." : "Loading…")); return; }
   let i = 0;
   HORIZONS.forEach((hz) => {
@@ -582,11 +596,11 @@ function renderBoard() {
   $("#wLabel").textContent = (weekOffset === 0 ? "This week · " : "") + fmt(mon) + " – " + fmt(sun);
   const byId = Object.fromEntries(tasks.map((t) => [t.id, t]));
   const all = [...rituals(mon).map((r) => ({ ...r, status: byId[r.id]?.status || "todo" })), ...tasks.filter((t) => t.week === wk && !t.ritual)];
-  const box = $("#areas"); box.innerHTML = "";
+  const box = $("#areas"); box.classList.toggle("calm", box.dataset.wk === wk); box.dataset.wk = wk; box.innerHTML = "";
   AREAS.forEach((a, ai) => {
     const it = all.filter((t) => t.area === a.id).sort((x, y) => (x.ritual ? 0 : 1) - (y.ritual ? 0 : 1) || (x.createdAt || 0) - (y.createdAt || 0));
     const dn = it.filter((t) => t.status === "done").length;
-    const card = h("article", "card area"); card.style.animation = `rise .4s ${ai * 40}ms both`;
+    const card = h("article", "card area"); card.style.setProperty("--i", ai);
     const head = h("div", "head"); head.append(h("h3", "", a.name), h("span", "muted small", it.length ? dn + " of " + it.length : ""));
     const prog = h("div", "prog"), pi = h("i"); pi.style.width = (it.length ? Math.round((dn / it.length) * 100) : 0) + "%"; prog.append(pi);
     card.append(head, h("p", "muted small", a.why), prog);
@@ -698,7 +712,7 @@ function route() {
   if (hv === "chat") { markTabs("chat"); openSheet("#chatSheet"); renderChat(true); setTimeout(() => $("#chatIn").focus(), 350); return; }
   const v = ["today", "week", "me"].includes(hv) ? hv : "today";
   closeSheets(true);
-  if (v !== lastView) { const sec = $("#v-" + v); sec.classList.remove("enter"); void sec.offsetWidth; sec.classList.add("enter"); if (v === "today") scrolledToNow = false; scrollTo(0, 0); }
+  if (v !== lastView) { const sec = $("#v-" + v); sec.classList.remove("enter"); void sec.offsetWidth; sec.classList.add("enter"); if (v === "today") { scrolledToNow = false; calKey = ""; calSig = ""; } scrollTo(0, 0); }
   lastView = v;
   document.querySelectorAll(".view").forEach((s) => (s.hidden = s.id !== "v-" + v));
   markTabs(v); $("#dock").hidden = v === "me";

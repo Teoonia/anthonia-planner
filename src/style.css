@@ -278,3 +278,6 @@ main{padding-top:6px}
 .added .a.x{background:var(--pink-soft)}
 .added .a.x .when{color:var(--pink)}
 .added .a.x b{text-decoration:line-through}
+.area{animation:rise .4s both;animation-delay:calc(var(--i,0)*40ms)}
+/* re-draws after a sync don't replay the entrance animations (no twitching) */
+.cal.calm .blk:not(.fresh),.nowcard.calm,.projects.calm .proj,.areas.calm .area{animation:none}
