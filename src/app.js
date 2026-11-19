@@ -303,8 +303,24 @@ function greet() {
   $("#hGreet").textContent = part + ", Anthonia";
   $("#hDate").textContent = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 }
+function goDay(off) { selOff = off; renderToday(); }
+$("#sPrev").onclick = () => goDay(selOff - 7);
+$("#sNext").onclick = () => goDay(selOff + 7);
+$("#sToday").onclick = () => { scrolledToNow = false; goDay(0); };
+$("#sDate").onchange = (e) => { if (e.target.value) goDay(offOfKey(e.target.value)); };
+$(".monthpick").onclick = (e) => { const i = $("#sDate"); if (e.target !== i) { try { i.showPicker(); } catch (_) { i.focus(); } } };
+{ // swipe the day strip left/right to change week
+  let x0 = null; const ws = $("#weekstrip");
+  ws.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  ws.addEventListener("touchend", (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) goDay(selOff + (dx < 0 ? 7 : -7)); });
+}
 function renderWeekStrip() {
   const sel = dayDate(selOff), mon = mondayOf(sel), ws = $("#weekstrip"); ws.innerHTML = "";
+  const sun = new Date(mon); sun.setDate(sun.getDate() + 6);
+  const mName = (d) => d.toLocaleDateString("en-GB", { month: "long" });
+  $("#sMonth").textContent = (mon.getMonth() === sun.getMonth() ? mName(mon) : mName(mon).slice(0, 3) + " – " + mName(sun).slice(0, 3)) + (sun.getFullYear() !== new Date().getFullYear() ? " " + sun.getFullYear() : "");
+  $("#sDate").value = dkey(sel);
+  $("#sToday").hidden = mon.getTime() === mondayOf(new Date()).getTime() && selOff === 0;
   for (let i = 0; i < 7; i++) {
     const d = new Date(mon); d.setDate(d.getDate() + i); const off = Math.round((d - dayDate(0)) / 864e5);
     const b = h("button", "daypill" + (off === 0 ? " today" : "")); b.type = "button"; b.setAttribute("role", "tab");

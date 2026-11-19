@@ -50,6 +50,13 @@
   <main>
     <!-- TODAY -->
     <section class="view" id="v-today">
+      <div class="striphead">
+        <button class="icon-btn" id="sPrev" aria-label="Previous week">‹</button>
+        <label class="monthpick"><span id="sMonth">November</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+          <input type="date" id="sDate" aria-label="Jump to a date"></label>
+        <button class="chip soft" id="sToday" hidden>Today</button>
+        <button class="icon-btn" id="sNext" aria-label="Next week">›</button>
+      </div>
       <div class="weekstrip" id="weekstrip" role="tablist" aria-label="Days of the week"></div>
       <div class="dayhead">
         <h2 id="dayTitle">Today</h2>

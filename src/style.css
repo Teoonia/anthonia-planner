@@ -281,3 +281,8 @@ main{padding-top:6px}
 .area{animation:rise .4s both;animation-delay:calc(var(--i,0)*40ms)}
 /* re-draws after a sync don't replay the entrance animations (no twitching) */
 .cal.calm .blk:not(.fresh),.nowcard.calm,.projects.calm .proj,.areas.calm .area{animation:none}
+.striphead{display:flex;align-items:center;gap:8px;margin-top:14px}
+.monthpick{position:relative;flex:1;display:flex;align-items:center;gap:4px;font:600 16px var(--display);cursor:pointer}
+.monthpick svg{width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2}
+.monthpick input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer;padding:0;border:0}
+#sToday{border:0;cursor:pointer}
