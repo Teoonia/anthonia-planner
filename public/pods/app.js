@@ -512,7 +512,7 @@ async function startRec(onDone){
   mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
   mr.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});const secs=Math.round((Date.now()-t0)/1000);rec=null;render(true);if(Date.now()-t0<800||!blob.size)return toast('Hold on a little longer to record.');
     if(blob.size>700000)return toast('That voice note is too long. Keep it under a minute.');const fr=new FileReader();fr.onload=()=>onDone(fr.result,secs);fr.readAsDataURL(blob);};
-  mr.start(500);rec={mr,t0,timer:setTimeout(()=>{if(mr.state==='recording')mr.stop();},60000)};render(true);}
+  mr.start();rec={mr,t0,timer:setTimeout(()=>{if(mr.state==='recording')mr.stop();},60000)};render(true);}
 function stopRec(){if(rec&&rec.mr.state==='recording'){clearTimeout(rec.timer);rec.mr.stop();}}
 
 /* ---------- nicknames: each of you picks what you call the other ---------- */
@@ -586,16 +586,26 @@ function checkNews(prev,list){if(!S.role)return;const me=S.role;let seen=0;try{s
   if(fresh.length)setTimeout(()=>showNews(fresh),prev?200:900);}
 
 /* ---------- voice notes: reliable play on both phones ---------- */
-const VOICE={};let vAudio=null,vKey=null;
-function voicePlayer(src,secs,key){key=key||('v'+Math.abs([...String(src).slice(-40)].reduce((a,c)=>a*31+c.charCodeAt(0)|0,7)));VOICE[key]=src;const playing=vKey===key&&vAudio&&!vAudio.paused;
-  return `<div class="vplay"><button class="vbtn" data-act="vPlay" data-k="${key}" aria-label="${playing?'Pause':'Play'} voice note">${playing?'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}</button><span class="vbar"><i id="vb-${key}" style="width:${playing&&vAudio.duration?vAudio.currentTime/vAudio.duration*100:0}%"></i></span><span class="vt">${secs?secs+'s':''}</span></div>`;}
+const VOICE={},VOICE_LEN={};let vAudio=null,vKey=null;
+function voicePlayer(src,secs,key){key=key||('v'+Math.abs([...String(src).slice(-40)].reduce((a,c)=>a*31+c.charCodeAt(0)|0,7)));VOICE[key]=src;const playing=vKey===key&&(!!vSrc||(vAudio&&!vAudio.paused));const len=VOICE_LEN[key]||secs;
+  return `<div class="vplay"><button class="vbtn" data-act="vPlay" data-k="${key}" aria-label="${playing?'Pause':'Play'} voice note">${playing?'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}</button><span class="vbar"><i id="vb-${key}" style="width:${vKey===key&&vSrc&&vDur?Math.min(100,(vOff+(vCtx.currentTime-vT0))/vDur*100):vKey===key&&vAudio&&vAudio.duration?vAudio.currentTime/vAudio.duration*100:S.vPaused===key&&vDur?vOff/vDur*100:0}%"></i></span><span class="vt" data-vt="${key}">${len?len+'s':''}</span></div>`;}
+let vCtx=null,vSrc=null,vT0=0,vOff=0,vDur=0,vRaf=0;const vBuf={};
+function vStop(keepOffset){if(vSrc){try{vSrc.onended=null;vSrc.stop();}catch(e){}vSrc=null;}if(vAudio){vAudio.pause();vAudio=null;}cancelAnimationFrame(vRaf);if(!keepOffset){vKey=null;vOff=0;}}
+function vTick(key){const b=document.getElementById('vb-'+key);if(vSrc&&vDur){const t=vOff+(vCtx.currentTime-vT0);if(b)b.style.width=Math.min(100,t/vDur*100)+'%';vRaf=requestAnimationFrame(()=>vTick(key));}}
 async function vPlay(key){const src=VOICE[key];if(!src)return;
-  if(vKey===key&&vAudio){if(vAudio.paused){vAudio.play().catch(()=>{});}else vAudio.pause();render(true);return;}
-  if(vAudio){vAudio.pause();vAudio=null;}
-  try{const blob=src.startsWith('data:')?await (await fetch(src)).blob():null;const url=blob?URL.createObjectURL(blob):src;const a=new Audio();a.preload='auto';a.src=url;vAudio=a;vKey=key;
-    a.ontimeupdate=()=>{const b=document.getElementById('vb-'+key);if(b&&a.duration&&isFinite(a.duration))b.style.width=(a.currentTime/a.duration*100)+'%';};
-    a.onended=()=>{vKey=null;vAudio=null;render(true);};a.onerror=()=>{vKey=null;vAudio=null;render(true);toast("This voice note can't play on this phone. Ask for it to be recorded again.");};
-    await a.play();render(true);}catch(e){vKey=null;vAudio=null;toast("Couldn't play that voice note. Tap again.");render(true);}}
+  if(vKey===key&&vSrc){vOff+=vCtx.currentTime-vT0;vStop(true);S.vPaused=key;render(true);return;}
+  if(vKey===key&&vAudio){if(vAudio.paused)vAudio.play().catch(()=>{});else vAudio.pause();render(true);return;}
+  if(vKey!==key){vStop();vOff=0;}
+  try{vCtx=vCtx||new (window.AudioContext||window.webkitAudioContext)();if(vCtx.state==='suspended')await vCtx.resume();
+    let buf=vBuf[key];if(!buf){const ab=await (await fetch(src)).arrayBuffer();buf=await new Promise((res,rej)=>vCtx.decodeAudioData(ab,res,rej));vBuf[key]=buf;}
+    const sN=vCtx.createBufferSource();sN.buffer=buf;sN.connect(vCtx.destination);vDur=buf.duration;if(vOff>=vDur)vOff=0;
+    sN.onended=()=>{if(vSrc===sN){vStop();S.vPaused=null;render(true);}};sN.start(0,vOff);vSrc=sN;vKey=key;vT0=vCtx.currentTime;S.vPaused=null;
+    const tl=document.querySelector(`[data-vt="${key}"]`);VOICE_LEN[key]=Math.round(vDur);render(true);vTick(key);
+  }catch(e){ // fall back to the browser's own player
+    try{const blob=src.startsWith('data:')?await (await fetch(src)).blob():null;const url=blob?URL.createObjectURL(blob):src;const a=new Audio();a.preload='auto';a.src=url;vAudio=a;vKey=key;
+      a.ontimeupdate=()=>{const b=document.getElementById('vb-'+key);if(b&&a.duration&&isFinite(a.duration))b.style.width=(a.currentTime/a.duration*100)+'%';};
+      a.onended=()=>{vKey=null;vAudio=null;render(true);};a.onerror=()=>{vKey=null;vAudio=null;render(true);toast("This voice note can't play on this phone. Ask for it to be recorded again.");};
+      await a.play();render(true);}catch(e2){vKey=null;vAudio=null;toast("Couldn't play that voice note. Tap again.");render(true);}}}
 
 /* ---------- presence: in the chat, playing a game, or away ---------- */
 let presWhere='',presT=0,typingT=null,isTyping=false;
