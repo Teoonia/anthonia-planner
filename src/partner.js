@@ -6,13 +6,37 @@ import { app } from "./firebase.js";
 
 // Fast "lite" models first (no thinking step, quick replies); bigger ones only as backup
 const MODELS = ["gemini-flash-lite-latest", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-2.5-flash"];
-export const AREA_IDS = ["gigs", "staff", "targets", "cmax", "website", "school", "life"];
+export const AREA_IDS = ["gigs", "staff", "targets", "cmax", "website", "school", "life", "self", "meal", "rest", "read", "fun"];
 
 const replySchema = Schema.object({
   properties: {
-    reply: Schema.string({ description: "What Mini Mi says back, in her voice. Short paragraphs." }),
+    reply: Schema.string({ description: "What Mini Mi says back, in her voice. Short paragraphs. If you added things, say where they landed and why that slot." }),
+    actions: Schema.array({
+      description: "Things to put on her calendar RIGHT NOW. Every item here is added immediately. Empty if nothing should be added.",
+      items: Schema.object({
+        properties: {
+          title: Schema.string({ description: "Short, starts with a verb, under 60 characters" }),
+          date: Schema.string({ description: "YYYY-MM-DD" }),
+          start: Schema.string({ description: "HH:MM (24h) only when the exact time matters (a call, a meeting, a time she gave). Otherwise empty string." }),
+          notBefore: Schema.string({ description: "HH:MM earliest sensible start when start is empty, or empty string" }),
+          mins: Schema.integer({ description: "Duration in minutes, 10-240" }),
+          area: Schema.enumString({ enum: AREA_IDS })
+        },
+        optionalProperties: ["start", "notBefore"]
+      })
+    }),
+    projectNotes: Schema.array({
+      description: "Things she just told you about her life projects worth remembering for later: progress, a decision, a setback, a new plan or idea. Empty unless she shared something like that.",
+      items: Schema.object({
+        properties: {
+          project: Schema.string({ description: "The project's name exactly as listed under LIFE PROJECTS, or a short new name if this is a new plan" }),
+          note: Schema.string({ description: "One short line in third person, e.g. 'Sent 3 Upwork proposals' or 'Decided to pause Pods until January'" }),
+          isNew: Schema.boolean({ description: "true only if this is a brand-new project or plan not in the list" })
+        }
+      })
+    }),
     suggestions: Schema.array({
-      description: "0 to 4 concrete tasks to add to the board. Empty when chatting casually.",
+      description: "0 to 4 bigger goals for her week board that she can accept or decline. Usually empty.",
       items: Schema.object({
         properties: {
           title: Schema.string({ description: "Short task, starts with a verb, under 70 characters" }),
@@ -22,13 +46,14 @@ const replySchema = Schema.object({
         }
       })
     })
-  }
+  },
+  optionalProperties: ["actions", "projectNotes", "suggestions"]
 });
 
 let ai = null;
 const aiInstance = () => (ai ||= getAI(app, { backend: new GoogleAIBackend() }));
 
-export function systemPrompt({ name, banter, about, context, today }) {
+export function systemPrompt({ name, banter, about, context, projects, today }) {
   const tone = {
     gentle: "Warm and encouraging. Light teasing only, always kind.",
     cheeky: "Playful and cheeky. Tease her like a close friend: call out excuses, laugh at her procrastination, hype her wins. Light Nigerian pidgin now and then is welcome.",
@@ -40,17 +65,30 @@ Tone: ${tone}
 Rules for teasing: roast her habits and excuses only. Never mock her body, looks, family, faith, background or intelligence. If she sounds genuinely stressed, sad or overwhelmed, drop the jokes, be kind and practical, and suggest rest or talking to someone she trusts.
 You are an AI friend in an app, not a real person; don't pretend otherwise if she asks.
 
-How to help:
-- Base everything on her real plan below: today's blocks, what's done, this week's board, her streak and her review.
-- When she asks what to do next (or uses a quick button), suggest 1-4 specific, doable tasks tied to her areas. Each must fit her actual schedule (classes, commute, AGN office hours 9:00-17:00 Mon-Fri Lagos time, CMAX updates due Wed and Fri, AGN website 1-2 days a week, monthly targets out by the 3rd, weekly reports checked Monday).
-- Don't suggest something already on the board. Prefer small next steps over vague goals.
-- When chatting casually, reply naturally and leave suggestions empty.
-- Keep replies short: 2-5 sentences unless she asks for more. No markdown headings.
+You are also her jotter. She tells you things in passing ("office called, I need to update the client portfolio", "remind me to pay rent", "seminar on Friday") and YOU put them on her calendar:
+- Anything she needs to do, remember, prepare or attend goes into "actions". Items in actions are added the moment you reply, so never say "I'll add it" or "added" unless it is in actions, and never leave out something you said you added.
+- Pick the best slot from her FREE SLOTS below (they already respect classes, the bus, meals and breaks). Respect: nothing that's work before 9:00 (her mornings are gentle on purpose); AGN calls only 9:00-17:00 Mon-Fri; CMAX updates due Wed and Fri; don't steal her meals, wind-down or rest.
+- If the time matters (a call, a meeting, a time she said), set "start". Otherwise leave start empty and set "notBefore" so the planner fits it into free time and can squeeze it if the day gets busy.
+- If something truly won't fit today, put it on the next day with room and tell her.
+- When she mentions a class, seminar or exam, help her prepare: suggest what to review or bring and add prep sessions before it (not on the morning of, unless she asks).
+- If she's vague ("later", "sometime this week"), choose for her and say why in one line. Ask only if you really can't tell what she means.
+- She can't remove more than 2 planned blocks a day; adding things is always fine. Don't remove or move things.
+- Use "suggestions" only for bigger goals for the week board, and rarely.
+- Keep replies short: 1-4 sentences unless she asks for more. No markdown headings, no bullet walls.
+
+You also know her LIFE PROJECTS (below): what she's building towards, why, and what "on track" looks like for each, with what she actually did this week and last week.
+- Chat about them like a friend who remembers: ask how they're going, connect today's tasks to the bigger goal, get excited about progress.
+- Tell her plainly when she's going off the rails: a "now" project with nothing done for a week or more, the same block skipped again and again, a deadline slipping (targets by the 3rd, CMAX Wed/Fri), or a new shiny idea eating time from her priorities. Say it once, clearly and kindly, name the project, then offer one concrete fix and add it to "actions" if she agrees or if it's obviously needed.
+- Don't nag about paused or someday projects unless she brings them up, but do notice if she keeps talking about one and never plans time for it.
+- When she shares progress, a decision or a new plan for any project, log it in "projectNotes" so you remember next time.
 
 Today is ${today}.
 
 About Anthonia:
 ${about}
+
+LIFE PROJECTS:
+${projects || "(none written down yet)"}
 
 Her plan right now:
 ${context}`;
@@ -86,11 +124,11 @@ export async function askPartner({ system, history, message }) {
         const gm = getGenerativeModel(aiInstance(), {
           model,
           systemInstruction: system,
-          generationConfig: { responseMimeType: "application/json", responseSchema: replySchema, temperature: 0.9, maxOutputTokens: 900 }
+          generationConfig: { responseMimeType: "application/json", responseSchema: replySchema, temperature: 0.9, maxOutputTokens: 1100 }
         }, { timeout: 25000 });
         const r = await gm.startChat({ history: hist }).sendMessage(message);
         const out = JSON.parse(r.response.text());
-        return { reply: String(out.reply || ""), suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
+        return { reply: String(out.reply || ""), actions: Array.isArray(out.actions) ? out.actions.slice(0, 8) : [], projectNotes: Array.isArray(out.projectNotes) ? out.projectNotes.slice(0, 5) : [], suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
       } catch (e) {
         console.warn("Mini Mi error", model, e);
         lastErr = e;

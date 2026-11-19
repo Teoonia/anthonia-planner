@@ -2,7 +2,7 @@
    Anthonia's class timetable (UNIVPM, EHDRM). Bump `version` whenever it changes:
    the app replaces the classes in Firestore once, on the next open, on every device. */
 export const TIMETABLE = {
-  version: "2026-11-16b",
+  version: "2026-11-19",
   label: "week of 16 November",
   classes: {
     "bio-mon":  { title: "Biological and Ecological Risk", day: 0, start: "08:30", end: "11:30", room: "B12" },
@@ -52,6 +52,22 @@ export const TIMETABLE = {
     routine: {
       "v2-r30b": { notBefore: "14:30" },                  // Friday check-in calls, early afternoon
       "v2-r40f": { title: "Lunch (after the ride home)", notBefore: "13:45" }
+    }
+  }, { version: "2026-11-19",
+    // Gentle mornings: nothing to do before 9:00 except looking after yourself.
+    // Wednesday: AGN calls in the morning, class 14:30, CMAX in the evening.
+    routine: {
+      "v2-r10":  { area: "self", title: "Body care and get ready" },
+      "v2-r10w": { area: "self", title: "Slow morning routine" },
+      "v2-r30w": { order: 61, notBefore: "09:00" },                     // Wed check-in calls first
+      "v2-r35":  { order: 62, notBefore: "09:30" },                     // Wed team calls next
+      "v2-cx":   { days: [4] },                                         // CMAX on Friday afternoon
+      "v2-cxw":  { title: "CMAX: design updates, then send to the team", area: "cmax", mins: 120, notBefore: "18:00", days: [2], order: 66 },
+      "v2-r90":  { days: [0, 1, 3] },
+      "v2-r90w": { title: "Dinner", area: "meal", mins: 45, notBefore: "18:00", days: [2], order: 29 },
+      "v2-r100": { days: [0, 1, 3, 4] },
+      "v2-r70":  { days: [] },                                          // AGN website on Saturday only
+      "v2-brk":  { title: "Slow breakfast and coffee", area: "self", mins: 30, notBefore: "07:00", days: [2], order: 15 }
     }
   }]
 };
