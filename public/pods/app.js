@@ -499,6 +499,7 @@ function settingsSheet(){const cfg=aiCfg();openSheet(`${sheetHead('Settings')}
   <span class="eyebrow">Names</span>
   <div class="item"><div class="grow">You call ${BASE_NAMES[other(S.role)]}<br><b>${esc(NAMES[other(S.role)])}</b></div><button class="btn sm" data-act="nickOpen">Change</button></div>
   <div class="item">${av(other(S.role),32)}<div class="grow">${esc(NAMES[other(S.role)])} calls you<br><b>${esc(theirNick()||BASE_NAMES[S.role])}</b>${theirNick()?"":' <span class="small muted">(hasn\'t picked a name yet)</span>'}</div></div>
+  ${!widgetPlugin()&&"Notification" in window&&navigator.setAppBadge?`<span class="eyebrow">App icon</span><div class="item"><span class="grow small">Show a number on the Pods icon when messages or game turns are waiting</span>${Notification.permission==="granted"?'<span class="chip him">On</span>':'<button class="btn sm primary" data-act="badgeOn">Turn on</button>'}</div>`:""}
   <span class="eyebrow">Account</span>
   <div class="item"><span class="grow small">${esc(S.email||'')}</span><button class="btn sm" data-act="signOut">Sign out</button></div>`);}
 /* ---------- voice notes (MediaRecorder → small audio saved with the note) ---------- */
@@ -712,6 +713,7 @@ const A={
     POD='pods/'+code;S.podId=code;S.role=r;S.mode='live';subscribe();render();confetti();toast("You're linked! Welcome to Pods");},
   signOut:async()=>{closeSheet();if(window.FB)await FB.signOut();},
   settings:()=>settingsSheet(),
+  badgeOn:async()=>{try{const r=await Notification.requestPermission();closeSheet();badgeLast=-1;pushBadge();toast(r==='granted'?'App icon number is on':'Allow notifications for Pods in Settings to see the number');}catch(e){toast("This phone doesn't support it");}},
   copyCode:async()=>{try{await navigator.clipboard.writeText(S.podId||'');toast('Code copied');}catch(e){toast('Code: '+(S.podId||''));}},
   aiSave:()=>{const k=val('aiKey').trim();if(!k)return toast('Paste a key first');localStorage.setItem(AIK,JSON.stringify({key:k}));closeSheet();toast('AI key saved on this phone');},
   aiClear:()=>{localStorage.removeItem(AIK);closeSheet();toast('AI key removed');},
