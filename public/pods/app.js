@@ -8,9 +8,7 @@ const HEART=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><pa
 const QUESTIONS=["What made you smile today?","What's one thing you miss about being in the same room as me?","If we could teleport for one hour tonight, where would we go?","What's a small thing I do that makes you feel loved?","What's something you're worried about this week?","Describe your perfect lazy Sunday with me.","What's one goal you want us to hit before the year ends?","What song reminds you of us right now?","What food do you want us to eat together on our next visit?","What's one thing you're proud of yourself for lately?","What did you dream about recently?","What's a habit of mine you secretly love?","Where do you see us in five years?","What's one thing I could do this week to make you happier?","What was your first impression of me?","What's a memory of us you replay often?","If we opened a business together, what would it be?","What's something new you learned this week?","What's one thing you want to tell me but haven't yet?","Which of our plans are you most excited about?","What's your love language today: words, time, gifts, help or touch?","What's a place back home you want us to visit together?","What's a place in Italy you want us to explore together?","What stressed you today, and how can I help?","What would our dream home look like?","What's a silly thing that made you laugh recently?","What do you appreciate most about how we handle the distance?","What's one thing we should start doing as a couple?","What's one thing we should stop doing as a couple?","Finish this: I knew I loved you when…"];
 const OPEN_WHEN=["Open when you miss me","Open when you're sad","Open when you need a laugh","Open when you can't sleep","Open when you're stressed","Open when we've had a fight","Open on your birthday"];
 const SIZES_WIDE=[[24,6,4],[60,10,6],[120,15,8],[260,20,13]];
-// On a phone held upright the board runs down the screen: fewer pieces across means bigger pieces.
-const SIZES_TALL=[[24,4,6],[60,6,10],[120,8,15],[260,10,26]];
-const SIZES=new Proxy(SIZES_WIDE,{get(t,k){const a=window.innerHeight>window.innerWidth?SIZES_TALL:SIZES_WIDE;const v=a[k];return typeof v==='function'?v.bind(a):v;}});
+const SIZES=new Proxy(SIZES_WIDE,{get(t,k){const tall=window.innerHeight>window.innerWidth;const v=t[k];if(Array.isArray(v)&&tall)return [v[0],v[2],v[1]];if(k==='map'||k==='find')return (...a)=>t.map(x=>tall?[x[0],x[2],x[1]]:x)[k](...a);return v;}});
 const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],["chat","Chat",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/>'],["play","Play",'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>'],["plan","Plan",'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],["truth","Truth",'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h6"/>'],["us","Gallery",'<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5.5-5.5L7 19"/>']];
 
 /* ---------- avatars ---------- */
@@ -63,26 +61,10 @@ function edgeTo(ctx,x0,y0,x1,y1,d){if(!d){ctx.lineTo(x1,y1);return;}const L=Math
   const P=(t,h)=>[x0+ux*t*L+nx*h*L,y0+uy*t*L+ny*h*L];
   ctx.lineTo(...P(.36,0));ctx.bezierCurveTo(...P(.44,0),...P(.28,.24),...P(.5,.24));ctx.bezierCurveTo(...P(.72,.24),...P(.56,0),...P(.64,0));ctx.lineTo(x1,y1);}
 function pieceOutline(ctx,s,sd){const p=[[0,0],[s,0],[s,s],[0,s]];ctx.beginPath();ctx.moveTo(0,0);for(let k=0;k<4;k++){const a=p[k],b=p[(k+1)%4];edgeTo(ctx,a[0],a[1],b[0],b[1],sd[k]);}ctx.closePath();}
-function cropRect(img,cols,rows,f){const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,ar=cols/rows;let sw=iw,sh=iw/ar;if(sh>ih){sh=ih;sw=ih*ar;}
-  const fx=f&&f[0]!=null?f[0]:.5,fy=f&&f[1]!=null?f[1]:.5;return [(iw-sw)*fx,(ih-sh)*fy,sw,sh];}
-/* Find where the interesting part of a photo is (detail + colour), so a tall board keeps the subject instead of a blind centre cut.
-   Returns [fx,fy] in 0..1: how far along the spare width/height the crop window should sit. */
-const energyCache=new Map();
-function energyOf(img){const k=img.src||img;if(energyCache.has(k))return energyCache.get(k);
-  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,W=96,H=Math.max(8,Math.round(96*ih/iw));
-  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,0,0,W,H);
-  const d=x.getImageData(0,0,W,H).data,L=new Float32Array(W*H),E=new Float32Array(W*H);
-  for(let i=0;i<W*H;i++){const r=d[i*4],g=d[i*4+1],b=d[i*4+2];L[i]=.3*r+.59*g+.11*b;E[i]=(Math.max(r,g,b)-Math.min(r,g,b))*.35;}
-  for(let y=1;y<H-1;y++)for(let q=1;q<W-1;q++){const i=y*W+q;E[i]+=Math.abs(L[i+1]-L[i-1])+Math.abs(L[i+W]-L[i-W]);}
-  const cx=new Float32Array(W),cy=new Float32Array(H);for(let y=0;y<H;y++)for(let q=0;q<W;q++){cx[q]+=E[y*W+q];cy[y]+=E[y*W+q];}
-  const r={cx,cy};energyCache.set(k,r);return r;}
-function bestWin(prof,frac){const n=prof.length,w=Math.max(1,Math.round(n*frac));if(w>=n)return .5;let best=-1,at=0;
-  for(let s=0;s+w<=n;s++){let e=0;for(let i=s;i<s+w;i++)e+=prof[i];const mid=(s+w/2)/n;e*=1-.35*Math.abs(mid-.5)*2;if(e>best){best=e;at=s;}}return at/(n-w);}
-function focusFor(img,cols,rows){try{const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,ar=cols/rows,{cx,cy}=energyOf(img);
-  return iw/ih>ar?[Math.round(bestWin(cx,ar*ih/iw)*100)/100,.5]:[.5,Math.round(bestWin(cy,iw/ar/ih)*100)/100];}catch(e){return [.5,.5];}}
+function cropRect(img,cols,rows){const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,ar=cols/rows;let sw=iw,sh=iw/ar;if(sh>ih){sh=ih;sw=ih*ar;}return [(iw-sw)/2,(ih-sh)/2,sw,sh];}
 const scaledCache=new Map();
 function scaled(img,j,px){const k=j.at+'|'+px+'|'+(j.photo||'u');if(scaledCache.has(k))return scaledCache.get(k);
-  const c=document.createElement('canvas');c.width=Math.round(j.cols*px);c.height=Math.round(j.rows*px);const cr=cropRect(img,j.cols,j.rows,j.focus);
+  const c=document.createElement('canvas');c.width=Math.round(j.cols*px);c.height=Math.round(j.rows*px);const cr=cropRect(img,j.cols,j.rows);
   c.getContext('2d').drawImage(img,cr[0],cr[1],cr[2],cr[3],0,0,c.width,c.height);if(scaledCache.size>4)scaledCache.clear();scaledCache.set(k,c);return c;}
 function drawPiece(ctx,sc,j,i,s,ox,oy,stroke){const x=i%j.cols,y=Math.floor(i/j.cols);ctx.save();ctx.translate(ox,oy);pieceOutline(ctx,s,sides(j,i));
   ctx.save();ctx.clip();ctx.drawImage(sc,-x*s,-y*s,j.cols*s,j.rows*s);ctx.restore();ctx.lineWidth=Math.max(.8,s*.035);ctx.strokeStyle=stroke||'rgba(255,255,255,.8)';ctx.stroke();ctx.restore();}
@@ -93,8 +75,8 @@ async function drawJig(){
   const j=S.jig;if(!j||j.done)return;let img;try{img=await getImg(jigSrc(j));}catch(e){return;}
   if(S.jig!==j&&(!S.jig||S.jig.at!==j.at))return;
   const cv=document.getElementById('board'),wrap=document.getElementById('boardwrap');if(!cv||!wrap)return;
-  const dpr=DPR(),avail=wrap.clientWidth-6;let s=Math.floor(avail/(j.cols+.3));if(S.zoom)s=Math.max(s,54);s=Math.max(s,12);
-  const pad=Math.round(s*.14),W=j.cols*s+pad*2,H=j.rows*s+pad*2;
+  const dpr=DPR(),avail=wrap.clientWidth-6;let s=Math.floor(avail/(j.cols+.4));if(S.zoom)s=Math.max(s,54);s=Math.max(s,12);
+  const pad=Math.round(s*.25),W=j.cols*s+pad*2,H=j.rows*s+pad*2;
   cv.style.width=W+'px';cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
   ctx.fillStyle='#f7eef2';ctx.beginPath();ctx.roundRect?ctx.roundRect(pad,pad,j.cols*s,j.rows*s,8):ctx.rect(pad,pad,j.cols*s,j.rows*s);ctx.fill();
   const placed=new Set(j.placed||[]),total=j.cols*j.rows;
@@ -800,9 +782,7 @@ const A={
   shuffle:async()=>{const j=S.jig;if(!j)return;const placed=new Set(j.placed||[]);await mergeDoc('games/jigsaw',{tray:shuffled(j.cols*j.rows).filter(i=>!placed.has(i))});},
   zoom:()=>{S.zoom=!S.zoom;render(true);},
   edges:()=>{S.edgesOnly=!S.edgesOnly;render(true);},
-  peek:async()=>{const j=S.jig;if(!j)return;openSheet(`${sheetHead('The picture')}<canvas id="peekCv" aria-label="The full puzzle picture" style="width:100%;max-height:70vh;object-fit:contain;border-radius:18px;display:block;margin:0 auto"></canvas>`);
-    try{const img=await getImg(jigSrc(j)),cv=document.getElementById('peekCv');if(!cv)return;const px=Math.min(1200/Math.max(j.cols,j.rows),90);const sc=scaled(img,j,px);cv.width=sc.width;cv.height=sc.height;cv.getContext('2d').drawImage(sc,0,0);
-      if(j.rows>j.cols){cv.style.width='auto';cv.style.height='min(70vh,'+sc.height+'px)';}}catch(e){}},
+  peek:()=>{const j=S.jig;if(!j)return;openSheet(`${sheetHead('The picture')}<img src="${jigSrc(j)}" alt="The full puzzle picture" style="width:100%;border-radius:18px">`);},
   winClose:t=>{const w=t.closest('.win');if(w)w.remove();},
   winAgain:t=>{const w=t.closest('.win');if(w)w.remove();if(t.dataset.g){S.tab='play';S.game=t.dataset.g;render();newGame(t.dataset.g);return;}S.tab='play';S.game='jigsaw';location.hash='play';render();drawPicker();},
   winGallery:t=>{const w=t.closest('.win');if(w)w.remove();S.tab='us';S.galFilter='puzzle';location.hash='us';render();window.scrollTo(0,0);},
@@ -862,7 +842,7 @@ const A={
   letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lWhen');closeSheet();await addDoc('letters',{from:S.role,to:other(S.role),when,body,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');},
   openLetter:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l)return;openSheet(`${sheetHead(esc(l.when))}<div class="row">${av(l.from,40)}<span class="small muted">From ${NAMES[l.from]}</span></div><div style="white-space:pre-wrap;font-size:1.08rem;background:var(--blush);border-radius:18px;padding:16px">${esc(l.body)}</div>`);if(!l.opened){floatHearts();await mergeDoc('letters/'+l.id,{opened:true});}},
 };
-async function startJig(src,c,r){closeSheet();let focus=null;try{focus=focusFor(await getImg(src.photo?photoURL(src.photo):src.img),c,r);}catch(e){}const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const doc={photo:src.photo||null,img:src.img||null,cols:c,rows:r,focus,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
+async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const doc={photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
 function winnerOfJig(j){const c=j.counts||{},a=c.anthonia||0,i=c.ifeayomi||0;return a===i?null:a>i?'anthonia':'ifeayomi';}
 function newGame(id,starter){const prev=S.games[id],w=prev&&prev.over&&prev.winner&&prev.winner!=='tie'?prev.winner:null,first=starter||w||S.role;const st=G[id].start(first);st.winnerStart=!!w;saveGame(id,st,true);
   toast(w?`${NAMES[w]} won last time, so ${w===S.role?'you start':NAMES[w]+' starts'}`:'New game started');}
@@ -870,16 +850,14 @@ function drawPicker(memId){const cat=S.pickCat||'animals',size=S.pickSize||60;co
   openSheet(`${sheetHead('New jigsaw')}<label class="f" for="jigSize">How many pieces?<select id="jigSize">${SIZES.map(([n,c,r])=>`<option value="${n}" ${n===size?'selected':''}>${n} pieces (${c} × ${r})</option>`).join('')}</select></label>
   <div class="cats">${CATS.map(([k,l])=>`<button class="${cat===k?'on':''}" data-act="pickCat" data-k="${k}">${l}</button>`).join('')}</div>
   ${cat==='ours'?`<label class="btn" for="jigImg">Upload a new photo</label><input type="file" id="jigImg" accept="image/*" hidden>${ours.length?`<div class="scenes">${ours.map(m=>`<button data-act="jigMem" data-id="${m.id}" class="${memId===m.id?'hl':''}"><img src="${memThumb(m)}" alt=""><span>${esc(m.caption||NAMES[m.by]||'')}</span></button>`).join('')}</div>`:'<p class="small muted">Photos you add to the gallery show up here.</p>'}`
-   :`<div class="scenes">${PHOTOS.filter(p=>p[1]===cat).map(([k,,t])=>`<button data-act="jigPhoto" data-k="${k}"><img class="fimg" src="${thumbURL(k)}" alt=""><span>${t}</span></button>`).join('')}</div>`}`);shapeThumbs();}
-function shapeThumbs(){const [n,c,r]=curSize();document.querySelectorAll('#panel .scenes img').forEach(im=>{im.style.aspectRatio=c+'/'+r;
-  const go=()=>{const f=focusFor(im,c,r);im.style.objectPosition=(f[0]*100)+'% '+(f[1]*100)+'%';};if(im.complete&&im.naturalWidth)go();else im.addEventListener('load',go,{once:true});});}
+   :`<div class="scenes">${PHOTOS.filter(p=>p[1]===cat).map(([k,,t])=>`<button data-act="jigPhoto" data-k="${k}"><img src="${thumbURL(k)}" alt="" loading="lazy"><span>${t}</span></button>`).join('')}</div>`}`);}
 function syncDateSheet(){const d=val('dDate'),t=val('dTime');const el=document.getElementById('dIb');if(el&&d&&t)el.textContent=`That's ${ibadanTime(d,t)} in Ibadan.`;const h=document.getElementById('dHost');if(h&&d&&!h.dataset.touched)h.value=hostFor(d.slice(0,7));}
 document.addEventListener('click',e=>{if(e.target.id==='board'){boardTap(e);return;}const t=e.target.closest('[data-act]');if(!t||t.disabled)return;const f=A[t.dataset.act];if(f){e.preventDefault();Promise.resolve(f(t)).catch(()=>{});}});
 document.addEventListener('submit',async e=>{if(e.target.id!=='authForm')return;e.preventDefault();const em=val('aEmail').trim(),pw=val('aPass');if(!em||!pw)return toast('Type your email and password');
   try{if(S.authMode==='up')await FB.signUp(em,pw);else await FB.signIn(em,pw);}catch(err){const c=err&&err.code||'';toast(/weak/.test(c)?'Use at least 6 characters':/in-use/.test(c)?'That email already has a login. Sign in instead.':/invalid|wrong|not-found/.test(c)?'Email or password is wrong':"Couldn't sign in. Check your connection.");}});
 document.addEventListener('input',e=>{if(e.target.id==='chatIn'){setTyping(!!e.target.value);clearTimeout(typingT);typingT=setTimeout(()=>setTyping(false),3500);}if(e.target.id==='dDate'||e.target.id==='dTime')syncDateSheet();});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){const m={todoIn:'todoAdd',goalIn:'goalAdd',wishIn:'wishAdd',moodIn:'moodAdd',chatIn:'chatSend'}[e.target.id];if(m){e.preventDefault();A[m]();}}});
-document.addEventListener('change',async e=>{const el=e.target;if(el.id==='jigSize'){S.pickSize=Number(el.value)||S.pickSize;shapeThumbs();drawPicker();return;}if(el.id==='dHost')el.dataset.touched='1';
+document.addEventListener('change',async e=>{const el=e.target;if(el.id==='dHost')el.dataset.touched='1';
   if(!el.files||!el.files[0])return;
   if(el.id==='chatImg'){const f=el.files[0];el.value='';try{const url=URL.createObjectURL(f);const im=await loadImg(url);URL.revokeObjectURL(url);await sendMsg({kind:'photo',img:await compressPhoto(im)});await saveToGallery({thumb:cropTo(im,320,320,.74),img:await compressPhoto(im),caption:'From our chat',kind:'photo'});}catch(err){toast("That photo couldn't be sent. Try another one.");}return;}
   if(el.id==='memImg'||el.id==='memImg2'){const files=[...el.files];el.value='';await uploadFiles(files,'','photo');return;}
