@@ -7,11 +7,10 @@ const HEART_PATH='M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3
 const HEART=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${HEART_PATH}"/></svg>`;
 const QUESTIONS=["What made you smile today?","What's one thing you miss about being in the same room as me?","If we could teleport for one hour tonight, where would we go?","What's a small thing I do that makes you feel loved?","What's something you're worried about this week?","Describe your perfect lazy Sunday with me.","What's one goal you want us to hit before the year ends?","What song reminds you of us right now?","What food do you want us to eat together on our next visit?","What's one thing you're proud of yourself for lately?","What did you dream about recently?","What's a habit of mine you secretly love?","Where do you see us in five years?","What's one thing I could do this week to make you happier?","What was your first impression of me?","What's a memory of us you replay often?","If we opened a business together, what would it be?","What's something new you learned this week?","What's one thing you want to tell me but haven't yet?","Which of our plans are you most excited about?","What's your love language today: words, time, gifts, help or touch?","What's a place back home you want us to visit together?","What's a place in Italy you want us to explore together?","What stressed you today, and how can I help?","What would our dream home look like?","What's a silly thing that made you laugh recently?","What do you appreciate most about how we handle the distance?","What's one thing we should start doing as a couple?","What's one thing we should stop doing as a couple?","Finish this: I knew I loved you when…"];
 const OPEN_WHEN=["Open when you miss me","Open when you're sad","Open when you need a laugh","Open when you can't sleep","Open when you're stressed","Open when we've had a fight","Open on your birthday"];
-// Pick the grid that gives the biggest pieces while the whole board still fits on one screen above the tray.
-const JIG_TOP=290;
-function jigBox(){return [Math.min(window.innerWidth,560)-6,Math.max(280,window.innerHeight-JIG_TOP)];}
-function gridFor(n){const [W,H]=jigBox();let best=null;for(let c=2;c<=n;c++){if(n%c)continue;const r=n/c;if(c/r>2.2||r/c>2.2)continue;const s=Math.min(W/(c+.3),H/(r+.3));if(!best||s>best[2])best=[c,r,s];}return [best[0],best[1]];}
-const SIZES=new Proxy([],{get(t,k){const a=[24,60,120,260].map(n=>[n,...gridFor(n)]);const v=a[k];return typeof v==='function'?v.bind(a):v;}});
+const SIZES_WIDE=[[24,6,4],[60,10,6],[120,15,8],[260,20,13]];
+// On a phone held upright the board runs down the screen: fewer pieces across means bigger pieces.
+const SIZES_TALL=[[24,4,6],[60,6,10],[120,8,15],[260,10,26]];
+const SIZES=new Proxy(SIZES_WIDE,{get(t,k){const a=window.innerHeight>window.innerWidth?SIZES_TALL:SIZES_WIDE;const v=a[k];return typeof v==='function'?v.bind(a):v;}});
 const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],["chat","Chat",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/>'],["play","Play",'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>'],["plan","Plan",'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],["truth","Truth",'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h6"/>'],["us","Gallery",'<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5.5-5.5L7 19"/>']];
 
 /* ---------- avatars ---------- */
@@ -94,7 +93,7 @@ async function drawJig(){
   const j=S.jig;if(!j||j.done)return;let img;try{img=await getImg(jigSrc(j));}catch(e){return;}
   if(S.jig!==j&&(!S.jig||S.jig.at!==j.at))return;
   const cv=document.getElementById('board'),wrap=document.getElementById('boardwrap');if(!cv||!wrap)return;
-  const dpr=DPR(),avail=wrap.clientWidth-6;let s=Math.floor(Math.min(avail/(j.cols+.3),jigBox()[1]/(j.rows+.3)));if(S.zoom)s=Math.max(s,54);s=Math.max(s,12);
+  const dpr=DPR(),avail=wrap.clientWidth-6;let s=Math.floor(avail/(j.cols+.3));if(S.zoom)s=Math.max(s,54);s=Math.max(s,12);
   const pad=Math.round(s*.14),W=j.cols*s+pad*2,H=j.rows*s+pad*2;
   cv.style.width=W+'px';cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
   ctx.fillStyle='#f7eef2';ctx.beginPath();ctx.roundRect?ctx.roundRect(pad,pad,j.cols*s,j.rows*s,8):ctx.rect(pad,pad,j.cols*s,j.rows*s);ctx.fill();
