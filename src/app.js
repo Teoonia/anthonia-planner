@@ -165,7 +165,7 @@ async function addItems(list) {
       title: String(a.title || "Something new").slice(0, 80),
       area: AREA_IDS.includes(a.area) ? a.area : "life",
       mins: Math.min(240, Math.max(10, Math.round(+a.mins || 45))),
-      by: a.by || "minimi"
+      by: a.by || "minimi", addedAt: Date.now()
     };
     if (validHM(a.start)) item.start = toHM(toMin(a.start)); else if (validHM(a.notBefore)) item.notBefore = toHM(toMin(a.notBefore));
     (byDate[date] ||= []).push(item);
@@ -187,6 +187,46 @@ async function addItems(list) {
   setTimeout(() => { list.length && fresh.clear(); }, 6000);
   renderToday();
   return out;
+}
+/* everything added through chat or the jot bar, wherever it is on the calendar */
+function findAdded(id) {
+  for (const [date, d] of Object.entries(days)) {
+    const it = [...(d.events || []), ...(d.extra || [])].find((x) => x.id === id);
+    if (it) return { date, item: it };
+  }
+  return null;
+}
+/* Mini Mi taking her own additions back is free (fixing her mistakes);
+   anything you added yourself counts toward the day's 2 changes */
+async function applyRemovals(ids) {
+  const out = [];
+  for (const id of ids || []) {
+    const f = findAdded(id); if (!f) continue;
+    const free = f.item.by === "minimi";
+    if (!free && changesLeft(f.date) <= 0) { out.push({ id, title: f.item.title, date: f.date, blocked: true }); continue; }
+    removeItem(f.date, id, free);
+    out.push({ id, title: f.item.title, date: f.date });
+  }
+  return out;
+}
+function addedItemsContext() {
+  const from = dkey(dayDate(-1)), to = dkey(dayDate(30)), rows = [];
+  Object.keys(days).sort().filter((k) => k >= from && k <= to).forEach((k) => {
+    const d = days[k];
+    [...(d.events || []), ...(d.extra || [])].forEach((x) => {
+      const b = plan(dateOfKey(k)).blocks.find((y) => y.id === x.id);
+      rows.push(`  id=${x.id} | ${DAYS[wd(dateOfKey(k))]} ${k} | ${b ? toHM(b.s) + "-" + toHM(b.e) : x.start || "didn't fit"} | ${x.title} | added by ${x.by === "minimi" ? "you" : "her"}`);
+    });
+  });
+  return rows.join("\n") || "  (nothing added yet)";
+}
+function datesContext() {
+  const out = [];
+  for (let off = -1; off < 15; off++) {
+    const d = dayDate(off);
+    out.push(`  ${d.toLocaleDateString("en-GB", { weekday: "long" })} ${d.getDate()} ${d.toLocaleDateString("en-GB", { month: "short" })} = ${dkey(d)}${off === 0 ? " (TODAY)" : off === 1 ? " (tomorrow)" : off === -1 ? " (yesterday)" : ""}`);
+  }
+  return out.join("\n");
 }
 const addedLabel = (a) => {
   const live = days[a.date] && plan(dateOfKey(a.date)).blocks.find((b) => b.id === a.id);
@@ -414,7 +454,8 @@ function openBlock(key, b, flexIds) {
      ["Skip today", () => skipIt(key, b.id)], ["Move to tomorrow", () => toTomorrow(key, { ...b, nb: null })]]
       .forEach(([l, f]) => { const x = button(l, () => { f(); close(); }, "btn soft"); x.disabled = locked || b.done; acts.append(x); });
   }
-  if (isJot || b.kind === "event") { const x = button("Remove", () => { removeItem(key, b.id, b.by === "minimi" && fresh.has(b.id)); close(); }, "btn soft"); x.disabled = locked; acts.append(x); }
+  const minimiAdded = findAdded(b.id)?.item.by === "minimi";
+  if (isJot || b.kind === "event") { const x = button(minimiAdded ? "Remove (free, Mini Mi added it)" : "Remove", () => { removeItem(key, b.id, findAdded(b.id)?.item.by === "minimi"); close(); }, "btn soft"); x.disabled = locked && !minimiAdded; acts.append(x); }
   if (b.kind === "class") {
     acts.append(button("Cancelled today", () => { toggleCancelled(key, b.cid); close(); toast("Marked cancelled. The day re-plans around it."); }, "btn soft"));
     acts.append(button("Prep with Mini Mi", () => { close(); openChat(); sendToPartner(`Help me prepare for ${b.title} on ${relDay(key)} at ${toHM(b.s)}. What should I review or bring? Add a prep session before it.`); }, "btn primary"));
@@ -845,6 +886,7 @@ function planContext() {
   const L = [], n = nowMin(), tk = todayKey();
   const fmtBlocks = (off) => plan(dayDate(off)).blocks.filter((b) => b.kind !== "break").map((b) => `  ${toHM(b.s)}-${toHM(b.e)} ${b.title}${b.done ? " [done]" : ""}${b.kind === "class" ? " [class" + (b.room ? ", " + b.room : "") + "]" : ""}${b.jotted || b.kind === "event" ? " [added]" : ""}${b.squeezed ? " [squeezed]" : ""}`).join("\n");
   L.push(`Now: ${dayDate(0).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}, ${toHM(n)}.`);
+  L.push(`DATES (use these exact dates):\n${datesContext()}`);
   L.push(`Today's plan (${tk}):\n${fmtBlocks(0)}`);
   const pt = plan(dayDate(0));
   if (pt.over.length) L.push(`Didn't fit today: ${pt.over.map((q) => q.title).join("; ")}`);
@@ -858,6 +900,7 @@ function planContext() {
   }
   L.push(`FREE SLOTS (gaps of 20+ min; work only after ${settings.workStart || "09:00"}):\n${free.join("\n")}`);
   L.push(`Classes, meetings and added items in the next 8 days:\n${cls.join("\n")}`);
+  L.push(`ADDED ITEMS (added in chat or the jot bar; you can remove these by id):\n${addedItemsContext()}`);
   L.push(`Win streak: ${streak} days. Today: ${todayPct == null ? "no work blocks" : todayPct + "% of work done"}.`);
   const mon = mondayOf(new Date()), wk = isoWeek(mon);
   L.push(`This week's board goals:\n` + AREAS.map((a) => { const it = tasks.filter((t) => t.week === wk && t.area === a.id); return it.length ? `  ${a.name}: ` + it.map((t) => `${t.title} (${t.status === "done" ? "done" : "to do"})`).join("; ") : null; }).filter(Boolean).join("\n"));
@@ -876,17 +919,18 @@ async function saveChat(tk, msgs) { chatDays[tk] = { ...(chatDays[tk] || {}), da
 async function sendToPartner(text) {
   text = (text || "").trim(); if (!text || chatBusy || !db) return;
   chatBusy = true; const tk = todayKey();
-  const prev = allMessages().filter((m) => !m.error).slice(-12).map((m) => ({ role: m.role === "me" ? "user" : "model", text: m.role === "me" ? m.text : JSON.stringify({ reply: m.text, actions: (m.added || []).map((a) => ({ title: a.title, date: a.date })), projectNotes: m.noted || [] }) }));
+  const prev = allMessages().filter((m) => !m.error).slice(-12).map((m) => ({ role: m.role === "me" ? "user" : "model", text: m.role === "me" ? m.text : JSON.stringify({ reply: m.text, actions: (m.added || []).map((a) => ({ id: a.id, title: a.title, date: a.date })), removeIds: (m.removed || []).map((r) => r.id), projectNotes: m.noted || [] }) }));
   const msgs = [...((chatDays[tk] || {}).messages || []), { role: "me", text, ts: Date.now() }];
   chatDays[tk] = { ...(chatDays[tk] || {}), messages: msgs }; renderChat(true);
   safe(db.collection("chat").doc(tk).set({ date: tk, messages: msgs }), "save your message");
   try {
     const system = systemPrompt({ name: partnerName(), banter: settings.partnerBanter || "cheeky", about: settings.partnerAbout || DEFAULT_ABOUT, context: planContext(), projects: projectsContext(), today: dayDate(0).toDateString() });
     const out = await askPartner({ system, history: prev, message: text });
+    const removed = await applyRemovals(out.removeIds);
     const added = await addItems(out.actions.filter((a) => a && a.title));
     const noted = await applyProjectNotes(out.projectNotes);
     const sugs = out.suggestions.filter((s) => s && s.title).map((s) => ({ ...s, state: "new" }));
-    await saveChat(tk, [...msgs, { role: "her", text: out.reply, added, noted, suggestions: sugs, ts: Date.now() }]);
+    await saveChat(tk, [...msgs, { role: "her", text: out.reply, added, removed, noted, suggestions: sugs, ts: Date.now() }]);
     if (added.length && $("#chatSheet").hidden) toast(added.length === 1 ? "Added: " + added[0].title : added.length + " things added to your calendar");
   } catch (e) {
     let reply = friendlyError(e), added = [];
@@ -930,16 +974,18 @@ function renderChat(scroll) {
   if (!msgs.length) box.append(h("div", "msg her", `Hey Anthonia! I'm ${name}, your jotter. Tell me anything that comes up ("office called, update the client portfolio today") and I'll find the best free slot and put it on your calendar. I also know your life projects, so I'll tell you if you're drifting.`));
   msgs.forEach((m) => {
     box.append(h("div", "msg " + (m.role === "me" ? "me" : "her"), m.text));
-    if (m.added?.length || m.noted?.length) {
+    if (m.added?.length || m.noted?.length || m.removed?.length) {
       const w = h("div", "added");
       (m.added || []).forEach((a, ai) => {
         const r = h("div", "a"); r.append(h("span", "", a.undone ? "↺" : "✓"));
-        const t = h("div"); const b = h("b", "", a.title); if (a.undone) b.style.textDecoration = "line-through"; t.append(b, h("div", "when", a.undone ? "Removed" : addedLabel(a)));
+        const gone = a.undone || (loaded && !findAdded(a.id));
+        const t = h("div"); const b = h("b", "", a.title); if (gone) b.style.textDecoration = "line-through"; t.append(b, h("div", "when", gone ? "Removed" : addedLabel(a)));
         r.append(t);
         if (!a.undone && days[a.date] && [...(days[a.date].events || []), ...(days[a.date].extra || [])].some((x) => x.id === a.id))
           r.append(button("Undo", () => undoAdded(m.day, m.idx, ai), "btn ghost small", "Undo adding " + a.title));
         w.append(r);
       });
+      (m.removed || []).forEach((r) => { const row = h("div", "a x"); const t = h("div"); const b = h("b", "", r.title); t.append(b, h("div", "when", r.blocked ? "Couldn't remove: no changes left that day" : "Removed · " + relDay(r.date))); row.append(h("span", "", r.blocked ? "!" : "✕"), t); w.append(row); });
       (m.noted || []).forEach((n) => { const r = h("div", "a p"); const t = h("div"); t.append(h("b", "", n.isNew ? "New project: " + n.project : n.project), h("div", "when", "Noted · " + n.note)); r.append(h("span", "", "★"), t); w.append(r); });
       box.append(w);
     }

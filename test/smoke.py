@@ -27,12 +27,17 @@ try:
     shot(pg,"p-chat")
     sysp=pg.evaluate("window.__lastSystem||''")
     print("prompt has projects:", "LIFE PROJECTS" in sysp and "CMAX UI/UX" in sysp, "| free slots:", "FREE SLOTS" in sysp)
+    print("dates in prompt:", "DATES" in sysp and "(TODAY)" in sysp, "| added items listed:", "ADDED ITEMS" in sysp)
+    pg.fill("#chatIn","no, wrong day, I meant tomorrow"); pg.press("#chatIn","Enter"); time.sleep(2)
+    print("after correction chips:",[t.replace("\n"," ") for t in pg.locator(".added .a").all_inner_texts()])
     # offline fallback
     pg.fill("#chatIn","buy groceries tomorrow at 6pm"); pg.press("#chatIn","Enter"); time.sleep(2)
     print("fallback chips:",pg.locator(".added .a").all_inner_texts()[-1:])
     pg.click("#chatClose"); time.sleep(.5)
     port=pg.locator(".blk",has_text="Update client portfolio")
-    print("portfolio block on calendar:",port.count(), port.first.locator(".sub").inner_text() if port.count() else "")
+    print("portfolio today after fix (want 0):",port.count()); pg.locator(".daypill").nth(4).click(); time.sleep(.5)
+    port=pg.locator(".blk",has_text="Update client portfolio")
+    print("portfolio tomorrow:",port.count(), port.first.locator(".sub").inner_text() if port.count() else "")
     # tap block -> sheet
     if port.count():
       port.first.click(); time.sleep(.5); print("block sheet:",pg.locator("#blockBody").inner_text().replace("\n"," | ")[:160]); pg.keyboard.press("Escape")

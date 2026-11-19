@@ -275,3 +275,6 @@ main{padding-top:6px}
 .areachips button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent-ink)}
 .added .a.p{background:var(--accent-soft)}
 .added .a.p .when{color:var(--accent-ink)}
+.added .a.x{background:var(--pink-soft)}
+.added .a.x .when{color:var(--pink)}
+.added .a.x b{text-decoration:line-through}

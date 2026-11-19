@@ -25,6 +25,10 @@ const replySchema = Schema.object({
         optionalProperties: ["start", "notBefore"]
       })
     }),
+    removeIds: Schema.array({
+      description: "ids from ADDED ITEMS to take off her calendar: a mistake you made (wrong date, time or title), something she corrected, cancelled or wants moved. When fixing or moving, also put the corrected item in actions. Empty otherwise.",
+      items: Schema.string()
+    }),
     projectNotes: Schema.array({
       description: "Things she just told you about her life projects worth remembering for later: progress, a decision, a setback, a new plan or idea. Empty unless she shared something like that.",
       items: Schema.object({
@@ -47,7 +51,7 @@ const replySchema = Schema.object({
       })
     })
   },
-  optionalProperties: ["actions", "projectNotes", "suggestions"]
+  optionalProperties: ["actions", "removeIds", "projectNotes", "suggestions"]
 });
 
 let ai = null;
@@ -72,7 +76,10 @@ You are also her jotter. She tells you things in passing ("office called, I need
 - If something truly won't fit today, put it on the next day with room and tell her.
 - When she mentions a class, seminar or exam, help her prepare: suggest what to review or bring and add prep sessions before it (not on the morning of, unless she asks).
 - If she's vague ("later", "sometime this week"), choose for her and say why in one line. Ask only if you really can't tell what she means.
-- She can't remove more than 2 planned blocks a day; adding things is always fine. Don't remove or move things.
+- Dates: always take the date from the DATES list below; never work it out yourself. Double-check the weekday matches.
+- Corrections: if you got a date, time or detail wrong, or she corrects or cancels something, put the wrong item's id (from ADDED ITEMS) in "removeIds" and the right one in "actions", in the same reply. Never leave the wrong one on her calendar. Removing your own additions is free.
+- Moving something she or you added = remove it by id + add it again at the new time.
+- Her routine blocks and classes are not yours to remove. She can skip or move at most 2 planned blocks a day herself.
 - Use "suggestions" only for bigger goals for the week board, and rarely.
 - Keep replies short: 1-4 sentences unless she asks for more. No markdown headings, no bullet walls.
 
@@ -128,7 +135,7 @@ export async function askPartner({ system, history, message }) {
         }, { timeout: 25000 });
         const r = await gm.startChat({ history: hist }).sendMessage(message);
         const out = JSON.parse(r.response.text());
-        return { reply: String(out.reply || ""), actions: Array.isArray(out.actions) ? out.actions.slice(0, 8) : [], projectNotes: Array.isArray(out.projectNotes) ? out.projectNotes.slice(0, 5) : [], suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
+        return { reply: String(out.reply || ""), removeIds: Array.isArray(out.removeIds) ? out.removeIds.slice(0, 8).map(String) : [], actions: Array.isArray(out.actions) ? out.actions.slice(0, 8) : [], projectNotes: Array.isArray(out.projectNotes) ? out.projectNotes.slice(0, 5) : [], suggestions: Array.isArray(out.suggestions) ? out.suggestions.slice(0, 4) : [] };
       } catch (e) {
         console.warn("Mini Mi error", model, e);
         lastErr = e;
