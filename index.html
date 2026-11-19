@@ -62,6 +62,7 @@
         <h2 id="dayTitle">Today</h2>
         <span class="chip soft" id="chgLeft">2 changes left</span>
       </div>
+      <button class="progcard" id="progCard" type="button" hidden aria-label="Today's progress and treats"></button>
       <div class="nowcard" id="nowCard" hidden></div>
       <div class="welcome card" id="seedPanel" hidden>
         <h3>Welcome to your planner</h3>
@@ -89,6 +90,11 @@
         </div>
         <div id="projects" class="projects"></div>
         <button class="btn primary" id="askTrack">Ask Mini Mi: am I on track?</button>
+      </section>
+      <section class="card">
+        <div><h3>Treats</h3><p class="muted small" id="treatStreak"></p></div>
+        <p class="muted small">Win a day by ticking off 80% of its work blocks. Wins in a row unlock cheap, fun treats.</p>
+        <div id="treatList"></div>
       </section>
       <h3 class="section-h">This week's board</h3>
       <div class="areas" id="areas"></div>

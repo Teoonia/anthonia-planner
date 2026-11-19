@@ -286,3 +286,23 @@ main{padding-top:6px}
 .monthpick svg{width:18px;height:18px;fill:none;stroke:var(--muted);stroke-width:2}
 .monthpick input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer;padding:0;border:0}
 #sToday{border:0;cursor:pointer}
+
+/* progress + treats */
+.progcard{margin-top:14px;width:100%;display:flex;gap:14px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:var(--r);padding:14px 16px;cursor:pointer;box-shadow:var(--shadow);animation:rise .4s both}
+.progcard .ring{position:relative;width:64px;height:64px;flex:none;display:grid;place-items:center}
+.progcard .ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.progcard .ring circle{fill:none;stroke-width:7;stroke-linecap:round}
+.progcard .ring .bg{stroke:var(--line)}
+.progcard .ring .fg{stroke:var(--accent);transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.2,1)}
+.progcard .ring.win .fg{stroke:var(--green)}
+.progcard .ring b{font:700 15px var(--display);position:relative}
+.progcard .pt{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.progcard .pn{font:600 16px var(--display)}
+.progcard .nt{font-size:13px;color:var(--accent-ink);margin-top:4px;line-height:1.35}
+.treats .mile{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.treats .mile:first-child{border-top:0}
+.treats .mt{flex:1;min-width:0}
+.treats .mn{font-weight:600;font-size:14.5px}
+.treats .cost{font:500 12px var(--mono);color:var(--muted);white-space:nowrap}
+.treats .mile.got{opacity:.6}
+.treats .mile.hit:not(.got) .n{animation:breathe 2.4s ease-in-out infinite}

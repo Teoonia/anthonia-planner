@@ -24,17 +24,19 @@ const CLASSES = Object.entries(TIMETABLE.classes).map(([id, c]) => ({ id, ...c }
 const MAX_CHANGES = 2;
 const PX = 1.15; // pixels per minute in the day calendar
 const START = new Date(2026, 10, 3);
+/* cheap, fun treats for win streaks (prices are rough, around Ancona) */
 const MILESTONES = [
-  { d: 1, name: "First win", reward: "Try a pastry you've never had at a local bar" },
-  { d: 3, name: "Warm-up", reward: "A gelato in a flavour you've never tried" },
-  { d: 5, name: "Rhythm", reward: "Cook one new Italian dish at home" },
-  { d: 7, name: "One full week", reward: "Pizza al taglio or street food somewhere new" },
-  { d: 10, name: "Steady", reward: "Walk a part of the city you haven't seen" },
-  { d: 14, name: "Two strong weeks", reward: "Cheap regional train to a nearby seaside town" },
-  { d: 21, name: "Three weeks", reward: "Coffee and a new book or magazine at a café" },
-  { d: 30, name: "Month of wins", reward: "A museum or gallery visit, or a small treat for your room" },
-  { d: 45, name: "Unstoppable", reward: "Day trip to a hill town by regional train" },
-  { d: 60, name: "Two months", reward: "Pick a bigger treat yourself. You've earned it" }
+  { d: 1, name: "First win", reward: "Cornetto and cappuccino at a bar you've never tried", cost: "€2–3" },
+  { d: 2, name: "Back it up", reward: "Gelato in a flavour you've never had", cost: "€3" },
+  { d: 3, name: "Warm-up", reward: "Movie night with a snack you've never tried from the supermarket", cost: "€3" },
+  { d: 5, name: "Rhythm", reward: "Sunset walk at the Passetto with a takeaway drink", cost: "€3" },
+  { d: 7, name: "One full week", reward: "Olive all'ascolana or pizza al taglio somewhere new", cost: "€5" },
+  { d: 10, name: "Steady", reward: "Cook a Marche dish you've never made (vincisgrassi, anyone?)", cost: "€6" },
+  { d: 14, name: "Two strong weeks", reward: "Regional train to Senigallia for a seaside afternoon", cost: "€6–8" },
+  { d: 21, name: "Three weeks", reward: "Hunt the market for one fun find under €10", cost: "≤€10" },
+  { d: 30, name: "Month of wins", reward: "A museum or exhibition in Ancona, then an aperitivo", cost: "€10" },
+  { d: 45, name: "Unstoppable", reward: "Day trip by regional train to Loreto", cost: "€10" },
+  { d: 60, name: "Two months", reward: "You pick the treat, up to €20", cost: "≤€20" }
 ];
 const HORIZONS = [
   { id: "now", name: "Now" }, { id: "year", name: "This year" }, { id: "later", name: "Someday" }, { id: "paused", name: "Paused" }
@@ -501,12 +503,60 @@ function dayScore(date) {
   return (work.filter((b) => b.done).length + pre.length) / total;
 }
 let streak = 0, todayPct = null;
+let runStart = null; // first day of the current streak
 function renderStreak() {
-  const ts = dayScore(dayDate(0)); let n = 0;
+  const ts = dayScore(dayDate(0)); let n = 0; runStart = dkey(dayDate(0));
   if (ts != null && ts >= 0.8) n++;
-  for (let i = 1; i < 120; i++) { const d = dayDate(-i); if (d < START) break; const s = dayScore(d); if (s == null) continue; if (s >= 0.8) n++; else break; }
+  for (let i = 1; i < 120; i++) { const d = dayDate(-i); if (d < START) break; const s = dayScore(d); if (s == null) continue; if (s >= 0.8) { n++; runStart = dkey(d); } else break; }
   streak = n; todayPct = ts == null ? null : Math.round(ts * 100);
   $("#streakNum").textContent = n; $("#streakBtn").classList.toggle("hot", n >= 3);
+  renderTreats();
+}
+const claimedNow = (m) => { const c = (settings.treats || {})[m.d]; return c && c >= runStart; };
+async function claimTreat(m, ev) {
+  if (!needDb()) return;
+  settings.treats = { ...(settings.treats || {}), [m.d]: todayKey() };
+  confetti(ev.clientX, ev.clientY); toast("Enjoy it! " + m.reward);
+  renderTreats();
+  try { await db.doc("settings/main").update({ treats: settings.treats }); } catch (e) { await safe(db.collection("settings").doc("main").set({ ...settings }), "save that"); }
+}
+function treatTable() {
+  const list = h("div", "treats");
+  MILESTONES.forEach((m) => {
+    const hit = streak >= m.d, got = hit && claimedNow(m);
+    const row = h("div", "mile" + (hit ? " hit" : "") + (got ? " got" : ""));
+    const t = h("div", "mt"); t.append(h("div", "mn", m.name + " · " + m.d + (m.d === 1 ? " day" : " days")), h("div", "muted small", m.reward));
+    row.append(h("span", "n", hit ? (got ? "✓" : "🎁") : String(m.d)), t, h("span", "cost", m.cost));
+    if (hit && !got) row.append(button("Claim", (e) => claimTreat(m, e), "btn primary small"));
+    else if (!hit && m === MILESTONES.find((x) => x.d > streak)) row.append(h("span", "chip soft", m.d - streak + " to go"));
+    list.append(row);
+  });
+  return list;
+}
+/* progress card on Today: the day's % and the next treat */
+function renderProgress() {
+  const card = $("#progCard"); if (!card) return;
+  const date = dayDate(selOff), future = selOff > 0;
+  const sc = dayScore(date), pct = sc == null ? null : Math.round(sc * 100);
+  if (future || !loaded) { card.hidden = true; return; }
+  card.hidden = false; card.innerHTML = "";
+  const R = 26, C = 2 * Math.PI * R, v = pct || 0;
+  const ring = h("div", "ring" + (v >= 80 ? " win" : ""));
+  ring.innerHTML = `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="${R}" class="bg"/><circle cx="32" cy="32" r="${R}" class="fg" style="stroke-dasharray:${C};stroke-dashoffset:${C * (1 - v / 100)}"/></svg><b>${pct == null ? "–" : pct + "%"}</b>`;
+  const t = h("div", "pt");
+  const p = plan(date), work = p.blocks.filter((b) => b.kind === "flex" && isWork(b.area));
+  const doneN = work.filter((b) => b.done).length + p.doneItems.filter((q) => isWork(q.area)).length, total = work.length + p.doneItems.filter((q) => isWork(q.area)).length;
+  t.append(h("div", "pn", pct == null ? "No work blocks" : v >= 80 ? (selOff === 0 ? "Today is a win!" : "That day was a win") : v + "% of the work done"),
+    h("div", "muted small", pct == null ? "Rest day. Enjoy it." : doneN + " of " + total + " work blocks ticked · 80% wins the day"));
+  const next = MILESTONES.find((m) => m.d > streak), unclaimed = MILESTONES.filter((m) => streak >= m.d && !claimedNow(m));
+  if (selOff === 0) t.append(h("div", "nt", unclaimed.length ? "🎁 A treat is waiting for you! Tap to claim it" : next ? `Next treat in ${next.d - streak} win${next.d - streak === 1 ? "" : "s"}: ${next.reward} (${next.cost})` : "You've unlocked every treat!"));
+  card.append(ring, t);
+}
+function renderTreats() {
+  renderProgress();
+  const box = $("#treatList"); if (!box) return;
+  box.innerHTML = ""; box.append(treatTable());
+  $("#treatStreak").textContent = streak + (streak === 1 ? " win in a row" : " wins in a row") + (todayPct != null ? " · today " + todayPct + "%" : "");
 }
 function openRewards() {
   const b = $("#rewardBody"); b.innerHTML = "";
@@ -514,12 +564,7 @@ function openRewards() {
   b.append(h("span", "eyebrow", "Win streak"), big);
   const bar = h("div", "todaybar"), i = h("i"); i.style.width = (todayPct || 0) + "%"; bar.append(i);
   b.append(h("p", "muted small", todayPct == null ? "No work blocks today." : todayPct >= 80 ? "Today is a win: " + todayPct + "% done." : todayPct + "% of today's work done. 80% wins the day."), bar);
-  const list = h("div"); list.style.marginTop = "14px";
-  MILESTONES.forEach((m) => {
-    const row = h("div", "mile" + (streak >= m.d ? " hit" : "")); const t = h("div");
-    t.append(h("div", "", m.name), h("div", "muted small", m.reward));
-    row.append(h("span", "n", String(m.d)), t); list.append(row);
-  });
+  const list = treatTable(); list.style.marginTop = "14px";
   b.append(list); openSheet("#rewardSheet");
 }
 
@@ -721,6 +766,7 @@ function openChat() { if (location.hash !== "#chat") history.pushState(null, "",
 $("#scrim").onclick = () => closeSheets();
 $("#chatClose").onclick = () => closeSheets();
 $("#streakBtn").onclick = openRewards;
+$("#progCard").onclick = openRewards;
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!$("#takeover").hidden) $("#toClose").click(); else closeSheets(); } });
 function markTabs(v) { document.querySelectorAll(".tabbar a").forEach((a) => (a.dataset.v === v ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"))); }
 function route() {
@@ -731,7 +777,7 @@ function route() {
   if (v !== lastView) { const sec = $("#v-" + v); sec.classList.remove("enter"); void sec.offsetWidth; sec.classList.add("enter"); if (v === "today") { scrolledToNow = false; calKey = ""; calSig = ""; } scrollTo(0, 0); }
   lastView = v;
   document.querySelectorAll(".view").forEach((s) => (s.hidden = s.id !== "v-" + v));
-  markTabs(v); $("#dock").hidden = v === "me";
+  markTabs(v); $("#dock").hidden = v === "me"; checkAlert();
   renderAll();
 }
 function renderAll() { renderToday(); renderBoard(); renderMe(); renderChat(); }
@@ -754,7 +800,7 @@ function showTakeover(cur, next) {
 function updatePill(cur, next) {
   if (!$("#takeover").hidden) return; const parts = [];
   if (cur) parts.push("Now: " + cur.title); if (next[0]) parts.push("Next " + toHM(next[0].s) + ": " + next[0].title);
-  $("#pillTxt").textContent = parts.join(" · "); $("#pill").hidden = !parts.length || !db;
+  $("#pillTxt").textContent = parts.join(" · "); $("#pill").hidden = !parts.length || !db || (lastView === "today" && location.hash !== "#chat"); // Today already shows "Now"
 }
 function checkAlert() {
   if (!loaded || isNative) return;
