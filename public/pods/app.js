@@ -64,9 +64,9 @@ function pieceOutline(ctx,s,sd){const p=[[0,0],[s,0],[s,s],[0,s]];ctx.beginPath(
 function cropRect(img,cols,rows){const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height,ar=cols/rows;let sw=iw,sh=iw/ar;if(sh>ih){sh=ih;sw=ih*ar;}return [(iw-sw)/2,(ih-sh)/2,sw,sh];}
 const scaledCache=new Map();
 function scaled(img,j,px){const k=j.at+'|'+px+'|'+(j.photo||'u');if(scaledCache.has(k))return scaledCache.get(k);
-  const c=document.createElement('canvas');c.width=Math.round(j.cols*px);c.height=Math.round(j.rows*px);const cr=cropRect(img,j.cols,j.rows);
+  const c=document.createElement('canvas');c.width=Math.round(j.cols*px);c.height=Math.round(j.rows*px);const cr=cropRect(img,j.cols,j.rows*(j.ta||1));
   c.getContext('2d').drawImage(img,cr[0],cr[1],cr[2],cr[3],0,0,c.width,c.height);if(scaledCache.size>4)scaledCache.clear();scaledCache.set(k,c);return c;}
-function drawPiece(ctx,sc,j,i,s,ox,oy,stroke){const x=i%j.cols,y=Math.floor(i/j.cols);ctx.save();ctx.translate(ox,oy);pieceOutline(ctx,s,sides(j,i));
+function drawPiece(ctx,sc,j,i,s,ox,oy,stroke){const x=i%j.cols,y=Math.floor(i/j.cols);ctx.save();ctx.translate(ox,oy);ctx.scale(1,j.ta||1);pieceOutline(ctx,s,sides(j,i));
   ctx.save();ctx.clip();ctx.drawImage(sc,-x*s,-y*s,j.cols*s,j.rows*s);ctx.restore();ctx.lineWidth=Math.max(.8,s*.035);ctx.strokeStyle=stroke||'rgba(255,255,255,.8)';ctx.stroke();ctx.restore();}
 const DPR=()=>Math.min(2,window.devicePixelRatio||1);
 let boardGeom=null;
@@ -76,15 +76,15 @@ async function drawJig(){
   if(S.jig!==j&&(!S.jig||S.jig.at!==j.at))return;
   const cv=document.getElementById('board'),wrap=document.getElementById('boardwrap');if(!cv||!wrap)return;
   const dpr=DPR(),avail=wrap.clientWidth-6;let s=Math.floor(avail/(j.cols+.4));if(S.zoom)s=Math.max(s,54);s=Math.max(s,12);
-  const pad=Math.round(s*.25),W=j.cols*s+pad*2,H=j.rows*s+pad*2;
+  const ta=j.ta||1,pad=Math.round(s*.25),W=j.cols*s+pad*2,H=Math.round(j.rows*s*ta)+pad*2;
   cv.style.width=W+'px';cv.style.height=H+'px';cv.width=W*dpr;cv.height=H*dpr;const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
-  ctx.fillStyle='#f7eef2';ctx.beginPath();ctx.roundRect?ctx.roundRect(pad,pad,j.cols*s,j.rows*s,8):ctx.rect(pad,pad,j.cols*s,j.rows*s);ctx.fill();
+  ctx.fillStyle='#f7eef2';ctx.beginPath();ctx.roundRect?ctx.roundRect(pad,pad,j.cols*s,j.rows*s*ta,8):ctx.rect(pad,pad,j.cols*s,j.rows*s*ta);ctx.fill();
   const placed=new Set(j.placed||[]),total=j.cols*j.rows;
   ctx.strokeStyle='rgba(255,79,126,.2)';ctx.lineWidth=1;
-  for(let i=0;i<total;i++){if(placed.has(i))continue;ctx.save();ctx.translate(pad+(i%j.cols)*s,pad+Math.floor(i/j.cols)*s);pieceOutline(ctx,s,sides(j,i));ctx.stroke();ctx.restore();}
+  for(let i=0;i<total;i++){if(placed.has(i))continue;ctx.save();ctx.translate(pad+(i%j.cols)*s,pad+Math.floor(i/j.cols)*s*ta);ctx.scale(1,ta);pieceOutline(ctx,s,sides(j,i));ctx.stroke();ctx.restore();}
   const sc=scaled(img,j,s*dpr);
-  for(const i of placed)drawPiece(ctx,sc,j,i,s,pad+(i%j.cols)*s,pad+Math.floor(i/j.cols)*s,'rgba(255,255,255,.35)');
-  boardGeom={s,pad};
+  for(const i of placed)drawPiece(ctx,sc,j,i,s,pad+(i%j.cols)*s,pad+Math.floor(i/j.cols)*s*ta,'rgba(255,255,255,.35)');
+  boardGeom={s,pad,ta};
   // tray pieces
   const trEl=document.getElementById('tray');if(trEl)trEl.scrollLeft=trayScroll;
   const T=60,ts=T/1.5,tpad=ts*.25,tsc=scaled(img,j,ts*dpr);
@@ -96,7 +96,7 @@ async function boardTap(e){
   const j=S.jig,me=S.role,cv=e.target;if(!j||j.done||!boardGeom)return;
   if(j.turn!==me)return toast(`It's ${NAMES[j.turn]}'s turn`);
   if(S.sel===null)return toast('Pick a piece from the tray first');
-  const r=cv.getBoundingClientRect(),{s,pad}=boardGeom;const cx=Math.floor((e.clientX-r.left-pad)/s),cy=Math.floor((e.clientY-r.top-pad)/s);
+  const r=cv.getBoundingClientRect(),{s,pad}=boardGeom,ta=boardGeom.ta||1;const cx=Math.floor((e.clientX-r.left-pad)/s),cy=Math.floor((e.clientY-r.top-pad)/(s*ta));
   if(cx<0||cy<0||cx>=j.cols||cy>=j.rows)return;const i=cy*j.cols+cx;
   if((j.placed||[]).includes(i))return toast('That spot is already filled');
   if(i!==S.sel){sparkle(e.clientX,e.clientY,false);cv.classList.add('shake');setTimeout(()=>cv.classList.remove('shake'),400);S.sel=null;const nxt=other(me);
@@ -842,7 +842,7 @@ const A={
   letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lWhen');closeSheet();await addDoc('letters',{from:S.role,to:other(S.role),when,body,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');},
   openLetter:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l)return;openSheet(`${sheetHead(esc(l.when))}<div class="row">${av(l.from,40)}<span class="small muted">From ${NAMES[l.from]}</span></div><div style="white-space:pre-wrap;font-size:1.08rem;background:var(--blush);border-radius:18px;padding:16px">${esc(l.body)}</div>`);if(!l.opened){floatHearts();await mergeDoc('letters/'+l.id,{opened:true});}},
 };
-async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const doc={photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
+async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const ta=(c*r===120&&r>c)?Math.round((c/r)/(13/20)*1000)/1000:1;const doc={ta,photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
 function winnerOfJig(j){const c=j.counts||{},a=c.anthonia||0,i=c.ifeayomi||0;return a===i?null:a>i?'anthonia':'ifeayomi';}
 function newGame(id,starter){const prev=S.games[id],w=prev&&prev.over&&prev.winner&&prev.winner!=='tie'?prev.winner:null,first=starter||w||S.role;const st=G[id].start(first);st.winnerStart=!!w;saveGame(id,st,true);
   toast(w?`${NAMES[w]} won last time, so ${w===S.role?'you start':NAMES[w]+' starts'}`:'New game started');}
