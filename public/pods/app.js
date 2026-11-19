@@ -246,7 +246,7 @@ function render(quiet){
   v.innerHTML=banners+({home:homeView,chat:chatView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
-  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();}
+  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();maybeAskBadge();}
   if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
@@ -631,6 +631,15 @@ function scoreboard(){const sc=S.scores||{},names=GAME_NAMES();let a=0,i=0;for(c
     return `<div class="sbrow"><span class="sbname">${n}</span><b style="color:var(--her)">${s.anthonia||0}</b><span class="sbbar"><i style="width:${(s.anthonia||0)/t*100}%"></i></span><b style="color:var(--him)">${s.ifeayomi||0}</b></div>`;}).join('');
   return `<section class="card sbcard"><span class="eyebrow">Scoreboard</span><div class="sbtop"><div class="sbp">${lead==='anthonia'?`<span class="sbcrown">${CROWN}</span>`:''}${av('anthonia',58)}<b>${a}</b><span class="small muted">${esc(NAMES.anthonia)}</span></div><span class="sbvs">vs</span><div class="sbp">${lead==='ifeayomi'?`<span class="sbcrown">${CROWN}</span>`:''}${av('ifeayomi',58)}<b>${i}</b><span class="small muted">${esc(NAMES.ifeayomi)}</span></div></div>
   ${rows||'<p class="small muted center" style="margin:0">Finish a game to start the scoreboard.</p>'}</section>`;}
+
+
+/* ---------- iPhone: ask once to allow Pods notifications (needs a tap on iOS) ---------- */
+function canAskBadge(){return !widgetPlugin()&&'Notification' in window&&!!navigator.setAppBadge&&Notification.permission==='default';}
+function maybeAskBadge(){if(!S.role||S.mode!=='live'||S.badgeAsked||!canAskBadge())return;let n=0;try{n=Number(localStorage.getItem('pods_badgeAsk')||0);}catch(e){}
+  if(n>=2||!document.getElementById('sheet').classList.contains('hidden'))return;S.badgeAsked=true;try{localStorage.setItem('pods_badgeAsk',String(n+1));}catch(e){}
+  setTimeout(()=>{if(!document.getElementById('sheet').classList.contains('hidden'))return;openSheet(`${sheetHead('Turn on Pods notifications?')}<div class="row" style="justify-content:center">${av(other(S.role),84)}</div>
+    <p class="center" style="margin:0">See a number on your Pods icon when ${esc(NAMES[other(S.role)])} messages you or it's your turn in a game.</p>
+    <button class="btn primary" data-act="badgeOn">Allow notifications</button><button class="btn ghost" data-act="close">Not now</button>`);},1500);}
 
 /* ---------- sheets, toast, effects ---------- */
 function openSheet(html){document.getElementById('panel').innerHTML=html;document.getElementById('sheet').classList.remove('hidden');}
