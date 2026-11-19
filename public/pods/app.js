@@ -104,7 +104,7 @@ async function boardTap(e){
   await mergeDoc('games/jigsaw',{placed,counts,run,best,done});
   if(!done&&(run===5||run===10||run===20))toast(`${run} in a row!`);
   if(done){const src=jigSrc(j);let thumb=j.photo?thumbURL(j.photo):null;if(!thumb){try{thumb=cropTo(await getImg(src),300,300,.72);}catch(e){}}
-    const w=winnerOf(counts);await saveToGallery({thumb,photo:j.photo||null,img:j.photo?null:j.img,caption:`Our ${j.cols*j.rows}-piece ${j.photo?photoTitle(j.photo).toLowerCase():'puzzle'} · ${w?NAMES[w]+' won':'a tie'}`,kind:'puzzle'});}
+    const w=winnerOf(counts);recordWin('jigsaw',w||'tie');await saveToGallery({thumb,photo:j.photo||null,img:j.photo?null:j.img,caption:`Our ${j.cols*j.rows}-piece ${j.photo?photoTitle(j.photo).toLowerCase():'puzzle'} · ${w?NAMES[w]+' won':'a tie'}`,kind:'puzzle'});}
 }
 const winnerOf=c=>{const a=(c&&c.anthonia)||0,i=(c&&c.ifeayomi)||0;return a===i?null:(a>i?'anthonia':'ifeayomi');};
 const CROWN='<svg viewBox="0 0 64 44" aria-hidden="true"><path d="M4 14l14 12L32 4l14 22 14-12-6 28H10z" fill="#ffc531" stroke="#e59a00" stroke-width="2.5" stroke-linejoin="round"/><circle cx="4" cy="14" r="4" fill="#ff4f7e"/><circle cx="32" cy="4" r="4" fill="#22b3a3"/><circle cx="60" cy="14" r="4" fill="#ff4f7e"/><rect x="10" y="36" width="44" height="6" rx="2" fill="#e59a00"/></svg>';
@@ -207,15 +207,17 @@ let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hid
 window.addEventListener('online',()=>resubscribe());
 function subscribe(){
   watchDoc('pods/couple',d=>{const pn=S.role&&S.couple&&S.couple.nick?S.couple.nick[other(S.role)]:undefined;S.couple=d;{const nn=S.role&&d&&d.nick?d.nick[other(S.role)]:undefined;if(S.gotCouple&&S.role&&nn&&nn!==pn){setTimeout(()=>{floatHearts();toast(`${NAMES[other(S.role)]} now calls you "${nn}"`);},400);}}S.gotCouple=true;applyNick();if(S.note.startsWith("Pods can't"))S.note='';refresh();maybeAskNick();});
-  watchCol('messages',l=>{const prev=S.msgs;S.msgs=l;checkNews(prev,l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();},{order:'at',dir:'desc',limit:120});
+  watchCol('messages',l=>{const prev=S.msgs;S.msgs=l;checkNews(prev,l);markDelivered(l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();},{order:'at',dir:'desc',limit:120});
   watchDoc('pods/chatread',d=>{S.chatRead=d||{};refresh();});
+  watchDoc('pods/presence',d=>{S.presence=d||{};const el=document.getElementById('presText');if(S.tab==='chat'&&el){const pr=partnerPresence();el.textContent=pr.typing?'typing…':pr.text;el.className='small '+(pr.on?'onl':'muted');const cl=document.getElementById('chatList');if(cl){const old=cl.querySelector('.peek');const you=other(S.role);const html=pr.on&&pr.where==='chat'?`<div class="peek">${av(you,42)}${pr.typing?'<span class="typing"><i></i><i></i><i></i></span>':''}</div>`:'';if(old)old.remove();if(html){cl.insertAdjacentHTML('beforeend',html);cl.scrollTop=cl.scrollHeight;}}const pa=document.querySelector('.pav');if(pa)pa.classList.toggle('on',pr.on);}else if(S.tab==='home')refresh();});
+  watchDoc('pods/scores',d=>{S.scores=d||{};refresh();});
   watchCol('checkins',l=>{S.checkins=l;refresh();},{order:'at',dir:'desc',limit:20});
   watchDoc('pods/avatars',d=>{const p=(S.avatars||{})[S.role];S.avatars=d||{};const n=S.avatars[S.role];S.gotAv=true;refresh();});
   watchCol('daily',l=>{S.daily=l;refresh();});
   watchDoc('pods/songs',d=>{S.songs=d||{};refresh();});
   watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role))floatHearts();lastTapAt=d?d.at:0;refresh();});
   watchCol('games',l=>{const prev=S.games||{};S.games=Object.fromEntries(l.filter(x=>x.id!=='jigsaw').map(x=>[x.id,x]));gamesChanged(prev,S.games);refresh();});
-  watchCol('voice',l=>{S.voice=l;refresh();},{order:'at',dir:'desc',limit:12});
+  watchCol('voice',l=>{S.voice=l;refresh();},{order:'at',dir:'desc',limit:30});
   watchDoc('games/jigsaw',d=>{const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done&&!d.cancelled)setTimeout(()=>showWinner(d),300);if(d&&d.cancelReq&&d.cancelReq.by!==S.role&&!(prev&&prev.cancelReq))toast(`${NAMES[d.cancelReq.by]} wants to start a new puzzle`);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();});
   watchDoc('months/'+monthKey(),d=>{S.month=d;refresh();});
   watchDoc('years/'+todayKey().slice(0,4),d=>{S.year=d;refresh();});
@@ -229,7 +231,7 @@ function subscribe(){
 
 /* ---------- render plumbing ---------- */
 let pending=false,lastTab=null;
-function refresh(){pushWidget();if(S.tab==='chat'&&document.getElementById('chatList')&&document.activeElement&&document.activeElement.id==='chatIn'){const tmp=document.createElement('div');tmp.innerHTML=chatView();const nl=tmp.querySelector('#chatList');document.getElementById('chatList').innerHTML=nl?nl.innerHTML:'';chatAfterRender();return;}if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
+function refresh(){pushWidget();pushBadge();if(S.tab==='chat'&&document.getElementById('chatList')&&document.activeElement&&document.activeElement.id==='chatIn'){const tmp=document.createElement('div');tmp.innerHTML=chatView();const nl=tmp.querySelector('#chatList');document.getElementById('chatList').innerHTML=nl?nl.innerHTML:'';chatAfterRender();return;}if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pending){const a=document.activeElement;if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))){pending=false;render(true);}}},0));
 function render(quiet){
   const v=document.getElementById('view');
@@ -244,7 +246,7 @@ function render(quiet){
   v.innerHTML=banners+({home:homeView,chat:chatView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
-  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();if(S.role){maybeAskNick();maybeCheckin();}
+  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();}
   if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
@@ -261,7 +263,7 @@ function homeView(){
   const nv=S.couple&&S.couple.nextVisit;const dleft=nv?daysBetween(t,nv):null;
   const q=QUESTIONS[Math.floor(Date.parse(t+'T12:00:00Z')/864e5)%QUESTIONS.length];
   const day=S.daily.find(d=>d.id===t)||{};const mine=day[me],theirs=day[you];
-  const bub=(r,a)=>`<div class="bubble ${r}">${av(r,34)}<div class="b"><div class="who2">${r===me?'You':NAMES[r]}</div>${a.voice?voicePlayer(a.voice,a.secs):esc(a.text)}</div></div>`;
+  const bub=(r,a)=>`<div class="bubble ${r}">${av(r,34)}<div class="b"><div class="who2">${r===me?'You':NAMES[r]}</div>${a.voice?voicePlayer(a.voice,a.secs,'d'+r+t):esc(a.text)}</div></div>`;
   let daily;
   if(mine)daily=bub(me,mine)+(theirs?bub(you,theirs):`<div class="locked">${av(you,26)} Waiting for ${NAMES[you]} to answer…</div>`);
   else daily=(theirs?`<div class="locked">${av(you,26)} ${NAMES[you]} has answered! Answer to unlock it.</div>`:'')+`<textarea id="dailyIn" placeholder="Your answer…"></textarea><div class="row"><button class="btn primary" data-act="answer">Answer</button>${rec?`<button class="btn" data-act="recStop">Stop recording</button>`:`<button class="btn" data-act="recStart" data-k="daily">Answer with a voice note</button>`}</div>`;
@@ -269,7 +271,7 @@ function homeView(){
   const tapLine=S.tap&&S.tap.from===you?`${NAMES[you]} thought of you ${ago(S.tap.at)}`:(S.tap&&S.tap.from===me?`You sent love ${ago(S.tap.at)}`:'Send a little love across the miles');
   const songRow=r=>{const s=S.songs[r];return `<div class="item">${av(r,34)}<div class="grow"><div class="small muted">${r===me?'Your':NAMES[r]+"'s"} song of the moment</div>${s?(s.url?`<a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:700">${esc(s.title||s.url)}</a>`:`<b>${esc(s.title)}</b>`):'<span class="muted">Nothing pinned yet</span>'}</div>${r===me?`<button class="btn sm" data-act="songSheet">${s?'Change':'Pin'}</button>`:''}</div>`;};
   return `
-  <div class="greet">${av(me,54)}<div><h1>${greeting()}, ${NAMES[me]} <span class="wave">${HEART.replace('<svg','<svg width="22" height="22" style="color:var(--her);vertical-align:-3px"')}</span></h1><div class="small muted">${NAMES[you]} is ${hourIn(me==='anthonia'?'Africa/Lagos':'Europe/Rome')<6?'probably asleep':'awake in '+(me==='anthonia'?'Ibadan':'Ancona')}</div></div></div>
+  <div class="greet">${av(me,54)}<div><h1>${greeting()}, ${NAMES[me]} <span class="wave">${HEART.replace('<svg','<svg width="22" height="22" style="color:var(--her);vertical-align:-3px"')}</span></h1><div class="small ${partnerPresence().on?'onl':'muted'}">${partnerPresence().on?esc(NAMES[you])+' · '+esc(partnerPresence().text):NAMES[you]+' is '+(hourIn(me==='anthonia'?'Africa/Lagos':'Europe/Rome')<6?'probably asleep':'awake in '+(me==='anthonia'?'Ibadan':'Ancona'))}</div></div></div>
   <section class="card hero center">
     <div class="couple">${av('anthonia',64)}<span class="bridge">${HEART}</span>${av('ifeayomi',64)}</div>
     ${nv?(dleft>0?`<div class="big">${dleft}</div><div class="muted" style="font-weight:700">${dleft===1?'day':'days'} until we're together · ${prettyDay(nv)}</div>`:`<div class="big" style="font-size:2.6rem">${dleft===0?'Today!':'Together'}</div><div class="small muted">Set the date of your next visit.</div>`):`<div class="muted" style="font-weight:700">When will you see each other next?</div>`}
@@ -291,9 +293,9 @@ function homeView(){
   ${homeGallery()}
   <section class="card"><span class="eyebrow">Songs of the moment</span>${songRow(me)}${songRow(you)}</section>`;
 }
-function voiceCard(){const l=(S.voice||[]).slice(0,4);return `<section class="card"><div class="row between"><span class="eyebrow">Voice notes</span>${rec?`<button class="btn sm primary" data-act="recStop">Stop and send</button>`:`<button class="btn sm primary" data-act="recStart" data-k="note">Record one</button>`}</div>
-  ${rec?`<div class="locked" style="color:var(--her)"><span class="dot anthonia" style="animation:beat 1s infinite"></span> Recording… up to 60 seconds</div>`:''}
-  ${l.length?l.map(v=>`<div class="bubble ${v.by}">${av(v.by,30)}<div class="b"><div class="who2">${v.by===S.role?'You':NAMES[v.by]} · ${ago(v.at)}</div>${voicePlayer(v.src,v.secs)}</div></div>`).join(''):'<p class="small muted" style="margin:0">Say good morning in your own voice.</p>'}</section>`;}
+function voiceCard(){const l=[...(S.voice||[])].sort((a,b)=>b.at-a.at);return `<section class="card"><div class="row between"><span class="eyebrow">Voice notes</span>${rec&&S.recFor==='note'?`<button class="btn sm primary" data-act="recStop">Stop and send</button>`:`<button class="btn sm primary" data-act="recStart" data-k="note">Record one</button>`}</div>
+  ${rec&&S.recFor==='note'?`<div class="locked" style="color:var(--her)"><span class="dot anthonia" style="animation:beat 1s infinite"></span> Recording… up to 60 seconds</div>`:''}
+  ${l.length?`<div class="vlist">${l.map(v=>`<div class="bubble ${v.by}">${av(v.by,30)}<div class="b"><div class="who2">${v.by===S.role?'You':esc(NAMES[v.by])} · ${ago(v.at)}</div>${voicePlayer(v.src,v.secs,'n'+v.id)}</div></div>`).join('')}</div>${l.length>3?'<p class="small muted center" style="margin:0">Scroll for older notes</p>':''}`:'<p class="small muted" style="margin:0">Say good morning in your own voice.</p>'}</section>`;}
 function waitingCard(){
   const me=S.role,w=[];const t=todayKey();const day=S.daily.find(d=>d.id===t)||{};
   if(!day[me])w.push(['home',"Answer today's question"]);
@@ -318,7 +320,7 @@ function jigCard(){
     let tray=(j.tray||[]).filter(i=>!placed.has(i));
     if(S.edgesOnly){const e=tray.filter(i=>sides(j,i).includes(0));if(e.length)tray=e;}
     const shown=tray.slice(0,30);
-    jig=`${cancelBar('jigsaw',{cancelReq:j.cancelReq})}${mine&&!placed.size?`<div class="givebar">You start this puzzle. <button class="btn sm" data-act="gGive" data-g="jigsaw">Let ${NAMES[other(me)]} go first</button></div>`:''}<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
+    jig=`${scoreLine('jigsaw')}${cancelBar('jigsaw',{cancelReq:j.cancelReq})}${mine&&!placed.size?`<div class="givebar">You start this puzzle. <button class="btn sm" data-act="gGive" data-g="jigsaw">Let ${NAMES[other(me)]} go first</button></div>`:''}<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
     <div class="progress"><i style="width:${placed.size/total*100}%"></i></div>
     <div class="row" style="gap:6px"><button class="btn sm" data-act="peek">Peek at the picture</button><button class="btn sm ${S.zoom?'on':''}" data-act="zoom">${S.zoom?'Fit board':'Zoom in'}</button>${mine?`<button class="btn sm ${S.edgesOnly?'on':''}" data-act="edges">${S.edgesOnly?'All pieces':'Edges first'}</button>`:''}</div>
     <div class="boardwrap" id="boardwrap"><canvas id="board" aria-label="Puzzle board"></canvas></div>
@@ -340,6 +342,7 @@ function playView(){
   if(S.game&&G[S.game]){const g=G[S.game],st=S.games[S.game];
     return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>${g.name}</h2></div><button class="btn sm ghost" data-act="gNew" data-g="${S.game}">${st?'New game':'Start'}</button></div>
     ${st&&st.fresh&&st.turn===S.role&&!st.over?`<div class="givebar">${st.winnerStart?'You won last time, so you start.':'You start.'} <button class="btn sm" data-act="gGive" data-g="${S.game}">Let ${NAMES[other(S.role)]} go first</button></div>`:''}
+    ${scoreLine(S.game)}
     ${st&&g.legacy&&g.legacy(st)?`<div class="givebar ask">This ${g.name} game was started before the update, so it can't continue. <button class="btn sm primary" data-act="gFresh" data-g="${S.game}">Start the new ${g.name}</button></div>`:''}
     ${st?cancelBar(S.game,st):''}
     ${st&&g.legacy&&g.legacy(st)?'':st?(g.statusBelow?g.view(st,S.role)+gameStatus(S.game,st):gameStatus(S.game,st)+g.view(st,S.role)):`<p class="muted" style="margin:0">${g.desc}</p><button class="btn primary" data-act="gNew" data-g="${S.game}">Start a game</button>`}</section>`;}
@@ -348,6 +351,7 @@ function playView(){
     return `<button class="gtile" data-act="game" data-g="${id}"><span class="gico">${icon}</span><b>${name}</b><span class="small muted">${desc}</span>${chip}</button>`;};
   const j=S.jig;const jst=j?{turn:j.done?null:j.turn,over:j.done}:null;
   return `<div class="greet" style="padding-top:2px"><h1>Game Area</h1></div>
+  ${scoreboard()}
   <div class="glist">${tile('jigsaw','Jigsaw','Real pieces, HD photos','<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 3a2 2 0 0 1 4 0v1h4a2 2 0 0 1 2 2v4h-1a2 2 0 0 0 0 4h1v4a2 2 0 0 1-2 2h-4v-1a2 2 0 0 0-4 0v1H6a2 2 0 0 1-2-2v-4h1a2 2 0 0 0 0-4H4V6a2 2 0 0 1 2-2h4z"/></svg>',jst)}
   ${Object.entries(G).map(([id,g])=>tile(id,g.name,g.short,g.icon,S.games[id])).join('')}</div>`;
 }
@@ -455,6 +459,10 @@ async function openLightbox(id){
   const full=await fullImage(m);const im=document.getElementById('lbImg');if(full&&im&&S.lb&&S.lb.id===id)im.src=full;
 }
 async function fullImage(m){if(m.photo)return photoURL(m.photo);if(m.img)return m.img;const d=await getDoc('photos/'+m.id);return d&&d.img?d.img:memThumb(m);}
+let swX=null,swY=null,swEl=null;
+document.addEventListener('touchstart',e=>{const m=e.target.closest('#chatList .msg');if(!m)return;swEl=m;swX=e.touches[0].clientX;swY=e.touches[0].clientY;},{passive:true});
+document.addEventListener('touchmove',e=>{if(!swEl)return;const dx=e.touches[0].clientX-swX,dy=Math.abs(e.touches[0].clientY-swY);if(dy>30){swEl.style.transform='';swEl=null;return;}if(dx>0)swEl.style.transform=`translateX(${Math.min(dx,80)}px)`;},{passive:true});
+document.addEventListener('touchend',e=>{if(!swEl)return;const dx=e.changedTouches[0].clientX-swX,el=swEl;swEl=null;el.style.transform='';if(dx>60){const m=(S.msgs||[]).find(x=>x.id===el.dataset.id);if(m){S.replyTo={id:m.id,by:m.by,text:snippet(m)};render(true);const i=document.getElementById('chatIn');if(i)i.focus();}}});
 let lbX=null;
 document.addEventListener('touchstart',e=>{if(e.target.closest('#lb .lbImg'))lbX=e.touches[0].clientX;},{passive:true});
 document.addEventListener('touchend',e=>{if(lbX===null)return;const dx=e.changedTouches[0].clientX-lbX;lbX=null;if(Math.abs(dx)>50)lbNav(dx<0?1:-1);});
@@ -498,14 +506,13 @@ let rec=null;
 async function startRec(onDone){
   if(!navigator.mediaDevices||!window.MediaRecorder)return toast("This phone's browser can't record here.");
   let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){return toast('Allow the microphone to record a voice note.');}
-  const type=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
+  const type=['audio/mp4;codecs=mp4a.40.2','audio/mp4','audio/aac','audio/webm;codecs=opus','audio/webm'].find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||'';
   const mr=new MediaRecorder(stream,type?{mimeType:type,audioBitsPerSecond:32000}:{});const chunks=[];const t0=Date.now();
   mr.ondataavailable=e=>e.data.size&&chunks.push(e.data);
-  mr.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});const secs=Math.round((Date.now()-t0)/1000);rec=null;render(true);
+  mr.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});const secs=Math.round((Date.now()-t0)/1000);rec=null;render(true);if(Date.now()-t0<800||!blob.size)return toast('Hold on a little longer to record.');
     if(blob.size>700000)return toast('That voice note is too long. Keep it under a minute.');const fr=new FileReader();fr.onload=()=>onDone(fr.result,secs);fr.readAsDataURL(blob);};
-  mr.start();rec={mr,t0,timer:setTimeout(()=>{if(mr.state==='recording')mr.stop();},60000)};render(true);}
+  mr.start(500);rec={mr,t0,timer:setTimeout(()=>{if(mr.state==='recording')mr.stop();},60000)};render(true);}
 function stopRec(){if(rec&&rec.mr.state==='recording'){clearTimeout(rec.timer);rec.mr.stop();}}
-const voicePlayer=(src,secs)=>`<audio controls preload="none" src="${src}" style="width:100%;height:36px"></audio>${secs?`<span class="small muted">${secs}s</span>`:''}`;
 
 /* ---------- nicknames: each of you picks what you call the other ---------- */
 const BASE_NAMES={...NAMES};
@@ -534,22 +541,25 @@ function checkinCard(){const d=localDay(),c=(S.checkins||[]).filter(x=>x.date===
 
 /* ---------- chat ---------- */
 function unreadCount(){const me=S.role,last=(S.chatRead||{})[me]||0;return (S.msgs||[]).filter(m=>m.by!==me&&m.at>last).length;}
-function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a,b)=>a.at-b.at),seen=(S.chatRead||{})[you]||0;let lastDay='';
-  const myLast=[...list].reverse().find(m=>m.by===me);
+function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a,b)=>a.at-b.at);let lastDay='';const pr=partnerPresence();
+  const myLast=[...list].reverse().find(m=>m.by===me&&m.kind!=='news');
   const items=list.map(m=>{const day=new Date(m.at).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});const sep=day!==lastDay?`<div class="daysep">${day}</div>`:'';lastDay=day;
     const t=new Date(m.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     if(m.kind==='news')return `${sep}<div class="newspill">${esc(newsText(m))}</div>`;
-    let body=m.kind==='voice'?voicePlayer(m.src,m.secs):m.kind==='photo'?`<img src="${m.img}" alt="Photo" class="chatimg" data-act="chatImgOpen" data-id="${m.id}">`:m.kind==='checkin'?`<div class="small"><b>Evening check-in</b> · <span class="moodtag" style="--mc:${(MOODS_DAY.find(x=>x[0]===m.mood)||[,'#ccc'])[1]}">${esc(m.mood||'')}</span></div>${esc(m.text||'')}`:esc(m.text);
-    return `${sep}<div class="msg ${m.by===me?'me':'them'}"><button class="mb" data-act="chatHeart" data-id="${m.id}" aria-label="Love this message">${body}${m.heart?`<span class="mheart">${HEART}</span>`:''}</button><span class="mt">${t}${m.by===me&&m===myLast&&seen>=m.at?' · Seen':''}</span></div>`;}).join('');
-  return `<section class="card chatcard"><div class="row">${av(you,40)}<div><h2>${esc(NAMES[you])}</h2><div class="small muted">Tap a message to send it a heart</div></div></div>
-    <div class="chatlist" id="chatList">${items||`<div class="empty">${HEART}<p class="muted" style="margin:0">Say hi to ${esc(NAMES[you])}!</p></div>`}</div>
+    let body=m.kind==='voice'?voicePlayer(m.src,m.secs,'c'+m.id):m.kind==='photo'?`<img src="${m.img}" alt="Photo" class="chatimg">`:m.kind==='checkin'?`<div class="small"><b>Evening check-in</b> · <span class="moodtag" style="--mc:${(MOODS_DAY.find(x=>x[0]===m.mood)||[,'#ccc'])[1]}">${esc(m.mood||'')}</span></div>${esc(m.text||'')}`:esc(m.text);
+    const q=m.reply?`<button class="quote" data-act="chatJump" data-id="${m.reply.id}"><b>${m.reply.by===me?'You':esc(NAMES[m.reply.by])}</b><span>${esc(m.reply.text||'')}</span></button>`:'';
+    return `${sep}<div class="msg ${m.by===me?'me':'them'}" id="m-${m.id}" data-id="${m.id}">${q}<div class="mb" data-act="chatMenu" data-id="${m.id}" role="button" tabindex="0">${body}${m.heart?`<span class="mheart">${HEART}</span>`:''}</div><span class="mt">${t}${m===myLast?' · '+msgStatus(m):''}</span></div>`;}).join('');
+  const peek=pr.on&&pr.where==='chat'?`<div class="peek">${av(you,42)}${pr.typing?'<span class="typing"><i></i><i></i><i></i></span>':''}</div>`:'';
+  const rp=S.replyTo?`<div class="replybar"><div><b>Replying to ${S.replyTo.by===me?'yourself':esc(NAMES[S.replyTo.by])}</b><span>${esc(S.replyTo.text)}</span></div><button class="x" data-act="replyCancel" aria-label="Cancel reply">×</button></div>`:'';
+  return `<section class="card chatcard"><div class="row"><span class="pav ${pr.on?'on':''}">${av(you,42)}</span><div><h2>${esc(NAMES[you])}</h2><div class="small ${pr.on?'onl':'muted'}" id="presText">${pr.typing?'typing…':esc(pr.text||'Tap a message to reply or send a heart')}</div></div></div>
+    <div class="chatlist" id="chatList">${items||`<div class="empty">${HEART}<p class="muted" style="margin:0">Say hi to ${esc(NAMES[you])}!</p></div>`}${peek}</div>
     ${rec&&S.recFor==='chat'?`<div class="locked" style="color:var(--her)"><span class="dot anthonia" style="animation:beat 1s infinite"></span> Recording… <button class="btn sm primary" data-act="recStop">Stop and send</button></div>`:''}
-    <div class="chatbar"><label class="cbtn" for="chatImg" aria-label="Send a photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5-8 8"/></svg></label><input type="file" id="chatImg" accept="image/*" hidden>
+    ${rp}<div class="chatbar"><label class="cbtn" for="chatImg" aria-label="Send a photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5-8 8"/></svg></label><input type="file" id="chatImg" accept="image/*" hidden>
       <button class="cbtn" data-act="recStart" data-k="chat" aria-label="Record a voice note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       <input type="text" id="chatIn" placeholder="Message ${esc(NAMES[you])}" autocomplete="off" enterkeyhint="send"><button class="btn primary sm" data-act="chatSend">Send</button></div></section>`;}
 function chatAfterRender(){if(S.tab!=='chat')return;const l=document.getElementById('chatList');if(l)l.scrollTop=l.scrollHeight;const me=S.role,newest=Math.max(0,...(S.msgs||[]).filter(m=>m.by!==me).map(m=>m.at));
   if(newest>((S.chatRead||{})[me]||0)&&S.markingRead!==newest){S.markingRead=newest;mergeDoc('pods/chatread',{[me]:newest});}}
-async function sendMsg(data){await addDoc('messages',{by:S.role,at:Date.now(),...data});}
+async function sendMsg(data){const r=S.replyTo;if(r&&data.kind!=='news'){data.reply={id:r.id,by:r.by,text:r.text};S.replyTo=null;}await addDoc('messages',{by:S.role,at:Date.now(),...data});}
 
 
 /* ---------- Android home-screen widget (only inside the Pods app) ---------- */
@@ -573,6 +583,53 @@ function showNews(list){if(!list.length)return;const me=S.role;try{localStorage.
 function checkNews(prev,list){if(!S.role)return;const me=S.role;let seen=0;try{seen=Number(localStorage.getItem('pods_newsSeen')||0);}catch(e){}
   const known=prev?new Set(prev.map(m=>m.id)):null;const fresh=list.filter(m=>m.kind==='news'&&m.by!==me&&m.at>seen&&(!known||!known.has(m.id))).sort((a,b)=>a.at-b.at);
   if(fresh.length)setTimeout(()=>showNews(fresh),prev?200:900);}
+
+/* ---------- voice notes: reliable play on both phones ---------- */
+const VOICE={};let vAudio=null,vKey=null;
+function voicePlayer(src,secs,key){key=key||('v'+Math.abs([...String(src).slice(-40)].reduce((a,c)=>a*31+c.charCodeAt(0)|0,7)));VOICE[key]=src;const playing=vKey===key&&vAudio&&!vAudio.paused;
+  return `<div class="vplay"><button class="vbtn" data-act="vPlay" data-k="${key}" aria-label="${playing?'Pause':'Play'} voice note">${playing?'<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>':'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'}</button><span class="vbar"><i id="vb-${key}" style="width:${playing&&vAudio.duration?vAudio.currentTime/vAudio.duration*100:0}%"></i></span><span class="vt">${secs?secs+'s':''}</span></div>`;}
+async function vPlay(key){const src=VOICE[key];if(!src)return;
+  if(vKey===key&&vAudio){if(vAudio.paused){vAudio.play().catch(()=>{});}else vAudio.pause();render(true);return;}
+  if(vAudio){vAudio.pause();vAudio=null;}
+  try{const blob=src.startsWith('data:')?await (await fetch(src)).blob():null;const url=blob?URL.createObjectURL(blob):src;const a=new Audio();a.preload='auto';a.src=url;vAudio=a;vKey=key;
+    a.ontimeupdate=()=>{const b=document.getElementById('vb-'+key);if(b&&a.duration&&isFinite(a.duration))b.style.width=(a.currentTime/a.duration*100)+'%';};
+    a.onended=()=>{vKey=null;vAudio=null;render(true);};a.onerror=()=>{vKey=null;vAudio=null;render(true);toast("This voice note can't play on this phone. Ask for it to be recorded again.");};
+    await a.play();render(true);}catch(e){vKey=null;vAudio=null;toast("Couldn't play that voice note. Tap again.");render(true);}}
+
+/* ---------- presence: in the chat, playing a game, or away ---------- */
+let presWhere='',presT=0,typingT=null,isTyping=false;
+function whereNow(){if(document.hidden)return 'away';if(S.tab==='chat')return 'chat';if(S.tab==='play')return S.game?'game:'+S.game:'play';return S.tab;}
+function pushPresence(force){if(!S.role||!['live','demo'].includes(S.mode))return;const w=whereNow(),now=Date.now();if(!force&&w===presWhere&&now-presT<30000)return;presWhere=w;presT=now;
+  mergeDoc('pods/presence',{[S.role]:{at:now,where:w,typing:isTyping&&w==='chat'}}).catch(()=>{});}
+setInterval(()=>{if(!document.hidden)pushPresence(true);},30000);
+document.addEventListener('visibilitychange',()=>pushPresence(true));
+function setTyping(on){if(isTyping===on)return;isTyping=on;pushPresence(true);}
+function partnerPresence(){const p=(S.presence||{})[other(S.role)];if(!p)return {on:false,text:''};const fresh=Date.now()-p.at<75000&&p.where!=='away';
+  const gname=p.where&&p.where.startsWith('game:')?(p.where.slice(5)==='jigsaw'?'the jigsaw':(G[p.where.slice(5)]||{}).name):null;
+  return {on:fresh,where:p.where,typing:fresh&&p.typing,text:fresh?(p.where==='chat'?'In the chat with you':gname?'Playing '+gname:p.where==='play'?'In the Game Area':'On Pods now'):'Active '+ago(p.at)};}
+
+/* ---------- delivered / seen, replies ---------- */
+function markDelivered(list){if(!S.role)return;const me=S.role,newest=Math.max(0,...list.filter(m=>m.by!==me).map(m=>m.at));const cur=((S.chatRead||{}).deliv||{})[me]||0;
+  if(newest>cur&&S.delivering!==newest){S.delivering=newest;mergeDoc('pods/chatread',{deliv:{[me]:newest}}).catch(()=>{});}}
+function msgStatus(m){const you=other(S.role),r=S.chatRead||{};if((r[you]||0)>=m.at)return '<span class="tick seen">✓✓ Seen</span>';if(((r.deliv||{})[you]||0)>=m.at)return '<span class="tick">✓✓ Delivered</span>';return '<span class="tick">✓ Sent</span>';}
+const snippet=m=>m.kind==='voice'?'Voice note':m.kind==='photo'?'Photo':m.kind==='checkin'?'Evening check-in':String(m.text||'').slice(0,80);
+
+/* ---------- app icon dot/number ---------- */
+let badgeLast=-1;
+function waitingCount(){const me=S.role;let n=unreadCount();if(S.jig&&!S.jig.done&&S.jig.turn===me)n++;for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me&&!(G[id].legacy&&G[id].legacy(g)))n++;return n;}
+function pushBadge(){if(!S.role||S.mode!=='live')return;const n=waitingCount();if(n===badgeLast)return;badgeLast=n;
+  try{if(navigator.setAppBadge){n?navigator.setAppBadge(n).catch(()=>{}):navigator.clearAppBadge().catch(()=>{});}}catch(e){}
+  const P=widgetPlugin();if(P&&P.setBadge){P.setBadge({count:n}).catch(()=>{});}}
+
+/* ---------- scoreboards ---------- */
+const GAME_NAMES=()=>Object.assign({jigsaw:'Jigsaw'},Object.fromEntries(Object.entries(G).filter(([id])=>id!=='movie').map(([id,g])=>[id,g.name])));
+function recordWin(id,winner){const cur=(S.scores||{})[id]||{anthonia:0,ifeayomi:0,ties:0};const k=winner==='tie'||!winner?'ties':winner;mergeDoc('pods/scores',{[id]:{...cur,[k]:(cur[k]||0)+1,last:Date.now()}}).catch(()=>{});}
+function scoreLine(id){const s=(S.scores||{})[id];if(!s)return '';return `<div class="scoreline">${av('anthonia',22)}<b>${s.anthonia||0}</b><span class="small muted">all-time wins${s.ties?` · ${s.ties} tie${s.ties>1?'s':''}`:''}</span><b>${s.ifeayomi||0}</b>${av('ifeayomi',22)}</div>`;}
+function scoreboard(){const sc=S.scores||{},names=GAME_NAMES();let a=0,i=0;for(const s of Object.values(sc)){a+=s.anthonia||0;i+=s.ifeayomi||0;}
+  const lead=a===i?null:a>i?'anthonia':'ifeayomi';const rows=Object.entries(names).filter(([id])=>sc[id]).map(([id,n])=>{const s=sc[id],t=(s.anthonia||0)+(s.ifeayomi||0)||1;
+    return `<div class="sbrow"><span class="sbname">${n}</span><b style="color:var(--her)">${s.anthonia||0}</b><span class="sbbar"><i style="width:${(s.anthonia||0)/t*100}%"></i></span><b style="color:var(--him)">${s.ifeayomi||0}</b></div>`;}).join('');
+  return `<section class="card sbcard"><span class="eyebrow">Scoreboard</span><div class="sbtop"><div class="sbp">${lead==='anthonia'?`<span class="sbcrown">${CROWN}</span>`:''}${av('anthonia',58)}<b>${a}</b><span class="small muted">${esc(NAMES.anthonia)}</span></div><span class="sbvs">vs</span><div class="sbp">${lead==='ifeayomi'?`<span class="sbcrown">${CROWN}</span>`:''}${av('ifeayomi',58)}<b>${i}</b><span class="small muted">${esc(NAMES.ifeayomi)}</span></div></div>
+  ${rows||'<p class="small muted center" style="margin:0">Finish a game to start the scoreboard.</p>'}</section>`;}
 
 /* ---------- sheets, toast, effects ---------- */
 function openSheet(html){document.getElementById('panel').innerHTML=html;document.getElementById('sheet').classList.remove('hidden');}
@@ -631,8 +688,15 @@ const A={
   ciMood:t=>{S.ciMood=t.dataset.m;document.querySelectorAll('.mood').forEach(b=>b.classList.toggle('on',b.dataset.m===S.ciMood));},
   ciSend:async()=>{const day=val('ciDay').trim(),mood=S.ciMood;if(!day&&!mood)return toast('Tell us a little about your day');closeSheet();const d=localDay();
     await setDoc('checkins/'+d+'_'+S.role,{role:S.role,date:d,mood:mood||'',day,at:Date.now()});await sendMsg({kind:'checkin',mood:mood||'',text:day});S.ciMood=null;floatHearts();toast(`Sent to ${NAMES[other(S.role)]}`);},
-  chatSend:async()=>{const v=val('chatIn').trim();if(!v)return;clearIn('chatIn');await sendMsg({kind:'text',text:v});const i=document.getElementById('chatIn');if(i)i.focus();},
-  chatHeart:async t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(!m)return;await mergeDoc('messages/'+m.id,{heart:m.heart?null:S.role});if(!m.heart)floatHearts();},
+  chatSend:async()=>{const v=val('chatIn').trim();if(!v)return;clearIn('chatIn');setTyping(false);await sendMsg({kind:'text',text:v});const i=document.getElementById('chatIn');if(i)i.focus();},
+  vPlay:t=>vPlay(t.dataset.k),
+  chatMenu:t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(!m)return;openSheet(`${sheetHead('Message')}<div class="small muted" style="margin-top:-6px">${esc(snippet(m))}</div><div class="opts2">
+    <button class="btn opt" data-act="chatReply" data-id="${m.id}">Reply</button><button class="btn opt" data-act="chatHeart" data-id="${m.id}">${m.heart?'Remove heart':'Send a heart'}</button>${m.kind==='text'?`<button class="btn opt" data-act="chatCopy" data-id="${m.id}">Copy text</button>`:''}${m.kind==='photo'?`<button class="btn opt" data-act="chatImgOpen" data-id="${m.id}">Open photo</button>`:''}</div>`);},
+  chatReply:t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);closeSheet();if(!m)return;S.replyTo={id:m.id,by:m.by,text:snippet(m)};render(true);const i=document.getElementById('chatIn');if(i)i.focus();},
+  replyCancel:()=>{S.replyTo=null;render(true);},
+  chatCopy:async t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);closeSheet();try{await navigator.clipboard.writeText(m.text||'');toast('Copied');}catch(e){toast("Couldn't copy");}},
+  chatJump:t=>{const el=document.getElementById('m-'+t.dataset.id);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1400);}else toast('That message is too old to show');},
+  chatHeart:async t=>{closeSheet();const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(!m)return;await mergeDoc('messages/'+m.id,{heart:m.heart?null:S.role});if(!m.heart)floatHearts();},
   chatImgOpen:t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(m)openSheet(`${sheetHead('Photo')}<img src="${m.img}" alt="Photo" style="width:100%;border-radius:16px">`);},
   /* account & pod */
   authToggle:()=>{S.authMode=S.authMode==='up'?'in':'up';render();},
@@ -752,7 +816,7 @@ function syncDateSheet(){const d=val('dDate'),t=val('dTime');const el=document.g
 document.addEventListener('click',e=>{if(e.target.id==='board'){boardTap(e);return;}const t=e.target.closest('[data-act]');if(!t||t.disabled)return;const f=A[t.dataset.act];if(f){e.preventDefault();Promise.resolve(f(t)).catch(()=>{});}});
 document.addEventListener('submit',async e=>{if(e.target.id!=='authForm')return;e.preventDefault();const em=val('aEmail').trim(),pw=val('aPass');if(!em||!pw)return toast('Type your email and password');
   try{if(S.authMode==='up')await FB.signUp(em,pw);else await FB.signIn(em,pw);}catch(err){const c=err&&err.code||'';toast(/weak/.test(c)?'Use at least 6 characters':/in-use/.test(c)?'That email already has a login. Sign in instead.':/invalid|wrong|not-found/.test(c)?'Email or password is wrong':"Couldn't sign in. Check your connection.");}});
-document.addEventListener('input',e=>{if(e.target.id==='dDate'||e.target.id==='dTime')syncDateSheet();});
+document.addEventListener('input',e=>{if(e.target.id==='chatIn'){setTyping(!!e.target.value);clearTimeout(typingT);typingT=setTimeout(()=>setTyping(false),3500);}if(e.target.id==='dDate'||e.target.id==='dTime')syncDateSheet();});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){const m={todoIn:'todoAdd',goalIn:'goalAdd',wishIn:'wishAdd',moodIn:'moodAdd',chatIn:'chatSend'}[e.target.id];if(m){e.preventDefault();A[m]();}}});
 document.addEventListener('change',async e=>{const el=e.target;if(el.id==='dHost')el.dataset.touched='1';
   if(!el.files||!el.files[0])return;

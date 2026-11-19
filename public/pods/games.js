@@ -3,7 +3,7 @@
    act: {name: (state, button) => …}, optional post(state, me) after render. */
 const G = {};
 const NAMESX = () => NAMES;
-function saveGame(id, st, fresh) { st.updatedAt = Date.now(); st.fresh = !!fresh; return setDoc('games/' + id, st); }
+function saveGame(id, st, fresh) { st.updatedAt = Date.now(); st.fresh = !!fresh; if (st.over && st.winner && !st.scored && !fresh) { st.scored = true; recordWin(id, st.winner); } return setDoc('games/' + id, st); }
 function shuffleArr(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const gbtn = (g, a, label, cls = '', extra = '') => `<button class="btn ${cls}" data-act="g" data-g="${g}" data-a="${a}" ${extra}>${label}</button>`;
 function logLine(st, msg) { st.log = [msg, ...(st.log || [])].slice(0, 6); st.msg = msg; }
