@@ -364,7 +364,7 @@ body.fsmode .tabs,body.fsmode .top{visibility:hidden}
 .cbtn{width:40px;height:40px;flex:none;border:none;border-radius:50%;background:var(--blush);color:var(--her);display:grid;place-items:center;cursor:pointer;padding:0}.cbtn svg{width:22px;height:22px}
 .moods{display:flex;flex-wrap:wrap;gap:6px}.mood{border:2px solid var(--mc);background:#fff;color:var(--ink);border-radius:99px;padding:7px 12px;font-weight:800;cursor:pointer}.mood.on{background:var(--mc);color:#fff}
 .moodtag{display:inline-block;background:var(--mc);color:#fff;border-radius:99px;padding:0 8px;font-weight:800;font-size:.75rem}
-.boardwrap{margin:0 -10px;padding:3px}
+.boardwrap{margin:0 -32px;padding:0;border-radius:0;background:transparent}
 .newspill{align-self:center;text-align:center;background:#fff3d6;color:#a86a00;border-radius:99px;padding:5px 14px;font-size:.8rem;font-weight:800;margin:4px 0}
 .newsitem{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;background:var(--blush);border-radius:20px;padding:14px}
 .newsav{animation:winbounce 1.2s ease-in-out infinite}.newsname{font-family:var(--display);font-size:1.8rem;font-weight:700;color:var(--her)}
@@ -395,7 +395,7 @@ body.fsmode .tabs,body.fsmode .top{visibility:hidden}
 .sbvs{font-family:var(--display);font-weight:700;color:var(--muted);padding-bottom:30px}
 .sbrow{display:grid;grid-template-columns:96px 22px 1fr 22px;align-items:center;gap:8px;font-size:.88rem}.sbname{font-weight:700}
 .sbbar{height:8px;border-radius:99px;background:var(--him);overflow:hidden}.sbbar i{display:block;height:100%;background:var(--her)}
-.traywrap{position:relative}
+.traywrap{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:4;background:#fff;border-radius:20px;box-shadow:0 -6px 18px rgba(255,79,126,.14);margin:0 -8px}
 .traywrap .tray{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,62px);grid-auto-columns:62px;gap:4px;overflow-x:auto;overflow-y:hidden;justify-content:start;padding:8px 52px 8px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .traywrap .tray canvas.piece{scroll-snap-align:start}
 .shuf{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:#fff;color:var(--her);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;padding:0}
