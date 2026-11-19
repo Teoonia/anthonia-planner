@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- White screen with the Weekly Board icon in the middle (same spot as the web loading screen) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><color android:color="#FFFFFF"/></item>
+    <item android:gravity="center" android:width="96dp" android:height="96dp" android:drawable="@drawable/splash_icon"/>
+</layer-list>
