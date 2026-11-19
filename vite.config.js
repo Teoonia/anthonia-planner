@@ -1,2 +1,3 @@
 import { defineConfig } from "vite";
-export default defineConfig({ build: { chunkSizeWarningLimit: 1200 } });
+// BASE is set when building for GitHub Pages (https://teoonia.github.io/anthonia-planner/)
+export default defineConfig({ base: process.env.BASE || "/", build: { chunkSizeWarningLimit: 1200 } });

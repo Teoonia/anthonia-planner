@@ -1,0 +1,49 @@
+name: Publish on GitHub Pages
+
+# Free hosting with no monthly limit (Netlify's free credits ran out):
+#   Weekly Board  https://teoonia.github.io/anthonia-planner/
+#   Pods          https://teoonia.github.io/anthonia-planner/pods/
+#   Parla!        https://teoonia.github.io/anthonia-planner/parla/
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "android/**"
+      - "pods-app/**"
+      - "parla-app/**"
+      - "test/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build Weekly Board (Pods and Parla come along from public/)
+        run: npm run build
+        env:
+          BASE: /anthonia-planner/
+      - run: touch dist/.nojekyll
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

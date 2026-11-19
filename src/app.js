@@ -700,7 +700,7 @@ const canNotify = () => !isNative && "Notification" in window;
 async function systemNotify(cur, next) {
   if (!canNotify() || Notification.permission !== "granted") return;
   const body = toHM(cur.s) + " – " + toHM(cur.e) + (cur.meta ? "\n" + cur.meta : "") + (next.length ? "\nNext: " + next.map((x) => toHM(x.s) + " " + x.title).join(" · ") : "");
-  const opts = { body, tag: "weekly-board-block", renotify: true, requireInteraction: true, icon: "/icon-192.png", badge: "/icon-192.png" };
+  const opts = { body, tag: "weekly-board-block", renotify: true, requireInteraction: true, icon: import.meta.env.BASE_URL + "icon-192.png", badge: import.meta.env.BASE_URL + "icon-192.png" };
   try { const reg = await navigator.serviceWorker?.getRegistration(); if (reg) { await reg.showNotification(cur.title, opts); return; } } catch (e) {}
   try { new Notification(cur.title, opts); } catch (e) {}
 }
@@ -961,7 +961,7 @@ $("#chatForm").addEventListener("submit", (e) => { e.preventDefault(); const v =
 document.querySelectorAll("#quick button").forEach((b) => (b.onclick = () => sendToPartner(QUICK[b.dataset.q])));
 
 /* ============ start ============ */
-if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register(import.meta.env.BASE_URL + "sw.js").catch(() => {}));
 if (!configured) $("#setupScreen").hidden = false;
 else watchUser((user) => {
   $("#authScreen").hidden = !!user; $("#app").hidden = !user;
