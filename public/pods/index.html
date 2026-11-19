@@ -395,6 +395,11 @@ body.fsmode .tabs,body.fsmode .top{visibility:hidden}
 .sbvs{font-family:var(--display);font-weight:700;color:var(--muted);padding-bottom:30px}
 .sbrow{display:grid;grid-template-columns:96px 22px 1fr 22px;align-items:center;gap:8px;font-size:.88rem}.sbname{font-weight:700}
 .sbbar{height:8px;border-radius:99px;background:var(--him);overflow:hidden}.sbbar i{display:block;height:100%;background:var(--her)}
+.traywrap{position:relative}
+.traywrap .tray{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,62px);grid-auto-columns:62px;gap:4px;overflow-x:auto;overflow-y:hidden;justify-content:start;padding:8px 52px 8px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.traywrap .tray canvas.piece{scroll-snap-align:start}
+.shuf{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:#fff;color:var(--her);box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;padding:0}
+.shuf svg{width:20px;height:20px}.shuf:active{transform:translateY(-50%) rotate(180deg);transition:transform .3s}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>

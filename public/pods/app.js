@@ -7,7 +7,8 @@ const HEART_PATH='M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3
 const HEART=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${HEART_PATH}"/></svg>`;
 const QUESTIONS=["What made you smile today?","What's one thing you miss about being in the same room as me?","If we could teleport for one hour tonight, where would we go?","What's a small thing I do that makes you feel loved?","What's something you're worried about this week?","Describe your perfect lazy Sunday with me.","What's one goal you want us to hit before the year ends?","What song reminds you of us right now?","What food do you want us to eat together on our next visit?","What's one thing you're proud of yourself for lately?","What did you dream about recently?","What's a habit of mine you secretly love?","Where do you see us in five years?","What's one thing I could do this week to make you happier?","What was your first impression of me?","What's a memory of us you replay often?","If we opened a business together, what would it be?","What's something new you learned this week?","What's one thing you want to tell me but haven't yet?","Which of our plans are you most excited about?","What's your love language today: words, time, gifts, help or touch?","What's a place back home you want us to visit together?","What's a place in Italy you want us to explore together?","What stressed you today, and how can I help?","What would our dream home look like?","What's a silly thing that made you laugh recently?","What do you appreciate most about how we handle the distance?","What's one thing we should start doing as a couple?","What's one thing we should stop doing as a couple?","Finish this: I knew I loved you when…"];
 const OPEN_WHEN=["Open when you miss me","Open when you're sad","Open when you need a laugh","Open when you can't sleep","Open when you're stressed","Open when we've had a fight","Open on your birthday"];
-const SIZES=[[24,6,4],[60,10,6],[120,15,8],[260,20,13]];
+const SIZES_WIDE=[[24,6,4],[60,10,6],[120,15,8],[260,20,13]];
+const SIZES=new Proxy(SIZES_WIDE,{get(t,k){const tall=window.innerHeight>window.innerWidth;const v=t[k];if(Array.isArray(v)&&tall)return [v[0],v[2],v[1]];if(k==='map'||k==='find')return (...a)=>t.map(x=>tall?[x[0],x[2],x[1]]:x)[k](...a);return v;}});
 const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],["chat","Chat",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/>'],["play","Play",'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>'],["plan","Plan",'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],["truth","Truth",'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h6"/>'],["us","Gallery",'<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5.5-5.5L7 19"/>']];
 
 /* ---------- avatars ---------- */
@@ -69,6 +70,7 @@ function drawPiece(ctx,sc,j,i,s,ox,oy,stroke){const x=i%j.cols,y=Math.floor(i/j.
   ctx.save();ctx.clip();ctx.drawImage(sc,-x*s,-y*s,j.cols*s,j.rows*s);ctx.restore();ctx.lineWidth=Math.max(.8,s*.035);ctx.strokeStyle=stroke||'rgba(255,255,255,.8)';ctx.stroke();ctx.restore();}
 const DPR=()=>Math.min(2,window.devicePixelRatio||1);
 let boardGeom=null;
+let trayScroll=0;document.addEventListener('scroll',e=>{if(e.target&&e.target.id==='tray')trayScroll=e.target.scrollLeft;},true);
 async function drawJig(){
   const j=S.jig;if(!j||j.done)return;let img;try{img=await getImg(jigSrc(j));}catch(e){return;}
   if(S.jig!==j&&(!S.jig||S.jig.at!==j.at))return;
@@ -84,6 +86,7 @@ async function drawJig(){
   for(const i of placed)drawPiece(ctx,sc,j,i,s,pad+(i%j.cols)*s,pad+Math.floor(i/j.cols)*s,'rgba(255,255,255,.35)');
   boardGeom={s,pad};
   // tray pieces
+  const trEl=document.getElementById('tray');if(trEl)trEl.scrollLeft=trayScroll;
   const T=60,ts=T/1.5,tpad=ts*.25,tsc=scaled(img,j,ts*dpr);
   document.querySelectorAll('canvas.piece').forEach(c=>{const i=Number(c.dataset.i);c.style.width=T+'px';c.style.height=T+'px';c.width=T*dpr;c.height=T*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);
     x.shadowColor='rgba(58,31,43,.25)';x.shadowBlur=4;x.shadowOffsetY=1.5;drawPiece(x,tsc,j,i,ts,tpad,tpad);});
@@ -205,9 +208,23 @@ function setupView(){return `<div class="card center" style="margin-top:16px"><h
 function resubscribe(){if(S.mode!=='live'||!POD)return;unsubs.splice(0).forEach(u=>{try{u();}catch(e){}});subscribe();}
 let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();return;}if(Date.now()-hiddenAt>4000)resubscribe();});
 window.addEventListener('online',()=>resubscribe());
+function onJig(d){const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done&&!d.cancelled)setTimeout(()=>showWinner(d),300);if(d&&d.cancelReq&&d.cancelReq.by!==S.role&&!(prev&&prev.cancelReq))toast(`${NAMES[d.cancelReq.by]} wants to start a new puzzle`);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();}
+function onMessages(l){const prev=S.msgs;S.msgs=l;checkNews(prev,l);markDelivered(l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();}
+/* safety net: if the live connection stalls, ask the server every few seconds */
+let polling=false;
+async function pollLive(){if(polling||S.mode!=='live'||!POD||!window.FB||document.hidden||!FB.newerThan)return;polling=true;
+  try{const newest=Math.max(0,...(S.msgs||[]).map(m=>m.at||0));const nw=await FB.newerThan(POD+'/messages','at',newest,30);
+    if(nw.length){const ids=new Set((S.msgs||[]).map(m=>m.id));const add=nw.filter(m=>!ids.has(m.id));if(add.length)onMessages([...add.reverse(),...(S.msgs||[])]);}
+    if(S.tab==='play'&&S.game){const id=S.game,d=await FB.getServer(POD+'/games/'+id);
+      if(d){if(id==='jigsaw'){if(!S.jig||(d.placed||[]).length!==(S.jig.placed||[]).length||d.turn!==S.jig.turn||d.at!==S.jig.at||!!d.done!==!!S.jig.done)onJig(d);}
+        else{const cur=S.games[id];if(!cur||(d.updatedAt||0)>(cur.updatedAt||0)){const prev={...S.games};S.games={...S.games,[id]:{id,...d}};gamesChanged(prev,S.games);refresh();}}}}
+    if(S.tab==='chat'){const cr=await FB.getServer(POD+'/pods/presence');if(cr){S.presence=cr;}}
+  }catch(e){}finally{polling=false;}}
+setInterval(()=>{if(S.tab==='chat'||S.tab==='play')pollLive();},6000);
+setInterval(()=>{if(S.tab!=='chat'&&S.tab!=='play')pollLive();},20000);
 function subscribe(){
   watchDoc('pods/couple',d=>{const pn=S.role&&S.couple&&S.couple.nick?S.couple.nick[other(S.role)]:undefined;S.couple=d;{const nn=S.role&&d&&d.nick?d.nick[other(S.role)]:undefined;if(S.gotCouple&&S.role&&nn&&nn!==pn){setTimeout(()=>{floatHearts();toast(`${NAMES[other(S.role)]} now calls you "${nn}"`);},400);}}S.gotCouple=true;applyNick();if(S.note.startsWith("Pods can't"))S.note='';refresh();maybeAskNick();});
-  watchCol('messages',l=>{const prev=S.msgs;S.msgs=l;checkNews(prev,l);markDelivered(l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();},{order:'at',dir:'desc',limit:120});
+  watchCol('messages',onMessages,{order:'at',dir:'desc',limit:120});
   watchDoc('pods/chatread',d=>{S.chatRead=d||{};refresh();});
   watchDoc('pods/presence',d=>{S.presence=d||{};const el=document.getElementById('presText');if(S.tab==='chat'&&el){const pr=partnerPresence();el.textContent=pr.typing?'typing…':pr.text;el.className='small '+(pr.on?'onl':'muted');const cl=document.getElementById('chatList');if(cl){const old=cl.querySelector('.peek');const you=other(S.role);const html=pr.on&&pr.where==='chat'?`<div class="peek">${av(you,42)}${pr.typing?'<span class="typing"><i></i><i></i><i></i></span>':''}</div>`:'';if(old)old.remove();if(html){cl.insertAdjacentHTML('beforeend',html);cl.scrollTop=cl.scrollHeight;}}const pa=document.querySelector('.pav');if(pa)pa.classList.toggle('on',pr.on);}else if(S.tab==='home')refresh();});
   watchDoc('pods/scores',d=>{S.scores=d||{};refresh();});
@@ -218,7 +235,7 @@ function subscribe(){
   watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role))floatHearts();lastTapAt=d?d.at:0;refresh();});
   watchCol('games',l=>{const prev=S.games||{};S.games=Object.fromEntries(l.filter(x=>x.id!=='jigsaw').map(x=>[x.id,x]));gamesChanged(prev,S.games);refresh();});
   watchCol('voice',l=>{S.voice=l;refresh();},{order:'at',dir:'desc',limit:30});
-  watchDoc('games/jigsaw',d=>{const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done&&!d.cancelled)setTimeout(()=>showWinner(d),300);if(d&&d.cancelReq&&d.cancelReq.by!==S.role&&!(prev&&prev.cancelReq))toast(`${NAMES[d.cancelReq.by]} wants to start a new puzzle`);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();});
+  watchDoc('games/jigsaw',onJig);
   watchDoc('months/'+monthKey(),d=>{S.month=d;refresh();});
   watchDoc('years/'+todayKey().slice(0,4),d=>{S.year=d;refresh();});
   watchCol('dates',l=>{S.dates=l;refresh();});
@@ -319,14 +336,15 @@ function jigCard(){
     const total=j.cols*j.rows,placed=new Set(j.placed||[]),mine=j.turn===me,c=j.counts||{};
     let tray=(j.tray||[]).filter(i=>!placed.has(i));
     if(S.edgesOnly){const e=tray.filter(i=>sides(j,i).includes(0));if(e.length)tray=e;}
-    const shown=tray.slice(0,30);
+    const shown=tray.slice(0,40);
     jig=`${scoreLine('jigsaw')}${cancelBar('jigsaw',{cancelReq:j.cancelReq})}${mine&&!placed.size?`<div class="givebar">You start this puzzle. <button class="btn sm" data-act="gGive" data-g="jigsaw">Let ${NAMES[other(me)]} go first</button></div>`:''}<div class="row between"><div class="row">${av(j.turn,38)}<span class="chip ${j.turn==='anthonia'?'her':'him'}">${mine?'Your turn':NAMES[j.turn]+"'s turn"}</span>${mine&&j.run?`<span class="chip gold">${j.run} in a row</span>`:''}</div><span class="small muted"><b>${placed.size}</b> / ${total}</span></div>
     <div class="progress"><i style="width:${placed.size/total*100}%"></i></div>
     <div class="row" style="gap:6px"><button class="btn sm" data-act="peek">Peek at the picture</button><button class="btn sm ${S.zoom?'on':''}" data-act="zoom">${S.zoom?'Fit board':'Zoom in'}</button>${mine?`<button class="btn sm ${S.edgesOnly?'on':''}" data-act="edges">${S.edgesOnly?'All pieces':'Edges first'}</button>`:''}</div>
     <div class="boardwrap" id="boardwrap"><canvas id="board" aria-label="Puzzle board"></canvas></div>
     ${mine?`<p class="small muted" style="margin:0">Tap a piece below, then tap where it goes on the board.</p>
-      <div class="tray">${shown.map(i=>`<canvas class="piece ${S.sel===i?'sel':''}" data-act="selPiece" data-i="${i}" aria-label="Puzzle piece"></canvas>`).join('')}</div>
-      <div class="row between"><span class="small muted">${tray.length>shown.length?`${tray.length-shown.length} more in the box`:''}</span><button class="btn sm" data-act="shuffle">Shuffle pieces</button></div>`
+      <div class="traywrap"><div class="tray" id="tray">${shown.map(i=>`<canvas class="piece ${S.sel===i?'sel':''}" data-act="selPiece" data-i="${i}" aria-label="Puzzle piece"></canvas>`).join('')}</div>
+      <button class="shuf" data-act="shuffle" aria-label="Shuffle pieces" title="Shuffle pieces"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button></div>
+      <p class="small muted center" style="margin:0">${tray.length} piece${tray.length===1?'':'s'} left${tray.length>shown.length?` · ${shown.length} in the tray, scroll it sideways`:''}</p>`
     :`<div class="locked">${av(j.turn,28)} ${NAMES[j.turn]} is playing. Your turn comes when they miss.</div>`}
     <div class="row" style="justify-content:space-around"><div class="row">${av('anthonia',32)}<b>${c.anthonia||0}</b></div><span class="small muted">pieces placed</span><div class="row"><b>${c.ifeayomi||0}</b>${av('ifeayomi',32)}</div></div>
     ${j.best?`<p class="small muted center" style="margin:0">Best run: ${NAMES[j.best.by]}, ${j.best.n} in a row</p>`:''}
