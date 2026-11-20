@@ -603,20 +603,20 @@ function planCard(m,me){
   return `<div class="plancard"><span class="pi">${PLAN_ICON[m.what]||'📅'}</span><div class="grow">${esc(planSnippet(m,me))}</div><button class="btn sm" data-act="planGo" data-k="${PLAN_SEC[m.what]||'pNotes'}">View</button></div>`;}
 /* Surprise letters Claude placed for one of you; created in the pod the first time that person opens Pods */
 const SURPRISES=[{id:'mensday2026',from:'anthonia',to:'ifeayomi',when:"Happy Men's Day, my king 👑",
-  body:"Ife, my love,\n\nHappy belated International Men's Day! I'm sorry I missed it yesterday. That one is on me, and I'm making it up to you.\n\nYou work so hard, you take care of me from miles away, and you never stop pushing for us. I'm so proud of the man you are.\n\nOne day isn't enough to celebrate you, so consider this your Men's Day extension. Tomorrow's jollof is on me 🍛",
+  toName:"Ifeayotemi",body:"Ifeayotemi, my love,\n\nHappy belated International Men's Day! I'm sorry I missed it yesterday. That one is on me, and I'm making it up to you.\n\nYou work so hard, you take care of me from miles away, and you never stop pushing for us. I'm so proud of the man you are.\n\nOne day isn't enough to celebrate you, so consider this your Men's Day extension. Tomorrow's jollof is on me 🍛",
   cheque:{amount:'₦3,500',words:'Three thousand five hundred naira only',memo:"The best jollof rice in Ibadan, tomorrow 🍛"}}];
 async function seedSurprises(){if(!S.lettersReady||S.seeded)return;S.seeded=true;
-  for(const x of SURPRISES){if(x.to!==S.role||(S.letters||[]).some(l=>l.id===x.id))continue;const at=Date.now();
-    try{await setDoc('letters/'+x.id,{from:x.from,to:x.to,when:x.when,body:x.body,cheque:x.cheque,pop:true,opened:false,at});await setDoc('messages/'+x.id,{by:x.from,at,kind:'letter',letterId:x.id,when:x.when});}catch(e){S.seeded=false;}}}
+  for(const x of SURPRISES){if(x.to!==S.role)continue;const ex=(S.letters||[]).find(l=>l.id===x.id);if(ex){if(!ex.opened&&(ex.body!==x.body||ex.toName!==x.toName)){try{await mergeDoc('letters/'+x.id,{body:x.body,toName:x.toName||null});}catch(e){}}continue;}const at=Date.now();
+    try{await setDoc('letters/'+x.id,{from:x.from,to:x.to,toName:x.toName||null,when:x.when,body:x.body,cheque:x.cheque,pop:true,opened:false,at});await setDoc('messages/'+x.id,{by:x.from,at,kind:'letter',letterId:x.id,when:x.when});}catch(e){S.seeded=false;}}}
 function chequeHtml(c,l){return c?`<div class="cheque"><div class="chtop"><b>Bank of Love</b><span>${esc(new Date(l.at||Date.now()).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))}</span></div>
-  <div class="chrow"><span>Pay</span><b>${esc(NAMES[l.to])}</b></div><div class="chrow"><span>The sum of</span><i>${esc(c.words)}</i></div>
+  <div class="chrow"><span>Pay</span><b>${esc(l.toName||NAMES[l.to])}</b></div><div class="chrow"><span>The sum of</span><i>${esc(c.words)}</i></div>
   <div class="chamt">${esc(c.amount)}</div><div class="chrow"><span>For</span><i>${esc(c.memo)}</i></div><div class="chsign">${esc(NAMES[l.from])}</div></div>`:'';}
 /* Envelope surprise: a sealed letter he opens by breaking the seal */
 function showEnvelope(l){closeSheet();const old=document.getElementById('envOv');if(old)old.remove();S.envShown=l.id;
   const ov=document.createElement('div');ov.id='envOv';ov.className='envov';
   ov.innerHTML=`<button class="x envx" aria-label="Close">×</button><div class="envtitle">${esc(l.when)}</div>
     <div class="envelope"><div class="eback"></div><div class="paper"><div class="pfrom">From ${esc(NAMES[l.from])} ${HEART}</div><div class="pbody">${esc(l.body)}</div>${chequeHtml(l.cheque,l)}<div class="psign">Love, ${esc(NAMES[l.from])}</div></div>
-      <div class="efront"><span>For ${esc(NAMES[l.to])}</span></div><div class="eflap"></div><button class="seal" aria-label="Break the seal">${HEART}</button></div>
+      <div class="efront"><span>For ${esc(l.toName||NAMES[l.to])}</span></div><div class="eflap"></div><button class="seal" aria-label="Break the seal">${HEART}</button></div>
     <div class="envhint">Tap the heart seal to open</div>`;
   document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('in'));
   const close=()=>{ov.classList.remove('in');setTimeout(()=>ov.remove(),400);};
