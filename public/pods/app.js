@@ -607,7 +607,7 @@ const SURPRISES=[{id:'mensday2026',from:'anthonia',to:'ifeayomi',when:"A little 
   cheque:{amount:'₦3,500',words:'Three thousand five hundred naira only',memo:"The best jollof rice in Ibadan, tomorrow 🍛"}}];
 async function seedSurprises(){if(!S.lettersReady||S.seeded)return;S.seeded=true;
   for(const x of SURPRISES){if(x.to!==S.role&&x.from!==S.role)continue;const ex=(S.letters||[]).find(l=>l.id===x.id);if(ex){if(!ex.opened&&(ex.body!==x.body||ex.toName!==x.toName||ex.when!==x.when)){try{await mergeDoc('letters/'+x.id,{body:x.body,toName:x.toName||null,when:x.when});await mergeDoc('messages/'+x.id,{when:x.when});}catch(e){}}continue;}const at=Date.now();
-    try{await setDoc('letters/'+x.id,{from:x.from,to:x.to,toName:x.toName||null,when:x.when,body:x.body,cheque:x.cheque,pop:true,opened:false,at});await setDoc('messages/'+x.id,{by:x.from,at,kind:'letter',letterId:x.id,when:x.when});}catch(e){S.seeded=false;}}}
+    try{await setDoc('letters/'+x.id,{from:x.from,to:x.to,toName:x.toName||null,when:x.when,body:x.body,cheque:x.cheque,pop:true,opened:false,at});await setDoc('messages/'+x.id,{by:x.from,at,kind:'letter',letterId:x.id,when:x.when});}catch(e){}}}
 function chequeHtml(c,l){return c?`<div class="cheque"><div class="chtop"><b>Bank of Love</b><span>${esc(new Date(l.at||Date.now()).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))}</span></div>
   <div class="chrow"><span>Pay</span><b>${esc(l.toName||NAMES[l.to])}</b></div><div class="chrow"><span>The sum of</span><i>${esc(c.words)}</i></div>
   <div class="chamt">${esc(c.amount)}</div><div class="chrow"><span>For</span><i>${esc(c.memo)}</i></div><div class="chsign">${esc(NAMES[l.from])}</div></div>`:'';}
@@ -618,8 +618,8 @@ function showEnvelope(l){closeSheet();const old=document.getElementById('envOv')
     <div class="envelope"><div class="eback"></div><div class="paper"><div class="pfrom">From ${esc(NAMES[l.from])} ${HEART}</div><div class="pbody">${esc(l.body)}</div>${chequeHtml(l.cheque,l)}<div class="psign">Love, ${esc(NAMES[l.from])}</div></div>
       <div class="efront"><span>For ${esc(l.toName||NAMES[l.to])}</span></div><div class="eflap"></div><button class="seal" aria-label="Break the seal">${HEART}</button></div>
     <div class="envhint">Tap the heart seal to open</div>`;
-  document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('in'));
-  const close=()=>{ov.classList.remove('in');setTimeout(()=>ov.remove(),400);};
+  document.body.appendChild(ov);document.documentElement.style.overflow='hidden';document.body.style.overflow='hidden';requestAnimationFrame(()=>ov.classList.add('in'));
+  const close=()=>{ov.classList.remove('in');document.documentElement.style.overflow='';document.body.style.overflow='';setTimeout(()=>ov.remove(),400);};
   ov.querySelector('.envx').onclick=close;
   ov.querySelector('.seal').onclick=async()=>{if(ov.classList.contains('open'))return;ov.classList.add('open');try{navigator.vibrate&&navigator.vibrate([30,60,30]);}catch(e){}
     setTimeout(()=>{floatHearts();confetti();},700);setTimeout(()=>{const b=document.createElement('div');b.className='bigpaper';b.innerHTML=ov.querySelector('.paper').innerHTML;ov.appendChild(b);ov.classList.add('read');},1500);
@@ -736,7 +736,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet();closeL
 const sheetHead=t=>`<div class="row between"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`;
 let tt;function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2600);}
 function floatHearts(){for(let k=0;k<9;k++){const h=document.createElement('div');h.className='float';h.innerHTML=HEART;h.style.left=(10+Math.random()*80)+'vw';h.style.bottom='100px';h.style.animationDelay=(k*0.12)+'s';h.style.color=k%3?'var(--her)':'var(--gold)';document.body.appendChild(h);setTimeout(()=>h.remove(),3200);}}
-function confetti(){const cols=['#ff4f7e','#ffb21f','#22b3a3','#6cc6ff','#b388ff'];for(let i=0;i<70;i++){const c=document.createElement('div');c.className='confetti';c.style.left=Math.random()*100+'vw';c.style.background=cols[i%5];c.style.animationDuration=(1.8+Math.random()*1.6)+'s';c.style.animationDelay=(Math.random()*.4)+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),4200);}}
+function confetti(){const cols=['#ff4f7e','#ffb21f','#22b3a3','#6cc6ff','#b388ff'];for(let i=0;i<70;i++){const c=document.createElement('div');c.className='confetti';c.style.left=Math.random()*95+'vw';c.style.background=cols[i%5];c.style.animationDuration=(1.8+Math.random()*1.6)+'s';c.style.animationDelay=(Math.random()*.4)+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),4200);}}
 
 /* ---------- images ---------- */
 function loadImg(src){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src;});}
