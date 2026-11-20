@@ -384,7 +384,8 @@ function planView(){
   const dateItem=d=>`<div class="item" style="align-items:flex-start">${av(d.host,34)}<div class="grow">
     <b>${prettyDay(d.date)}</b> <span class="small muted">· ${esc(d.time)} Ancona · ${esc(ibadanTime(d.date,d.time))} Ibadan</span>
     <div class="small">Anthonia: ${esc(d.herPlace||'—')}<br>Ifeayomi: ${esc(d.hisPlace||'—')}</div>
-    <div class="small muted">${NAMES[d.host]} hosts and pays both bills${d.note?' · '+esc(d.note):''}</div></div>
+    <div class="small muted">${NAMES[d.host]} hosts and pays both bills${d.note?' · '+esc(d.note):''}</div>
+    ${d.status!=='done'&&!d.invited&&!(S.msgs||[]).some(m=>m.kind==='plan'&&m.what==='date'&&m.dateId===d.id)?`<button class="btn sm primary" style="margin-top:6px" data-act="dateInvite" data-id="${d.id}">Send invite 💌</button>`:''}</div>
     ${d.status!=='done'?`<button class="btn sm" data-act="dateDone" data-id="${d.id}">Done</button>`:''}</div>`;
   const pins=S.mood.filter(p=>p.month===mk).sort((a,b)=>a.at-b.at);
   return `
@@ -846,7 +847,8 @@ const A={
     <label class="f" for="dHost">Host (pays both bills)<select id="dHost"><option value="anthonia">Anthonia</option><option value="ifeayomi">Ifeayomi</option></select></label>
     <span class="small muted">The host defaults to whoever hosts that month's planning date.</span>
     <button class="btn primary" data-act="dateSave">Book it</button>`);syncDateSheet();},
-  dateSave:async()=>{const date=val('dDate'),time=val('dTime');if(!date||!time)return toast('Pick a date and time');const data={date,time,herPlace:val('dHer').trim(),hisPlace:val('dHis').trim(),host:val('dHost'),status:'planned',by:S.role,at:Date.now()};closeSheet();const did=await addDoc('dates',data);floatHearts();toast('Date night booked!');planPost('date',{dateId:did,d:{date,time,herPlace:data.herPlace,hisPlace:data.hisPlace,host:data.host}});},
+  dateSave:async()=>{const date=val('dDate'),time=val('dTime');if(!date||!time)return toast('Pick a date and time');const data={date,time,herPlace:val('dHer').trim(),hisPlace:val('dHis').trim(),host:val('dHost'),status:'planned',by:S.role,at:Date.now()};closeSheet();const did=await addDoc('dates',{...data,invited:true});floatHearts();toast('Date night booked!');planPost('date',{dateId:did,d:{date,time,herPlace:data.herPlace,hisPlace:data.hisPlace,host:data.host}});},
+  dateInvite:async t=>{const d=S.dates.find(x=>x.id===t.dataset.id);if(!d)return;await mergeDoc('dates/'+d.id,{invited:true});await planPost('date',{dateId:d.id,d:{date:d.date,time:d.time,herPlace:d.herPlace||'',hisPlace:d.hisPlace||'',host:d.host}});floatHearts();toast(`Invite sent to ${NAMES[other(S.role)]} 💌`);},
   planGo:t=>{const k=t.dataset.k;closeSheet();S.tab='plan';location.hash='plan';render();setTimeout(()=>{const el=document.getElementById(k);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600);}},120);},
   dateYes:async t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(!m||m.yes)return;await mergeDoc('messages/'+m.id,{yes:true});if(m.dateId)await mergeDoc('dates/'+m.dateId,{yes:true});confetti();floatHearts();await sendMsg({text:"Yes! It's a date 💖"});},
   dateDone:t=>openSheet(`${sheetHead('How was it?')}<label class="f" for="dNote">One line to remember it by<input type="text" id="dNote" placeholder="Best night of the month…"></label><button class="btn primary" data-act="dateDoneSave" data-id="${t.dataset.id}">Save</button>`),
