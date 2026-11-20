@@ -6,7 +6,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const HEART_PATH='M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.6.7-1.5 2.2-2.6 4.3-2.6 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z';
 const HEART=`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${HEART_PATH}"/></svg>`;
 const QUESTIONS=["What made you smile today?","What's one thing you miss about being in the same room as me?","If we could teleport for one hour tonight, where would we go?","What's a small thing I do that makes you feel loved?","What's something you're worried about this week?","Describe your perfect lazy Sunday with me.","What's one goal you want us to hit before the year ends?","What song reminds you of us right now?","What food do you want us to eat together on our next visit?","What's one thing you're proud of yourself for lately?","What did you dream about recently?","What's a habit of mine you secretly love?","Where do you see us in five years?","What's one thing I could do this week to make you happier?","What was your first impression of me?","What's a memory of us you replay often?","If we opened a business together, what would it be?","What's something new you learned this week?","What's one thing you want to tell me but haven't yet?","Which of our plans are you most excited about?","What's your love language today: words, time, gifts, help or touch?","What's a place back home you want us to visit together?","What's a place in Italy you want us to explore together?","What stressed you today, and how can I help?","What would our dream home look like?","What's a silly thing that made you laugh recently?","What do you appreciate most about how we handle the distance?","What's one thing we should start doing as a couple?","What's one thing we should stop doing as a couple?","Finish this: I knew I loved you when…"];
-const OPEN_WHEN=["Open when you miss me","Open when you're sad","Open when you need a laugh","Open when you can't sleep","Open when you're stressed","Open when we've had a fight","Open on your birthday"];
+const OPEN_WHEN=["Open now 💌","Happy Men's Day, my king 👑","Open when you miss me","Open when you're sad","Open when you need a laugh","Open when you can't sleep","Open when you're stressed","Open when we've had a fight","Open on your birthday"];
 const SIZES_WIDE=[[24,6,4],[60,10,6],[120,12,10],[260,20,13]];
 const SIZES=new Proxy(SIZES_WIDE,{get(t,k){const tall=window.innerHeight>window.innerWidth;const v=t[k];if(Array.isArray(v)&&tall)return [v[0],v[2],v[1]];if(k==='map'||k==='find')return (...a)=>t.map(x=>tall?[x[0],x[2],x[1]]:x)[k](...a);return v;}});
 const TABS=[["home","Us",'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],["chat","Chat",'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/>'],["play","Play",'<rect x="3" y="7" width="18" height="11" rx="5"/><path d="M8 11v3M6.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>'],["plan","Plan",'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],["truth","Truth",'<path d="M4 5h16v11H9l-5 4z"/><path d="M9 10.5h6"/>'],["us","Gallery",'<rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5.5-5.5L7 19"/>']];
@@ -209,7 +209,7 @@ function resubscribe(){if(S.mode!=='live'||!POD)return;unsubs.splice(0).forEach(
 let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();return;}if(Date.now()-hiddenAt>4000)resubscribe();});
 window.addEventListener('online',()=>resubscribe());
 function onJig(d){const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done&&!d.cancelled)setTimeout(()=>showWinner(d),300);if(d&&d.cancelReq&&d.cancelReq.by!==S.role&&!(prev&&prev.cancelReq))toast(`${NAMES[d.cancelReq.by]} wants to start a new puzzle`);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();}
-function onMessages(l){const prev=S.msgs;S.msgs=l;checkNews(prev,l);markDelivered(l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':m.kind==='plan'?planSnippet(m).replace(NAMES[m.by]+' ','').slice(0,50):(m.text||'').slice(0,40)}`);floatHearts();}}refresh();}
+function onMessages(l){const prev=S.msgs;S.msgs=l;checkNews(prev,l);markDelivered(l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':m.kind==='letter'?'sent you a sealed letter 💌':m.kind==='plan'?planSnippet(m).replace(NAMES[m.by]+' ','').slice(0,50):(m.text||'').slice(0,40)}`);floatHearts();}}refresh();}
 /* safety net: if the live connection stalls, ask the server every few seconds */
 let polling=false;
 async function pollLive(){if(polling||S.mode!=='live'||!POD||!window.FB||document.hidden||!FB.newerThan)return;polling=true;
@@ -242,7 +242,7 @@ function subscribe(){
   watchCol('truths',l=>{S.truths=l;refresh();});
   watchCol('memories',l=>{S.memories=l;refresh();},{order:'at',dir:'desc',limit:150});
   watchDoc('pods/wishlist',d=>{S.wish=d;refresh();});
-  watchCol('letters',l=>{S.letters=l;refresh();});
+  watchCol('letters',l=>{S.letters=l;S.lettersReady=true;refresh();});
   watchCol('mood',l=>{S.mood=l;refresh();});
 }
 
@@ -263,7 +263,7 @@ function render(quiet){
   v.innerHTML=banners+({home:homeView,chat:chatView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
-  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();maybeAskBadge();maybeTodoRemind();}
+  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();maybeAskBadge();maybeTodoRemind();maybeEnvelope();}
   if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
@@ -567,6 +567,7 @@ function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a
   const items=list.map(m=>{const day=new Date(m.at).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});const sep=day!==lastDay?`<div class="daysep">${day}</div>`:'';lastDay=day;
     const t=new Date(m.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     if(m.kind==='news')return `${sep}<div class="newspill">${esc(newsText(m))}</div>`;
+    if(m.kind==='letter'){const L=S.letters.find(x=>x.id===m.letterId),op=L&&L.opened;return `${sep}<div class="msg plan ${m.by===me?'me':'them'}" id="m-${m.id}" data-id="${m.id}"><button class="envmini" data-act="openLetter" data-id="${m.letterId}" ${m.by===me?'disabled':''}><span class="em">💌</span><span class="grow"><b>${m.by===me?'You sent a sealed letter':esc(NAMES[m.by])+' sent you a sealed letter'}</b><br><span class="small">${esc(m.when||'')}</span><br><span class="small">${m.by===me?(op?'Opened 💖':'Not opened yet'):(op?'Tap to read again':'Tap to open')}</span></span></button><span class="mt">${t}</span></div>`;}
     if(m.kind==='plan')return `${sep}<div class="msg plan ${m.by===me?'me':'them'}" id="m-${m.id}" data-id="${m.id}">${planCard(m,me)}<span class="mt">${t}</span></div>`;
     let body=m.kind==='voice'?voicePlayer(m.src,m.secs,'c'+m.id):m.kind==='photo'?`<img src="${m.img}" alt="Photo" class="chatimg">`:m.kind==='checkin'?`<div class="small"><b>Evening check-in</b> · <span class="moodtag" style="--mc:${(MOODS_DAY.find(x=>x[0]===m.mood)||[,'#ccc'])[1]}">${esc(m.mood||'')}</span></div>${esc(m.text||'')}`:esc(m.text);
     const q=m.reply?`<button class="quote" data-act="chatJump" data-id="${m.reply.id}"><b>${m.reply.by===me?'You':esc(NAMES[m.reply.by])}</b><span>${esc(m.reply.text||'')}</span></button>`:'';
@@ -600,6 +601,31 @@ function planCard(m,me){
       <div class="small">${d.host===me?'You host and pay both bills':esc(NAMES[d.host])+' hosts and pays both bills'}</div>
       <div class="row" style="justify-content:center;margin-top:6px">${!mine&&!m.yes?`<button class="btn sm primary" data-act="dateYes" data-id="${m.id}">Say yes 💖</button>`:''}${m.yes?`<span class="chip him">${mine?NAMES[other(me)]+' said yes!':'You said yes'} 💖</span>`:''}<button class="btn sm" data-act="planGo" data-k="pDates">See the date</button></div></div>`;}
   return `<div class="plancard"><span class="pi">${PLAN_ICON[m.what]||'📅'}</span><div class="grow">${esc(planSnippet(m,me))}</div><button class="btn sm" data-act="planGo" data-k="${PLAN_SEC[m.what]||'pNotes'}">View</button></div>`;}
+/* Surprise letters Claude placed for one of you; created in the pod the first time that person opens Pods */
+const SURPRISES=[{id:'mensday2026',from:'anthonia',to:'ifeayomi',when:"Happy Men's Day, my king 👑",
+  body:"Ife, my love,\n\nHappy belated International Men's Day! I'm sorry I missed it yesterday. That one is on me, and I'm making it up to you.\n\nYou work so hard, you take care of me from miles away, and you never stop pushing for us. I'm so proud of the man you are.\n\nOne day isn't enough to celebrate you, so consider this your Men's Day extension. Tomorrow's jollof is on me 🍛",
+  cheque:{amount:'₦3,500',words:'Three thousand five hundred naira only',memo:"The best jollof rice in Ibadan, tomorrow 🍛"}}];
+async function seedSurprises(){if(!S.lettersReady||S.seeded)return;S.seeded=true;
+  for(const x of SURPRISES){if(x.to!==S.role||(S.letters||[]).some(l=>l.id===x.id))continue;const at=Date.now();
+    try{await setDoc('letters/'+x.id,{from:x.from,to:x.to,when:x.when,body:x.body,cheque:x.cheque,pop:true,opened:false,at});await setDoc('messages/'+x.id,{by:x.from,at,kind:'letter',letterId:x.id,when:x.when});}catch(e){S.seeded=false;}}}
+function chequeHtml(c,l){return c?`<div class="cheque"><div class="chtop"><b>Bank of Love</b><span>${esc(new Date(l.at||Date.now()).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))}</span></div>
+  <div class="chrow"><span>Pay</span><b>${esc(NAMES[l.to])}</b></div><div class="chrow"><span>The sum of</span><i>${esc(c.words)}</i></div>
+  <div class="chamt">${esc(c.amount)}</div><div class="chrow"><span>For</span><i>${esc(c.memo)}</i></div><div class="chsign">${esc(NAMES[l.from])}</div></div>`:'';}
+/* Envelope surprise: a sealed letter he opens by breaking the seal */
+function showEnvelope(l){closeSheet();const old=document.getElementById('envOv');if(old)old.remove();S.envShown=l.id;
+  const ov=document.createElement('div');ov.id='envOv';ov.className='envov';
+  ov.innerHTML=`<button class="x envx" aria-label="Close">×</button><div class="envtitle">${esc(l.when)}</div>
+    <div class="envelope"><div class="eback"></div><div class="paper"><div class="pfrom">From ${esc(NAMES[l.from])} ${HEART}</div><div class="pbody">${esc(l.body)}</div>${chequeHtml(l.cheque,l)}<div class="psign">Love, ${esc(NAMES[l.from])}</div></div>
+      <div class="efront"><span>For ${esc(NAMES[l.to])}</span></div><div class="eflap"></div><button class="seal" aria-label="Break the seal">${HEART}</button></div>
+    <div class="envhint">Tap the heart seal to open</div>`;
+  document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('in'));
+  const close=()=>{ov.classList.remove('in');setTimeout(()=>ov.remove(),400);};
+  ov.querySelector('.envx').onclick=close;
+  ov.querySelector('.seal').onclick=async()=>{if(ov.classList.contains('open'))return;ov.classList.add('open');try{navigator.vibrate&&navigator.vibrate([30,60,30]);}catch(e){}
+    setTimeout(()=>{floatHearts();confetti();},700);setTimeout(()=>{const b=document.createElement('div');b.className='bigpaper';b.innerHTML=ov.querySelector('.paper').innerHTML;ov.appendChild(b);ov.classList.add('read');},1500);
+    if(!l.opened&&l.to===S.role){try{await mergeDoc('letters/'+l.id,{opened:true,openedAt:Date.now()});}catch(e){}}};}
+function maybeEnvelope(){if(!S.role||!['live','demo'].includes(S.mode))return;seedSurprises();if(document.getElementById('envOv')||!document.getElementById('sheet').classList.contains('hidden'))return;
+  const l=(S.letters||[]).filter(x=>x.to===S.role&&!x.opened&&x.pop).sort((a,b)=>a.at-b.at)[0];if(!l||S.envShown===l.id)return;setTimeout(()=>{if(!document.getElementById('envOv'))showEnvelope(l);},600);}
 /* Month-end to-do reminder for the person who owns them */
 function myOpenTodos(){const m=S.month||{};return (m.todos||[]).filter(x=>!x.done&&x.owner===S.role);}
 function daysLeftInMonth(){const t=todayKey(),y=+t.slice(0,4),mo=+t.slice(5,7),d=+t.slice(8);return new Date(y,mo,0).getDate()-d;}
@@ -620,7 +646,7 @@ function widgetPlugin(){const C=window.Capacitor;if(!C||!(C.isNativePlatform&&C.
 function pushWidget(){if(!S.role||S.mode!=='live'||!widgetPlugin())return;clearTimeout(widgetT);widgetT=setTimeout(async()=>{const P=widgetPlugin();if(!P)return;const me=S.role,you=other(me);
   const ci=(S.checkins||[]).filter(c=>c.role===you).sort((a,b)=>b.at-a.at)[0];const fresh=ci&&Date.now()-ci.at<36*3600e3;
   const lm=(S.msgs||[]).filter(m=>m.by===you&&m.kind!=='news').sort((a,b)=>b.at-a.at)[0];
-  const lastMsg=lm?(lm.kind==='voice'?'Sent you a voice note':lm.kind==='photo'?'Sent you a photo':lm.kind==='checkin'?('Day: '+(lm.text||lm.mood||'')):lm.kind==='plan'?planSnippet(lm):'"'+(lm.text||'')+'"')+' · '+ago(lm.at):'';
+  const lastMsg=lm?(lm.kind==='voice'?'Sent you a voice note':lm.kind==='photo'?'Sent you a photo':lm.kind==='checkin'?('Day: '+(lm.text||lm.mood||'')):lm.kind==='letter'?'Sent you a sealed letter 💌':lm.kind==='plan'?planSnippet(lm):'"'+(lm.text||'')+'"')+' · '+ago(lm.at):'';
   const turns=[];if(S.jig&&!S.jig.done&&S.jig.turn===me)turns.push('Jigsaw');for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me&&!(G[id].legacy&&G[id].legacy(g)))turns.push(G[id].name);
   const data={name:NAMES[you],mood:fresh?(ci.mood||''):'',nextVisit:(S.couple&&S.couple.nextVisit)||'',lastMsg,turns:turns.join(', ')};
   const key=JSON.stringify(data)+JSON.stringify((S.avatars||{})[you]||{});if(key===widgetLast)return;widgetLast=key;
@@ -674,7 +700,7 @@ function partnerPresence(){const p=(S.presence||{})[other(S.role)];if(!p)return 
 function markDelivered(list){if(!S.role)return;const me=S.role,newest=Math.max(0,...list.filter(m=>m.by!==me).map(m=>m.at));const cur=((S.chatRead||{}).deliv||{})[me]||0;
   if(newest>cur&&S.delivering!==newest){S.delivering=newest;mergeDoc('pods/chatread',{deliv:{[me]:newest}}).catch(()=>{});}}
 function msgStatus(m){const you=other(S.role),r=S.chatRead||{};if((r[you]||0)>=m.at)return '<span class="tick seen">✓✓ Seen</span>';if(((r.deliv||{})[you]||0)>=m.at)return '<span class="tick">✓✓ Delivered</span>';return '<span class="tick">✓ Sent</span>';}
-const snippet=m=>m.kind==='plan'?planSnippet(m):m.kind==='voice'?'Voice note':m.kind==='photo'?'Photo':m.kind==='checkin'?'Evening check-in':String(m.text||'').slice(0,80);
+const snippet=m=>m.kind==='letter'?'Sealed letter':m.kind==='plan'?planSnippet(m):m.kind==='voice'?'Voice note':m.kind==='photo'?'Photo':m.kind==='checkin'?'Evening check-in':String(m.text||'').slice(0,80);
 
 /* ---------- app icon dot/number ---------- */
 let badgeLast=-1;
@@ -874,9 +900,11 @@ const A={
   wishAdd:async()=>{const v=val('wishIn').trim();if(!v)return;clearIn('wishIn');const items=[...((S.wish&&S.wish.items)||[]),{id:uidGen(),t:v,by:S.role,done:false}];await mergeDoc('pods/wishlist',{items});},
   wish:async t=>{let won=false;const items=((S.wish&&S.wish.items)||[]).map(x=>{if(x.id===t.dataset.id){won=!x.done;return {...x,done:!x.done};}return x;});await mergeDoc('pods/wishlist',{items});if(won)floatHearts();},
   wishDel:async t=>{const items=((S.wish&&S.wish.items)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('pods/wishlist',{items});},
-  letterSheet:()=>openSheet(`${sheetHead('Write an open-when letter')}<label class="f" for="lWhen">Open when…<select id="lWhen">${OPEN_WHEN.map(w=>`<option>${w}</option>`).join('')}</select></label><label class="f" for="lBody">Your letter to ${NAMES[other(S.role)]}<textarea id="lBody" style="min-height:180px"></textarea></label><button class="btn primary" data-act="letterSave">Seal and send</button>`),
-  letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lWhen');closeSheet();await addDoc('letters',{from:S.role,to:other(S.role),when,body,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');},
-  openLetter:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l)return;openSheet(`${sheetHead(esc(l.when))}<div class="row">${av(l.from,40)}<span class="small muted">From ${NAMES[l.from]}</span></div><div style="white-space:pre-wrap;font-size:1.08rem;background:var(--blush);border-radius:18px;padding:16px">${esc(l.body)}</div>`);if(!l.opened){floatHearts();await mergeDoc('letters/'+l.id,{opened:true});}},
+  letterSheet:()=>openSheet(`${sheetHead('Write a letter')}<label class="f" for="lWhen">Title on the envelope<select id="lWhen">${OPEN_WHEN.map(w=>`<option>${w}</option>`).join('')}</select></label><label class="f" for="lOwn">Or write your own title<input type="text" id="lOwn" maxlength="60" placeholder="e.g. To my favourite man"></label>
+    <label class="row small" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="lPop" checked style="width:auto"> Pop it up as a surprise the moment ${esc(NAMES[other(S.role)])} opens Pods</label><label class="f" for="lBody">Your letter to ${NAMES[other(S.role)]}<textarea id="lBody" style="min-height:180px"></textarea></label><button class="btn primary" data-act="letterSave">Seal and send</button>`),
+  letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lOwn').trim()||val('lWhen'),pop=!!(document.getElementById('lPop')||{}).checked;closeSheet();
+    const id=await addDoc('letters',{from:S.role,to:other(S.role),when,body,pop,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');await sendMsg({kind:'letter',letterId:id,when});},
+  openLetter:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l)return;if(l.to===S.role&&!l.opened)return showEnvelope(l);openSheet(`${sheetHead(esc(l.when))}<div class="row">${av(l.from,40)}<span class="small muted">From ${NAMES[l.from]}</span></div><div style="white-space:pre-wrap;font-size:1.08rem;background:var(--blush);border-radius:18px;padding:16px">${esc(l.body)}</div>${chequeHtml(l.cheque,l)}`);if(!l.opened){floatHearts();await mergeDoc('letters/'+l.id,{opened:true});}},
 };
 async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const FR={60:.8,120:.8,260:13/20}[c*r],ta=(r>c&&FR)?Math.round((c/r)/FR*1000)/1000:1;const doc={ta,photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
 function winnerOfJig(j){const c=j.counts||{},a=c.anthonia||0,i=c.ifeayomi||0;return a===i?null:a>i?'anthonia':'ifeayomi';}
