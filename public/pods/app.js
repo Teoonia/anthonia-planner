@@ -209,7 +209,7 @@ function resubscribe(){if(S.mode!=='live'||!POD)return;unsubs.splice(0).forEach(
 let hiddenAt=0;document.addEventListener('visibilitychange',()=>{if(document.hidden){hiddenAt=Date.now();return;}if(Date.now()-hiddenAt>4000)resubscribe();});
 window.addEventListener('online',()=>resubscribe());
 function onJig(d){const prev=S.jig;S.jig=d;if(d&&prev&&!prev.done&&d.done&&!d.cancelled)setTimeout(()=>showWinner(d),300);if(d&&d.cancelReq&&d.cancelReq.by!==S.role&&!(prev&&prev.cancelReq))toast(`${NAMES[d.cancelReq.by]} wants to start a new puzzle`);if(d&&prev&&prev.turn!==d.turn&&d.turn===S.role&&!d.done)toast('Your turn in the jigsaw!');refresh();}
-function onMessages(l){const prev=S.msgs;S.msgs=l;checkNews(prev,l);markDelivered(l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':(m.text||'').slice(0,40)}`);floatHearts();}}refresh();}
+function onMessages(l){const prev=S.msgs;S.msgs=l;checkNews(prev,l);markDelivered(l);if(prev&&S.role){const known=new Set(prev.map(m=>m.id));const fresh=l.filter(m=>!known.has(m.id)&&m.by!==S.role&&m.kind!=='news');if(fresh.length&&S.tab!=='chat'){const m=fresh[fresh.length-1];toast(`${NAMES[m.by]}: ${m.kind==='voice'?'sent a voice note':m.kind==='photo'?'sent a photo':m.kind==='checkin'?'checked in for the evening':m.kind==='plan'?planSnippet(m).replace(NAMES[m.by]+' ','').slice(0,50):(m.text||'').slice(0,40)}`);floatHearts();}}refresh();}
 /* safety net: if the live connection stalls, ask the server every few seconds */
 let polling=false;
 async function pollLive(){if(polling||S.mode!=='live'||!POD||!window.FB||document.hidden||!FB.newerThan)return;polling=true;
@@ -263,7 +263,7 @@ function render(quiet){
   v.innerHTML=banners+({home:homeView,chat:chatView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
-  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();maybeAskBadge();}
+  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();maybeAskBadge();maybeTodoRemind();}
   if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
@@ -321,6 +321,7 @@ function waitingCard(){
   const tr=S.truths.filter(x=>x.to===me&&x.status==='sent').length;if(tr)w.push(['truth',`${tr} new message${tr>1?'s':''} in Truth Corner`]);
   const lt=S.letters.filter(x=>x.to===me&&!x.opened).length;if(lt)w.push(['us',`${lt} sealed letter${lt>1?'s':''} for you`]);
   const mk=monthKey();if(!(S.month&&S.month.done)&&hostFor(mk)===me)w.push(['plan',Number(t.slice(8))<=7?"You host this month's planning date":"This month's planning date is overdue"]);
+  const tl=todoRemindLine();if(tl)w.push(['plan',tl]);
   if(!w.length)return '';
   return `<section class="card waiting"><span class="eyebrow">Waiting for you</span>${w.map(([k,l])=>`<button class="w" data-act="tab" data-k="${k}"><span class="dot ${me}"></span><span>${esc(l)}</span><span class="go">›</span></button>`).join('')}</section>`;
 }
@@ -387,28 +388,28 @@ function planView(){
     ${d.status!=='done'?`<button class="btn sm" data-act="dateDone" data-id="${d.id}">Done</button>`:''}</div>`;
   const pins=S.mood.filter(p=>p.month===mk).sort((a,b)=>a.at-b.at);
   return `
-  <section class="card">
+  <section class="card" id="pNotes">
     <div class="row between"><span class="eyebrow">${monthName(mk)} planning date</span>${status}</div>
     <div class="row">${av(host,48)}<h2>${host===me?'You host this month':NAMES[host]+' hosts this month'}</h2></div>
     <ol class="small" style="margin:0;padding-left:18px;color:var(--muted)"><li>How last month went: wins and what to improve</li><li>Plan next month: goals, visits, money, to-dos</li><li>Update the year plan</li><li>Book this month's date night</li></ol>
     <label class="f" for="mNotes">Planning notes<textarea id="mNotes" placeholder="What we decided…">${esc(m.notes||'')}</textarea></label>
     <div class="row"><button class="btn sm" data-act="saveNotes">Save notes</button>${m.done?'':`<button class="btn sm primary" data-act="planDone">Mark planning date done</button>`}</div>
   </section>
-  <section class="card"><span class="eyebrow">This month's to-dos</span>
+  <section class="card" id="pTodos"><span class="eyebrow">This month's to-dos</span>${todoRemindLine()&&todos.some(x=>!x.done&&x.owner===me)?`<div class="todorem">⏰ ${esc(todoRemindLine())}</div>`:''}
     <ul class="list">${todos.map(x=>`<li class="item ${x.done?'done':''}"><button class="check ${x.done?'on':''}" data-act="todo" data-id="${x.id}" aria-label="Done"></button>${av(x.owner,26)}<span class="grow">${esc(x.t)}</span><button class="x" data-act="todoDel" data-id="${x.id}" aria-label="Delete">×</button></li>`).join('')||'<li class="small muted">Nothing planned yet.</li>'}</ul>
     <div class="row" style="flex-wrap:nowrap"><input type="text" id="todoIn" placeholder="Add a to-do"><select id="todoOwner" style="width:auto"><option value="${me}">Me</option><option value="${other(me)}">${NAMES[other(me)]}</option></select><button class="btn sm" data-act="todoAdd">Add</button></div>
   </section>
-  <section class="card">
+  <section class="card" id="pDates">
     <div class="row between"><h2>Date nights</h2><button class="btn sm primary" data-act="dateSheet">Plan one</button></div>
     <p class="small muted" style="margin:0">Same time, two cities. You both go out, stay on a call, and the host pays both bills.</p>
     ${up.length?up.map(dateItem).join(''):'<p class="small muted" style="margin:0">No date night booked yet.</p>'}
     ${past.length?`<span class="eyebrow">Recent</span>${past.map(dateItem).join('')}`:''}
   </section>
-  <section class="card"><span class="eyebrow">${t.slice(0,4)} goals</span>
+  <section class="card" id="pGoals"><span class="eyebrow">${t.slice(0,4)} goals</span>
     <ul class="list">${goals.map(x=>`<li class="item ${x.done?'done':''}"><button class="check ${x.done?'on':''}" data-act="goal" data-id="${x.id}" aria-label="Done"></button><span class="grow">${esc(x.t)}</span><button class="x" data-act="goalDel" data-id="${x.id}" aria-label="Delete">×</button></li>`).join('')||'<li class="small muted">Add the big things you want this year.</li>'}</ul>
     <div class="row" style="flex-wrap:nowrap"><input type="text" id="goalIn" placeholder="e.g. Visit twice, grow the farm to 10 pigs"><button class="btn sm" data-act="goalAdd">Add</button></div>
   </section>
-  <section class="card"><span class="eyebrow">${monthName(mk)} mood board</span>
+  <section class="card" id="pMood"><span class="eyebrow">${monthName(mk)} mood board</span>
     <div class="mood">${pins.map(p=>`<div class="pin">${p.img?`<img src="${p.img}" alt="">`:esc(p.text)}</div>`).join('')||'<p class="small muted" style="margin:0">Pin words or photos for how this month should feel.</p>'}</div>
     <div class="row" style="flex-wrap:nowrap"><input type="text" id="moodIn" placeholder="A word, a quote, a feeling"><button class="btn sm" data-act="moodAdd">Pin</button></div>
     <label class="btn sm" style="align-self:flex-start" for="moodImg">Pin a photo</label><input type="file" id="moodImg" accept="image/*" hidden>
@@ -565,6 +566,7 @@ function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a
   const items=list.map(m=>{const day=new Date(m.at).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});const sep=day!==lastDay?`<div class="daysep">${day}</div>`:'';lastDay=day;
     const t=new Date(m.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     if(m.kind==='news')return `${sep}<div class="newspill">${esc(newsText(m))}</div>`;
+    if(m.kind==='plan')return `${sep}<div class="msg plan ${m.by===me?'me':'them'}" id="m-${m.id}" data-id="${m.id}">${planCard(m,me)}<span class="mt">${t}</span></div>`;
     let body=m.kind==='voice'?voicePlayer(m.src,m.secs,'c'+m.id):m.kind==='photo'?`<img src="${m.img}" alt="Photo" class="chatimg">`:m.kind==='checkin'?`<div class="small"><b>Evening check-in</b> · <span class="moodtag" style="--mc:${(MOODS_DAY.find(x=>x[0]===m.mood)||[,'#ccc'])[1]}">${esc(m.mood||'')}</span></div>${esc(m.text||'')}`:esc(m.text);
     const q=m.reply?`<button class="quote" data-act="chatJump" data-id="${m.reply.id}"><b>${m.reply.by===me?'You':esc(NAMES[m.reply.by])}</b><span>${esc(m.reply.text||'')}</span></button>`:'';
     return `${sep}<div class="msg ${m.by===me?'me':'them'}" id="m-${m.id}" data-id="${m.id}">${q}<div class="mb" data-act="chatMenu" data-id="${m.id}" role="button" tabindex="0">${body}${m.heart?`<span class="mheart">${HEART}</span>`:''}</div><span class="mt">${t}${m===myLast?' · '+msgStatus(m):''}</span></div>`;}).join('');
@@ -578,7 +580,37 @@ function chatView(){const me=S.role,you=other(me),list=[...(S.msgs||[])].sort((a
       <input type="text" id="chatIn" placeholder="Message ${esc(NAMES[you])}" autocomplete="off" enterkeyhint="send"><button class="btn primary sm" data-act="chatSend">Send</button></div></section>`;}
 function chatAfterRender(){if(S.tab!=='chat')return;const l=document.getElementById('chatList');if(l)l.scrollTop=l.scrollHeight;const me=S.role,newest=Math.max(0,...(S.msgs||[]).filter(m=>m.by!==me).map(m=>m.at));
   if(newest>((S.chatRead||{})[me]||0)&&S.markingRead!==newest){S.markingRead=newest;mergeDoc('pods/chatread',{[me]:newest});}}
-async function sendMsg(data){const r=S.replyTo;if(r&&data.kind!=='news'){data.reply={id:r.id,by:r.by,text:r.text};S.replyTo=null;}await addDoc('messages',{by:S.role,at:Date.now(),...data});}
+/* Plan updates show up in chat as cards with a button to jump to them */
+async function planPost(what,data){try{await sendMsg({kind:'plan',what,...data});}catch(e){}}
+function planWho(m,me){return m.by===me?'You':NAMES[m.by];}
+function planSnippet(m,me){me=me||S.role;const w=planWho(m,me),mk=m.month?monthName(m.month):'this month',o=m.owner===me?'you':m.owner===m.by?(m.by===me?'yourself':'themself'):NAMES[m.owner];
+  return ({date:m.by===me?`You asked ${NAMES[other(me)]} out on a date`:`${NAMES[m.by]} is asking you out on a date…`,
+    todo:`${w} added a to-do for ${o}: ${m.text||''}`,todoDone:`${w} ticked off: ${m.text||''}`,notes:`${w} updated the ${mk} planning notes`,
+    planDone:`${w} marked the ${mk} planning date done`,goal:`${w} added a goal: ${m.text||''}`,mood:`${w} pinned to the ${mk} mood board${m.text?': '+m.text:''}`,
+    dateDone:`${w} marked your date night done${m.text?': '+m.text:''}`})[m.what]||`${w} updated the plan`;}
+const PLAN_ICON={todo:'📝',todoDone:'✅',notes:'🗒️',planDone:'🎉',goal:'🎯',mood:'🌸',dateDone:'💞'};
+const PLAN_SEC={todo:'pTodos',todoDone:'pTodos',notes:'pNotes',planDone:'pNotes',goal:'pGoals',mood:'pMood',dateDone:'pDates',date:'pDates'};
+function planCard(m,me){
+  if(m.what==='date'){const mine=m.by===me,d=m.d||{};
+    return `<div class="datecard"><div class="dhearts">${HEART}${HEART}${HEART}</div><div class="dkick">${mine?'You asked':'Psst…'}</div>
+      <div class="dhead">${mine?`${esc(NAMES[other(me)])} out on a date`:`${esc(NAMES[m.by])} is asking you out on a date…`}</div>
+      <div class="dwhen">${esc(prettyDay(d.date||''))} · ${esc(d.time||'')} Ancona · ${esc(ibadanTime(d.date,d.time))} Ibadan</div>
+      ${d.herPlace||d.hisPlace?`<div class="small">${esc(NAMES.anthonia)}: ${esc(d.herPlace||'to be decided')}<br>${esc(NAMES.ifeayomi)}: ${esc(d.hisPlace||'to be decided')}</div>`:''}
+      <div class="small">${d.host===me?'You host and pay both bills':esc(NAMES[d.host])+' hosts and pays both bills'}</div>
+      <div class="row" style="justify-content:center;margin-top:6px">${!mine&&!m.yes?`<button class="btn sm primary" data-act="dateYes" data-id="${m.id}">Say yes 💖</button>`:''}${m.yes?`<span class="chip him">${mine?NAMES[other(me)]+' said yes!':'You said yes'} 💖</span>`:''}<button class="btn sm" data-act="planGo" data-k="pDates">See the date</button></div></div>`;}
+  return `<div class="plancard"><span class="pi">${PLAN_ICON[m.what]||'📅'}</span><div class="grow">${esc(planSnippet(m,me))}</div><button class="btn sm" data-act="planGo" data-k="${PLAN_SEC[m.what]||'pNotes'}">View</button></div>`;}
+/* Month-end to-do reminder for the person who owns them */
+function myOpenTodos(){const m=S.month||{};return (m.todos||[]).filter(x=>!x.done&&x.owner===S.role);}
+function daysLeftInMonth(){const t=todayKey(),y=+t.slice(0,4),mo=+t.slice(5,7),d=+t.slice(8);return new Date(y,mo,0).getDate()-d;}
+function todoRemindLine(){const n=myOpenTodos().length,left=daysLeftInMonth();if(!n||left>7)return '';
+  const mn=monthName(monthKey()).split(' ')[0];return left===0?`Last day of ${mn}! ${n} to-do${n>1?'s':''} still open`:`${n} to-do${n>1?'s':''} to finish before ${mn} ends · ${left} day${left>1?'s':''} left`;}
+function maybeTodoRemind(){if(!S.role||!['live','demo'].includes(S.mode)||!S.month)return;const line=todoRemindLine();if(!line)return;
+  let seen='';try{seen=localStorage.getItem('pods_todoRem')||'';}catch(e){}if(seen===localDay()||S.todoRemShown===localDay())return;
+  if(!document.getElementById('sheet').classList.contains('hidden'))return;S.todoRemShown=localDay();try{localStorage.setItem('pods_todoRem',localDay());}catch(e){}
+  const l=myOpenTodos();openSheet(`${sheetHead('⏰ Don\'t forget')}<p style="margin:0"><b>${esc(line)}.</b></p>
+    <ul class="list">${l.map(x=>`<li class="item">${av(x.owner,26)}<span class="grow">${esc(x.t)}</span></li>`).join('')}</ul>
+    <button class="btn primary" data-act="planGo" data-k="pTodos">Open my to-dos</button>`);}
+async function sendMsg(data){const r=S.replyTo;if(r&&data.kind!=='news'&&data.kind!=='plan'){data.reply={id:r.id,by:r.by,text:r.text};S.replyTo=null;}await addDoc('messages',{by:S.role,at:Date.now(),...data});}
 
 
 /* ---------- Android home-screen widget (only inside the Pods app) ---------- */
@@ -587,7 +619,7 @@ function widgetPlugin(){const C=window.Capacitor;if(!C||!(C.isNativePlatform&&C.
 function pushWidget(){if(!S.role||S.mode!=='live'||!widgetPlugin())return;clearTimeout(widgetT);widgetT=setTimeout(async()=>{const P=widgetPlugin();if(!P)return;const me=S.role,you=other(me);
   const ci=(S.checkins||[]).filter(c=>c.role===you).sort((a,b)=>b.at-a.at)[0];const fresh=ci&&Date.now()-ci.at<36*3600e3;
   const lm=(S.msgs||[]).filter(m=>m.by===you&&m.kind!=='news').sort((a,b)=>b.at-a.at)[0];
-  const lastMsg=lm?(lm.kind==='voice'?'Sent you a voice note':lm.kind==='photo'?'Sent you a photo':lm.kind==='checkin'?('Day: '+(lm.text||lm.mood||'')):'"'+(lm.text||'')+'"')+' · '+ago(lm.at):'';
+  const lastMsg=lm?(lm.kind==='voice'?'Sent you a voice note':lm.kind==='photo'?'Sent you a photo':lm.kind==='checkin'?('Day: '+(lm.text||lm.mood||'')):lm.kind==='plan'?planSnippet(lm):'"'+(lm.text||'')+'"')+' · '+ago(lm.at):'';
   const turns=[];if(S.jig&&!S.jig.done&&S.jig.turn===me)turns.push('Jigsaw');for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me&&!(G[id].legacy&&G[id].legacy(g)))turns.push(G[id].name);
   const data={name:NAMES[you],mood:fresh?(ci.mood||''):'',nextVisit:(S.couple&&S.couple.nextVisit)||'',lastMsg,turns:turns.join(', ')};
   const key=JSON.stringify(data)+JSON.stringify((S.avatars||{})[you]||{});if(key===widgetLast)return;widgetLast=key;
@@ -641,7 +673,7 @@ function partnerPresence(){const p=(S.presence||{})[other(S.role)];if(!p)return 
 function markDelivered(list){if(!S.role)return;const me=S.role,newest=Math.max(0,...list.filter(m=>m.by!==me).map(m=>m.at));const cur=((S.chatRead||{}).deliv||{})[me]||0;
   if(newest>cur&&S.delivering!==newest){S.delivering=newest;mergeDoc('pods/chatread',{deliv:{[me]:newest}}).catch(()=>{});}}
 function msgStatus(m){const you=other(S.role),r=S.chatRead||{};if((r[you]||0)>=m.at)return '<span class="tick seen">✓✓ Seen</span>';if(((r.deliv||{})[you]||0)>=m.at)return '<span class="tick">✓✓ Delivered</span>';return '<span class="tick">✓ Sent</span>';}
-const snippet=m=>m.kind==='voice'?'Voice note':m.kind==='photo'?'Photo':m.kind==='checkin'?'Evening check-in':String(m.text||'').slice(0,80);
+const snippet=m=>m.kind==='plan'?planSnippet(m):m.kind==='voice'?'Voice note':m.kind==='photo'?'Photo':m.kind==='checkin'?'Evening check-in':String(m.text||'').slice(0,80);
 
 /* ---------- app icon dot/number ---------- */
 let badgeLast=-1;
@@ -797,15 +829,15 @@ const A={
   lbDel:async t=>{if(t.dataset.sure!=='1'){t.dataset.sure='1';t.textContent='Tap again to delete';return;}const id=S.lb&&S.lb.id;closeLb();if(!id)return;await delDoc('memories/'+id);await delDoc('photos/'+id);toast('Photo deleted');},
 
   /* plan */
-  saveNotes:async()=>{await mergeDoc('months/'+monthKey(),{notes:val('mNotes')});toast('Notes saved');},
-  planDone:async()=>{await mergeDoc('months/'+monthKey(),{notes:val('mNotes'),done:true,doneAt:todayKey(),doneBy:S.role});confetti();toast('Planning date done. See you next month!');},
-  todoAdd:async()=>{const v=val('todoIn').trim();if(!v)return;clearIn('todoIn');const todos=[...((S.month&&S.month.todos)||[]),{id:uidGen(),t:v,owner:val('todoOwner')||S.role,done:false}];await mergeDoc('months/'+monthKey(),{todos});},
-  todo:async t=>{const todos=((S.month&&S.month.todos)||[]).map(x=>x.id===t.dataset.id?{...x,done:!x.done}:x);await mergeDoc('months/'+monthKey(),{todos});},
+  saveNotes:async()=>{const v=val('mNotes'),old=(S.month&&S.month.notes)||'';await mergeDoc('months/'+monthKey(),{notes:v});toast('Notes saved');if(v.trim()!==old.trim())planPost('notes',{month:monthKey()});},
+  planDone:async()=>{await mergeDoc('months/'+monthKey(),{notes:val('mNotes'),done:true,doneAt:todayKey(),doneBy:S.role});confetti();toast('Planning date done. See you next month!');planPost('planDone',{month:monthKey()});},
+  todoAdd:async()=>{const v=val('todoIn').trim();if(!v)return;clearIn('todoIn');const owner=val('todoOwner')||S.role,todos=[...((S.month&&S.month.todos)||[]),{id:uidGen(),t:v,owner,done:false}];await mergeDoc('months/'+monthKey(),{todos});planPost('todo',{text:v,owner,month:monthKey()});},
+  todo:async t=>{let fin=null;const todos=((S.month&&S.month.todos)||[]).map(x=>{if(x.id!==t.dataset.id)return x;if(!x.done)fin=x;return {...x,done:!x.done};});await mergeDoc('months/'+monthKey(),{todos});if(fin)planPost('todoDone',{text:fin.t,owner:fin.owner,month:monthKey()});},
   todoDel:async t=>{const todos=((S.month&&S.month.todos)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('months/'+monthKey(),{todos});},
-  goalAdd:async()=>{const v=val('goalIn').trim();if(!v)return;clearIn('goalIn');const goals=[...((S.year&&S.year.goals)||[]),{id:uidGen(),t:v,done:false}];await mergeDoc('years/'+todayKey().slice(0,4),{goals});},
+  goalAdd:async()=>{const v=val('goalIn').trim();if(!v)return;clearIn('goalIn');const goals=[...((S.year&&S.year.goals)||[]),{id:uidGen(),t:v,done:false}];await mergeDoc('years/'+todayKey().slice(0,4),{goals});planPost('goal',{text:v});},
   goal:async t=>{let won=false;const goals=((S.year&&S.year.goals)||[]).map(x=>{if(x.id===t.dataset.id){won=!x.done;return {...x,done:!x.done};}return x;});await mergeDoc('years/'+todayKey().slice(0,4),{goals});if(won)confetti();},
   goalDel:async t=>{const goals=((S.year&&S.year.goals)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('years/'+todayKey().slice(0,4),{goals});},
-  moodAdd:async()=>{const v=val('moodIn').trim();if(!v)return;clearIn('moodIn');await addDoc('mood',{month:monthKey(),text:v,by:S.role,at:Date.now()});},
+  moodAdd:async()=>{const v=val('moodIn').trim();if(!v)return;clearIn('moodIn');await addDoc('mood',{month:monthKey(),text:v,by:S.role,at:Date.now()});planPost('mood',{text:v,month:monthKey()});},
   dateSheet:()=>{const d=addDays(todayKey(),7);openSheet(`${sheetHead('Plan a date night')}
     <div class="row" style="flex-wrap:nowrap"><label class="f" for="dDate" style="flex:1">Date<input type="date" id="dDate" value="${d}"></label><label class="f" for="dTime" style="flex:1">Time in Ancona<input type="time" id="dTime" value="19:30"></label></div>
     <span class="small muted" id="dIb"></span>
@@ -814,9 +846,11 @@ const A={
     <label class="f" for="dHost">Host (pays both bills)<select id="dHost"><option value="anthonia">Anthonia</option><option value="ifeayomi">Ifeayomi</option></select></label>
     <span class="small muted">The host defaults to whoever hosts that month's planning date.</span>
     <button class="btn primary" data-act="dateSave">Book it</button>`);syncDateSheet();},
-  dateSave:async()=>{const date=val('dDate'),time=val('dTime');if(!date||!time)return toast('Pick a date and time');const data={date,time,herPlace:val('dHer').trim(),hisPlace:val('dHis').trim(),host:val('dHost'),status:'planned',by:S.role,at:Date.now()};closeSheet();await addDoc('dates',data);floatHearts();toast('Date night booked!');},
+  dateSave:async()=>{const date=val('dDate'),time=val('dTime');if(!date||!time)return toast('Pick a date and time');const data={date,time,herPlace:val('dHer').trim(),hisPlace:val('dHis').trim(),host:val('dHost'),status:'planned',by:S.role,at:Date.now()};closeSheet();const did=await addDoc('dates',data);floatHearts();toast('Date night booked!');planPost('date',{dateId:did,d:{date,time,herPlace:data.herPlace,hisPlace:data.hisPlace,host:data.host}});},
+  planGo:t=>{const k=t.dataset.k;closeSheet();S.tab='plan';location.hash='plan';render();setTimeout(()=>{const el=document.getElementById(k);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600);}},120);},
+  dateYes:async t=>{const m=(S.msgs||[]).find(x=>x.id===t.dataset.id);if(!m||m.yes)return;await mergeDoc('messages/'+m.id,{yes:true});if(m.dateId)await mergeDoc('dates/'+m.dateId,{yes:true});confetti();floatHearts();await sendMsg({text:"Yes! It's a date 💖"});},
   dateDone:t=>openSheet(`${sheetHead('How was it?')}<label class="f" for="dNote">One line to remember it by<input type="text" id="dNote" placeholder="Best night of the month…"></label><button class="btn primary" data-act="dateDoneSave" data-id="${t.dataset.id}">Save</button>`),
-  dateDoneSave:async t=>{const note=val('dNote').trim();closeSheet();await mergeDoc('dates/'+t.dataset.id,{status:'done',note});confetti();},
+  dateDoneSave:async t=>{const note=val('dNote').trim();closeSheet();await mergeDoc('dates/'+t.dataset.id,{status:'done',note});confetti();planPost('dateDone',{text:note});},
   /* truth */
   truthFilter:async()=>{const raw=val('tRaw').trim();if(!raw)return toast('Write what you want to say first');
     const from=NAMES[S.role],to=NAMES[other(S.role)];
