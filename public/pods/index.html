@@ -402,10 +402,10 @@ html,body{overflow-x:clip}
 .envov.open .paper{transform:translateY(-62%)}
 .envov.open .envhint{opacity:0}
 .envov.read .envelope{transform:translateY(30dvh) scale(.85)}
-.bigpaper{position:absolute;left:50%;top:46%;box-sizing:border-box;width:min(88vw,380px);max-height:70vh;max-height:68dvh;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;overflow:auto;transform:translate(-50%,-50%);z-index:6;animation:pop .6s cubic-bezier(.3,1.5,.5,1);box-shadow:0 20px 50px rgba(122,31,61,.35);background:repeating-linear-gradient(#fffaf3 0 34px,#ffe4ec 34px 35px);border-radius:14px;padding:22px 20px}
+.bigpaper{position:absolute;left:50%;top:46%;box-sizing:border-box;width:min(88vw,380px);max-height:70vh;max-height:68dvh;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;overflow:auto;transform:translate(-50%,-50%);z-index:6;animation:bigpop .6s cubic-bezier(.3,1.5,.5,1);box-shadow:0 20px 50px rgba(122,31,61,.35);background:repeating-linear-gradient(#fffaf3 0 34px,#ffe4ec 34px 35px);border-radius:14px;padding:22px 20px}
 .envov.read .paper{opacity:0}
 .envov.read .envtitle{opacity:0}
-@keyframes pop{0%{transform:translate(-50%,-30%) scale(.6);opacity:0}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+@keyframes bigpop{0%{transform:translate(-50%,-30%) scale(.6);opacity:0}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 .cheque{margin:14px 0 4px;background:linear-gradient(135deg,#fff8e1,#ffe9b8);border:2px dashed #e0a526;border-radius:12px;padding:12px 14px;font-family:Nunito,sans-serif;color:#5a3a00;transform:rotate(-1.5deg);box-shadow:0 6px 16px rgba(168,106,0,.18)}
 .chtop{display:flex;justify-content:space-between;font-size:.8rem;border-bottom:1px solid #e0a52666;padding-bottom:6px;margin-bottom:6px}.chtop b{font-family:Fredoka,sans-serif;color:#c2185b;font-size:1rem}
 .chrow{display:flex;gap:8px;align-items:baseline;font-size:.82rem;margin:3px 0}.chrow span{opacity:.7;min-width:62px}.chrow b,.chrow i{font-family:Caveat,cursive;font-size:1.25rem;font-style:normal;border-bottom:1px solid #e0a52666;flex:1}
