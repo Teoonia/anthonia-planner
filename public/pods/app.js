@@ -232,12 +232,16 @@ function subscribe(){
   watchDoc('pods/avatars',d=>{const p=(S.avatars||{})[S.role];S.avatars=d||{};const n=S.avatars[S.role];S.gotAv=true;refresh();});
   watchCol('daily',l=>{S.daily=l;refresh();});
   watchDoc('pods/songs',d=>{S.songs=d||{};refresh();});
-  watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role))floatHearts();lastTapAt=d?d.at:0;refresh();});
+  watchDoc('pods/tap',d=>{S.tap=d;if(d&&lastTapAt!==null&&d.at!==lastTapAt&&S.role&&d.from===other(S.role)){floatHearts();try{navigator.vibrate&&navigator.vibrate([90,70,90,70,160]);}catch(e){}toast(`💗 ${NAMES[d.from]} is thinking of you`);}lastTapAt=d?d.at:0;refresh();});
   watchCol('games',l=>{const prev=S.games||{};S.games=Object.fromEntries(l.filter(x=>x.id!=='jigsaw').map(x=>[x.id,x]));gamesChanged(prev,S.games);refresh();});
   watchCol('voice',l=>{S.voice=l;refresh();},{order:'at',dir:'desc',limit:30});
   watchDoc('games/jigsaw',onJig);
   watchDoc('months/'+monthKey(),d=>{S.month=d;refresh();});
-  watchDoc('years/'+todayKey().slice(0,4),d=>{S.year=d;refresh();});
+  watchDoc('years/'+todayKey().slice(0,4),d=>{S.year=d;S.years=S.years||{};S.years[todayKey().slice(0,4)]=d;refresh();});
+  {const ny=String(+todayKey().slice(0,4)+1);watchDoc('years/'+ny,d=>{S.years=S.years||{};S.years[ny]=d;refresh();});}
+  watchDoc('pods/status',d=>{const prev=S.status||{},you=S.role&&other(S.role);S.status=d||{};if(you&&S.gotStatus&&d&&d[you]&&(!prev[you]||prev[you].at!==d[you].at)&&Date.now()-d[you].at<120000){const sl=d[you].s==='sleep';toast(sl?`😴 ${NAMES[you]} is going to bed. Good night!`:`☀️ ${NAMES[you]} is up. Say good morning!`);}S.gotStatus=true;refresh();});
+  watchDoc('pods/days',d=>{S.days=d||{};refresh();});
+  watchDoc('tot/'+todayKey(),d=>{S.tot=d||{};refresh();});
   watchCol('dates',l=>{S.dates=l;refresh();});
   watchCol('truths',l=>{S.truths=l;refresh();});
   watchCol('memories',l=>{S.memories=l;refresh();},{order:'at',dir:'desc',limit:150});
@@ -263,7 +267,7 @@ function render(quiet){
   v.innerHTML=banners+({home:homeView,chat:chatView,play:playView,plan:planView,truth:truthView,us:usView}[S.tab])();
   // keep entrance animation only when switching tabs
   if(quiet&&lastTab===S.tab)v.querySelectorAll(':scope>*').forEach(el=>el.style.animation='none');
-  lastTab=S.tab;tickClocks();chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();maybeAskBadge();maybeTodoRemind();maybeEnvelope();}
+  lastTab=S.tab;tickClocks();if(S.tab==='home'&&S.role){loadWx();maybeStreakParty();}chatAfterRender();pushWidget();pushPresence();pushBadge();if(S.role){maybeAskNick();maybeCheckin();maybeAskBadge();maybeTodoRemind();maybeEnvelope();}
   if(S.tab==='play'){if(S.game==='jigsaw')drawJig();else if(S.game&&G[S.game]&&G[S.game].post&&!(G[S.game].legacy&&G[S.game].legacy(S.games[S.game])))G[S.game].post(S.games[S.game],S.role);}
 }
 function pickView(){return `<div class="card center" style="margin-top:20px"><h1 style="font-size:2rem;color:var(--her)">Welcome to Pods</h1><p class="muted" style="margin:0">Our little place for two. Who's this?</p>
@@ -275,6 +279,31 @@ function makeBgHearts(){const el=document.getElementById('bgHearts');let h='';fo
 /* ---------- HOME ---------- */
 function streak(){const both=new Set(S.daily.filter(d=>d.anthonia&&d.ifeayomi).map(d=>d.id));let k=todayKey();if(!both.has(k))k=addDays(k,-1);let n=0;while(both.has(k)){n++;k=addDays(k,-1);}return n;}
 function greeting(){const h=hourIn(S.role==='anthonia'?'Europe/Rome':'Africa/Lagos');return h<5?'Still up':h<12?'Good morning':h<17?'Good afternoon':h<21?'Good evening':'Good night';}
+/* Weather for both cities (Open-Meteo, no key) */
+const WX={anc:[43.62,13.52],iba:[7.38,3.95]};
+const wxIcon=c=>c===0?'☀️':c<=2?'🌤️':c===3?'☁️':c<=48?'🌫️':c<=67?'🌧️':c<=77?'❄️':c<=82?'🌦️':'⛈️';
+async function loadWx(){if(S.wxAt&&Date.now()-S.wxAt<30*60e3)return;S.wxAt=Date.now();S.wx=S.wx||{};
+  for(const [k,[la,lo]] of Object.entries(WX)){try{const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,weather_code`);const j=await r.json();S.wx[k]={t:Math.round(j.current.temperature_2m),i:wxIcon(j.current.weather_code)};}catch(e){}}
+  if(S.tab==='home')refresh();}
+function wxLine(k){const w=(S.wx||{})[k];return w?`<div class="wx">${w.i} ${w.t}°</div>`:'';}
+function statusLine(r){const st=(S.status||{})[r];if(!st||Date.now()-st.at>16*3600e3)return '';const tz=r==='anthonia'?'Europe/Rome':'Africa/Lagos';const tm=new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit'}).format(new Date(st.at));
+  return `<div class="stline">${st.s==='sleep'?'😴 Asleep since '+tm:'☀️ Up since '+tm}</div>`;}
+/* Couple streak badges */
+function streakBadge(n){return n>=100?'🏆':n>=30?'🥇':n>=7?'🥈':'';}
+function maybeStreakParty(){const n=streak();const ms=[7,30,100].filter(m=>n>=m).pop();if(!ms)return;let k='';try{k=localStorage.getItem('pods_streakMs')||'';}catch(e){}if(String(ms)===k)return;try{localStorage.setItem('pods_streakMs',String(ms));}catch(e){}
+  confetti();toast(`${streakBadge(n)} ${ms}-day streak together! Keep it going`);}
+/* Special days */
+const BUILTIN_DAYS=[['02-14',"Valentine's Day 💘",'both'],['03-08',"International Women's Day 💐",'anthonia'],['11-19',"International Men's Day 💙",'ifeayomi'],['12-25','Christmas 🎄','both']];
+function specialDays(){const me=S.role,d=S.days||{},y=+todayKey().slice(0,4),t=todayKey(),out=[];
+  const add=(md,label,forWho)=>{if(!md)return;let dt=y+'-'+md;if(dt<t)dt=(y+1)+'-'+md;const n=daysBetween(t,dt);out.push({n,label,forWho,dt});};
+  BUILTIN_DAYS.forEach(([md,l,w])=>add(md,l,w));
+  ['anthonia','ifeayomi'].forEach(r=>{const b=(d.bday||{})[r];if(b)add(b.slice(5),r===me?'Your birthday 🎂':`${NAMES[r]}'s birthday 🎂`,r);});
+  if(d.anniv)add(d.anniv.slice(5),'Our anniversary 💞','both');
+  return out.filter(x=>x.n<=7).sort((a,b)=>a.n-b.n).map(x=>{const forOther=x.forWho===other(me);
+    return x.n===0?(x.forWho===me?`Today is ${x.label.replace('Your birthday','your birthday')}!`:forOther?`Today is ${x.label}. Don't forget to wish ${NAMES[other(me)]}!`:`Today is ${x.label}`):`${x.label} in ${x.n} day${x.n>1?'s':''}${forOther?` · plan something for ${NAMES[other(me)]}`:''}`;});}
+/* Daily sweet line */
+const SWEET=["I'm so proud of you. Never forget that.","You're my favourite notification every single day.","Distance means nothing when you mean everything.","I miss your voice already.","Thank you for loving me so well from so far.","You make the hard days easier, just by being you.","Counting down to holding your hand again.","I'd choose you in every lifetime.","You're my peace and my excitement at the same time.","Today I'm grateful for you. Just you."];
+function sweetDone(){const d=localDay();return (S.msgs||[]).some(m=>m.by===S.role&&m.sweet&&m.at&&new Date(m.at).toDateString()===new Date().toDateString());}
 function homeView(){
   const me=S.role,you=other(me),t=todayKey();
   const nv=S.couple&&S.couple.nextVisit;const dleft=nv?daysBetween(t,nv):null;
@@ -294,14 +323,15 @@ function homeView(){
     ${nv?(dleft>0?`<div class="big">${dleft}</div><div class="muted" style="font-weight:700">${dleft===1?'day':'days'} until we're together · ${prettyDay(nv)}</div>`:`<div class="big" style="font-size:2.6rem">${dleft===0?'Today!':'Together'}</div><div class="small muted">Set the date of your next visit.</div>`):`<div class="muted" style="font-weight:700">When will you see each other next?</div>`}
     <button class="btn sm ghost" data-act="visitSheet">${nv?'Change date':'Set our next visit'}</button>
     <div class="clocks" style="width:100%">
-      <div class="clock"><div class="small muted"><span class="dot anthonia"></span> Ancona</div><div class="t" id="clkA">--:--</div></div>
-      <div class="clock him"><div class="small muted"><span class="dot ifeayomi"></span> Ibadan</div><div class="t" id="clkI">--:--</div></div>
+      <div class="clock"><div class="small muted"><span class="dot anthonia"></span> Ancona</div><div class="t" id="clkA">--:--</div>${wxLine('anc')}${statusLine('anthonia')}</div>
+      <div class="clock him"><div class="small muted"><span class="dot ifeayomi"></span> Ibadan</div><div class="t" id="clkI">--:--</div>${wxLine('iba')}${statusLine('ifeayomi')}</div>
     </div>
+    <div class="row sleepbtns"><button class="btn sm ghost" data-act="setStatus" data-k="sleep">😴 Going to bed</button><button class="btn sm ghost" data-act="setStatus" data-k="awake">☀️ I'm up</button></div>
   </section>
   <div><button class="tapbtn" data-act="tap">${HEART} Thinking of you</button>
   <div class="row between small muted" style="margin-top:8px;padding:0 6px"><span>${esc(tapLine)}</span><span>Love sent today: <b style="color:var(--her)">${tapC.anthonia||0}</b> · <b style="color:var(--him)">${tapC.ifeayomi||0}</b></span></div></div>
   <section class="card">
-    <div class="row between"><span class="eyebrow">Today's question</span><span class="chip gold">${streak()} day streak</span></div>
+    <div class="row between"><span class="eyebrow">Today's question</span><span class="chip gold">🔥 ${streak()} day streak ${streakBadge(streak())}</span></div>
     <h2>${esc(q)}</h2>${daily}
   </section>
   ${checkinCard()}
@@ -322,10 +352,34 @@ function waitingCard(){
   const lt=S.letters.filter(x=>x.to===me&&!x.opened).length;if(lt)w.push(['us',`${lt} sealed letter${lt>1?'s':''} for you`]);
   const mk=monthKey();if(!(S.month&&S.month.done)&&hostFor(mk)===me)w.push(['plan',Number(t.slice(8))<=7?"You host this month's planning date":"This month's planning date is overdue"]);
   const tl=todoRemindLine();if(tl)w.push(['plan',tl]);
+  specialDays().forEach(l=>w.push(['us',l]));
+  if(!sweetDone())w.push(['sweet',`Send ${NAMES[other(me)]} a sweet line today 💌`]);
   if(!w.length)return '';
-  return `<section class="card waiting"><span class="eyebrow">Waiting for you</span>${w.map(([k,l])=>`<button class="w" data-act="tab" data-k="${k}"><span class="dot ${me}"></span><span>${esc(l)}</span><span class="go">›</span></button>`).join('')}</section>`;
+  return `<section class="card waiting"><span class="eyebrow">Waiting for you</span>${w.map(([k,l])=>`<button class="w" data-act="${k==='sweet'?'sweetSheet':'tab'}" data-k="${k}"><span class="dot ${me}"></span><span>${esc(l)}</span><span class="go">›</span></button>`).join('')}</section>`;
 }
 
+function goalsCard(){const me=S.role,you=other(me),y0=+todayKey().slice(0,4),y=S.goalYear||y0,who=S.goalWho||me,doc=(S.years||{})[String(y)]||(y===y0?S.year:null);
+  const all=(doc&&doc.goals)||[],list=all.filter(x=>(x.owner||'us')===who),canEdit=who===me||who==='us';
+  const tb=(k,l)=>`<button class="${who===k?'on':''}" data-act="goalWho" data-k="${k}">${l}</button>`,yb=n=>`<button class="${y===n?'on':''}" data-act="goalYear" data-k="${n}">${n}</button>`;
+  return `<section class="card" id="pGoals"><div class="row between"><span class="eyebrow">Yearly goals</span><div class="seg mini">${yb(y0)}${yb(y0+1)}</div></div>
+    <div class="seg">${tb(me,'Mine')}${tb(you,esc(NAMES[you]))}${tb('us','Ours')}</div>
+    <ul class="list">${list.map(x=>`<li class="item ${x.done?'done':''}">${canEdit?`<button class="check ${x.done?'on':''}" data-act="goal" data-id="${x.id}" aria-label="Done"></button>`:`<span class="check ${x.done?'on':''}"></span>`}<span class="grow">${esc(x.t)}</span>${canEdit?`<button class="x" data-act="goalDel" data-id="${x.id}" aria-label="Delete">×</button>`:''}</li>`).join('')||`<li class="small muted">${who==='us'?'Add the big things you want together in '+y+'.':who===me?'Add your own goals for '+y+'.':NAMES[you]+" hasn't added goals for "+y+' yet.'}</li>`}</ul>
+    ${canEdit?`<div class="row" style="flex-wrap:nowrap"><input type="text" id="goalIn" placeholder="${who==='us'?'e.g. Visit twice, grow the farm to 10 pigs':'e.g. Pass my exams, read 12 books'}"><button class="btn sm" data-act="goalAdd">Add</button></div>`:''}
+  </section>`;}
+function daysCard(){const d=S.days||{},b=d.bday||{},me=S.role,you=other(me),y=+todayKey().slice(0,4),t=todayKey();
+  const nx=md=>{if(!md)return null;let dt=y+'-'+md;if(dt<t)dt=(y+1)+'-'+md;return dt;};
+  const l=[[nx(b[me]&&b[me].slice(5)),'Your birthday 🎂'],[nx(b[you]&&b[you].slice(5)),NAMES[you]+"'s birthday 🎂"],[nx(d.anniv&&d.anniv.slice(5)),'Our anniversary 💞'],...BUILTIN_DAYS.map(([md,lb])=>[nx(md),lb])].filter(x=>x[0]).sort((a,b)=>a[0]<b[0]?-1:1).slice(0,3);
+  return `<section class="card"><div class="row between"><span class="eyebrow">Special days</span><button class="btn sm ghost" data-act="daysSheet">${b[me]||b[you]||d.anniv?'Edit dates':'Add birthdays'}</button></div>
+    <div class="days">${l.map(([dt,lb])=>{const n=daysBetween(t,dt);return `<div class="dayi"><b>${esc(lb)}</b><span class="small muted">${n===0?'Today!':n===1?'Tomorrow':'in '+n+' days'}</span></div>`;}).join('')}</div></section>`;}
+function goalDocKey(){return String(S.goalYear||+todayKey().slice(0,4));}
+function goalList(){const k=goalDocKey(),d=(S.years||{})[k]||(k===todayKey().slice(0,4)?S.year:null);return (d&&d.goals)||[];}
+/* This or That, a quick daily pick */
+const TOT=[['Beach holiday','City break'],['Jollof','Pasta'],['Morning call','Night call'],['Sneakers','Sandals'],['Text','Voice note'],['Movie night in','Dinner out'],['Sunrise','Sunset'],['Sweet','Spicy'],['Rain','Sunshine'],['Dogs','Cats'],['Plan everything','Go with the flow'],['Live in Lagos','Live in Rome'],['Love letters','Surprise gifts'],['Cook together','Order in'],['Big wedding','Small wedding'],['Afrobeats','Love songs'],['Early bird','Night owl'],['Road trip','Flight'],['Mountains','Ocean'],['Suya','Pizza'],['Hugs','Kisses'],['Comedy','Romance film'],['Save it','Spend it'],['Farm life','City life'],['Matching outfits','Surprise outfits'],['Never argue','Always make up fast',1],['Read my mind','I read yours',1],['A week together now','A month next year',1],['Slow dance','Karaoke together',1],['Breakfast in bed','A candlelit dinner',1]];
+function totToday(){const base=Math.floor(Date.parse(todayKey()+'T12:00:00Z')/864e5)*3;return [0,1,2].map(k=>(base+k)%TOT.length);}
+function totCard(){const me=S.role,you=other(me),q=totToday(),t=S.tot||{},mine=t[me]||{},theirs=t[you]||{},done=q.every(i=>mine[i]!=null),both=done&&q.every(i=>theirs[i]!=null);
+  const match=both?q.filter(i=>mine[i]===theirs[i]).length:0;
+  return `<section class="card tot"><div class="row between"><span class="eyebrow">Today's This or That</span>${both?`<span class="chip her">${match}/3 match 💞</span>`:done?`<span class="chip">Waiting for ${esc(NAMES[you])}</span>`:''}</div>
+    ${q.map(i=>{const [a,b,wyr]=TOT[i];const opt=(k,l)=>`<button class="totb ${mine[i]===k?'on':''} ${both&&theirs[i]===k?'them':''}" data-act="tot" data-i="${i}" data-k="${k}">${esc(l)}${both&&theirs[i]===k?` <span class="small">${esc(NAMES[you])}</span>`:''}</button>`;return `${wyr?'<span class="small muted" style="margin-bottom:-4px">Would you rather…</span>':''}<div class="totrow">${opt(0,a)}<span class="small muted">or</span>${opt(1,b)}</div>`;}).join('')}</section>`;}
 /* ---------- PLAY ---------- */
 function jigCard(){
   const j=S.jig,me=S.role;let jig;
@@ -377,6 +431,7 @@ function playView(){
   const j=S.jig;const jst=j?{turn:j.done?null:j.turn,over:j.done}:null;
   return `<div class="greet" style="padding-top:2px"><h1>Game Area</h1></div>
   ${scoreboard()}
+  ${totCard()}
   <div class="glist">${tile('jigsaw','Jigsaw','Real pieces, HD photos','<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 3a2 2 0 0 1 4 0v1h4a2 2 0 0 1 2 2v4h-1a2 2 0 0 0 0 4h1v4a2 2 0 0 1-2 2h-4v-1a2 2 0 0 0-4 0v1H6a2 2 0 0 1-2-2v-4h1a2 2 0 0 0 0-4H4V6a2 2 0 0 1 2-2h4z"/></svg>',jst)}
   ${Object.entries(G).map(([id,g])=>tile(id,g.name,g.short,g.icon,S.games[id])).join('')}</div>`;
 }
@@ -412,10 +467,7 @@ function planView(){
     ${up.length?up.map(dateItem).join(''):'<p class="small muted" style="margin:0">No date night booked yet.</p>'}
     ${past.length?`<span class="eyebrow">Recent</span>${past.map(dateItem).join('')}`:''}
   </section>
-  <section class="card" id="pGoals"><span class="eyebrow">${t.slice(0,4)} goals</span>
-    <ul class="list">${goals.map(x=>`<li class="item ${x.done?'done':''}"><button class="check ${x.done?'on':''}" data-act="goal" data-id="${x.id}" aria-label="Done"></button><span class="grow">${esc(x.t)}</span><button class="x" data-act="goalDel" data-id="${x.id}" aria-label="Delete">×</button></li>`).join('')||'<li class="small muted">Add the big things you want this year.</li>'}</ul>
-    <div class="row" style="flex-wrap:nowrap"><input type="text" id="goalIn" placeholder="e.g. Visit twice, grow the farm to 10 pigs"><button class="btn sm" data-act="goalAdd">Add</button></div>
-  </section>
+  ${goalsCard()}
   <section class="card" id="pMood"><span class="eyebrow">${monthName(mk)} mood board</span>
     <div class="mood">${pins.map(p=>`<div class="pin">${p.img?`<img src="${p.img}" alt="">`:esc(p.text)}</div>`).join('')||'<p class="small muted" style="margin:0">Pin words or photos for how this month should feel.</p>'}</div>
     <div class="row" style="flex-wrap:nowrap"><input type="text" id="moodIn" placeholder="A word, a quote, a feeling"><button class="btn sm" data-act="moodAdd">Pin</button></div>
@@ -465,6 +517,7 @@ function usView(){
     <ul class="list">${items.map(x=>`<li class="item ${x.done?'done':''}"><button class="check ${x.done?'on':''}" data-act="wish" data-id="${x.id}" aria-label="Done"></button>${av(x.by,26)}<span class="grow">${esc(x.t)}</span><button class="x" data-act="wishDel" data-id="${x.id}" aria-label="Delete">×</button></li>`).join('')||"<li class=\"small muted\">Things to do together, gifts you'd love.</li>"}</ul>
     <div class="row" style="flex-wrap:nowrap"><input type="text" id="wishIn" placeholder="e.g. Dinner by the sea in Ancona"><button class="btn sm" data-act="wishAdd">Add</button></div>
   </section>
+  ${daysCard()}
   <section class="card"><div class="row between"><h2>Open-when letters</h2><button class="btn sm" data-act="letterSheet">Write one</button></div>
     ${forMe.length?forMe.map(l=>`<div class="item">${av(l.from,34)}<span class="grow"><b>${esc(l.when)}</b><br><span class="small muted">from ${NAMES[l.from]}</span></span><button class="btn sm ${l.opened?'':'primary'}" data-act="openLetter" data-id="${l.id}">${l.opened?'Read again':'Open'}</button></div>`).join(''):'<p class="small muted" style="margin:0">No letters for you yet.</p>'}
     ${fromMe.length?`<span class="eyebrow">Letters you sent</span>${fromMe.sort((a,b)=>b.at-a.at).map(l=>`<div class="item">${av(l.from,34)}<span class="grow"><b>${esc(l.when)}</b><br><span class="small muted">to ${esc(l.toName||NAMES[l.to])} · ${l.opened?'Opened 💖':'Not opened yet'}</span></span><button class="btn sm" data-act="openLetter" data-id="${l.id}">Read</button></div>`).join('')}`:''}
@@ -614,24 +667,28 @@ const SURPRISES=[{id:'mensday2026',from:'anthonia',to:'ifeayomi',when:"A little 
 async function seedSurprises(){if(!S.lettersReady||S.seeded)return;S.seeded=true;
   for(const x of SURPRISES){if(x.to!==S.role&&x.from!==S.role)continue;const ex=(S.letters||[]).find(l=>l.id===x.id);if(ex){if(!ex.opened&&(ex.body!==x.body||ex.toName!==x.toName||ex.when!==x.when)){try{await mergeDoc('letters/'+x.id,{body:x.body,toName:x.toName||null,when:x.when});await mergeDoc('messages/'+x.id,{when:x.when});}catch(e){}}continue;}const at=Date.now();
     try{await setDoc('letters/'+x.id,{from:x.from,to:x.to,toName:x.toName||null,when:x.when,body:x.body,cheque:x.cheque,pop:true,opened:false,at});await setDoc('messages/'+x.id,{by:x.from,at,kind:'letter',letterId:x.id,when:x.when});}catch(e){}}}
-function chequeHtml(c,l){return c?`<div class="cheque"><div class="chtop"><b>Bank of Love</b><span>${esc(new Date(l.at||Date.now()).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))}</span></div>
+function numWords(n){const a=['','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'],t=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+  const h=x=>x<20?a[x]:x<100?t[Math.floor(x/10)]+(x%10?'-'+a[x%10]:''):a[Math.floor(x/100)]+' hundred'+(x%100?' and '+h(x%100):'');
+  if(!n)return 'Zero';let out=[],sc=[[1e9,'billion'],[1e6,'million'],[1e3,'thousand']];for(const [v,w] of sc)if(n>=v){out.push(h(Math.floor(n/v))+' '+w);n%=v;}if(n)out.push((out.length&&n<100?'and ':'')+h(n));
+  const s=out.join(' ');return s[0].toUpperCase()+s.slice(1);}
+function chequeHtml(c,l){return c?`<div class="cheque">${c.cashed?'<div class="cashed">CASHED</div>':''}<div class="chtop"><b>Bank of Love</b><span>${esc(new Date(l.at||Date.now()).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}))}</span></div>
   <div class="chrow"><span>Pay</span><b>${esc(l.toName||NAMES[l.to])}</b></div><div class="chrow"><span>The sum of</span><i>${esc(c.words)}</i></div>
-  <div class="chamt">${esc(c.amount)}</div><div class="chrow"><span>For</span><i>${esc(c.memo)}</i></div><div class="chsign">${esc(NAMES[l.from])}</div></div>`:'';}
+  <div class="chamt">${esc(c.amount)}</div><div class="chrow"><span>For</span><i>${esc(c.memo)}</i></div><div class="chsign">${esc(NAMES[l.from])}</div></div>${l.id&&l.to===S.role&&!c.cashed?`<button class="btn sm primary" style="align-self:center" data-act="cashCheque" data-id="${l.id}">Cash it 💸</button>`:l.id&&l.from===S.role&&c.cashed?`<p class="small" style="margin:4px 0 0;text-align:center"><b>${esc(NAMES[l.to])} cashed this.</b> Time to send ${esc(c.amount)} 😄</p>`:''}`:'';}
 /* Envelope surprise: a sealed letter he opens by breaking the seal */
-function showEnvelope(l){closeSheet();const old=document.getElementById('envOv');if(old)old.remove();S.envShown=l.id;
+function showEnvelope(l){closeSheet();const old=document.getElementById('envOv');if(old)old.remove();S.envShown=l.id;S.envDone=[...(S.envDone||[]),l.id];
   const ov=document.createElement('div');ov.id='envOv';ov.className='envov';
   ov.innerHTML=`<button class="x envx" aria-label="Close">×</button><div class="envtitle">${esc(l.when)}</div>
     <div class="envelope"><div class="eback"></div><div class="paper"><div class="pfrom">From ${esc(NAMES[l.from])} ${HEART}</div><div class="pbody">${esc(l.body)}</div>${chequeHtml(l.cheque,l)}<div class="psign">Love, ${esc(NAMES[l.from])}</div></div>
       <div class="efront"><span>For ${esc(l.toName||NAMES[l.to])}</span></div><div class="eflap"></div><button class="seal" aria-label="Break the seal">${HEART}</button></div>
     <div class="envhint">Tap the heart seal to open</div>`;
   document.body.appendChild(ov);document.documentElement.style.overflow='hidden';document.body.style.overflow='hidden';requestAnimationFrame(()=>ov.classList.add('in'));
-  const close=()=>{ov.classList.remove('in');document.documentElement.style.overflow='';document.body.style.overflow='';setTimeout(()=>ov.remove(),400);};
+  const close=()=>{ov.classList.remove('in');document.documentElement.style.overflow='';document.body.style.overflow='';setTimeout(()=>{ov.remove();maybeEnvelope();},400);};
   ov.querySelector('.envx').onclick=close;
   ov.querySelector('.seal').onclick=async()=>{if(ov.classList.contains('open'))return;ov.classList.add('open');try{navigator.vibrate&&navigator.vibrate([30,60,30]);}catch(e){}
     setTimeout(()=>{floatHearts();confetti();},700);setTimeout(()=>{const b=document.createElement('div');b.className='bigpaper';b.innerHTML=ov.querySelector('.paper').innerHTML;ov.appendChild(b);ov.classList.add('read');},1500);
     if(!l.opened&&l.to===S.role){try{await mergeDoc('letters/'+l.id,{opened:true,openedAt:Date.now()});}catch(e){}}};}
 function maybeEnvelope(){if(!S.role||!['live','demo'].includes(S.mode))return;seedSurprises();if(document.getElementById('envOv')||!document.getElementById('sheet').classList.contains('hidden'))return;
-  const l=(S.letters||[]).filter(x=>x.to===S.role&&!x.opened&&x.pop).sort((a,b)=>a.at-b.at)[0];if(!l||S.envShown===l.id)return;setTimeout(()=>{if(!document.getElementById('envOv'))showEnvelope(l);},600);}
+  S.envDone=S.envDone||[];const l=(S.letters||[]).filter(x=>x.to===S.role&&!x.opened&&x.pop&&!S.envDone.includes(x.id)).sort((a,b)=>a.at-b.at)[0];if(!l)return;setTimeout(()=>{if(!document.getElementById('envOv'))showEnvelope(l);},600);}
 /* Month-end to-do reminder for the person who owns them */
 function myOpenTodos(){const m=S.month||{};return (m.todos||[]).filter(x=>!x.done&&x.owner===S.role);}
 function daysLeftInMonth(){const t=todayKey(),y=+t.slice(0,4),mo=+t.slice(5,7),d=+t.slice(8);return new Date(y,mo,0).getDate()-d;}
@@ -868,9 +925,19 @@ const A={
   todoAdd:async()=>{const v=val('todoIn').trim();if(!v)return;clearIn('todoIn');const owner=val('todoOwner')||S.role,todos=[...((S.month&&S.month.todos)||[]),{id:uidGen(),t:v,owner,done:false}];await mergeDoc('months/'+monthKey(),{todos});planPost('todo',{text:v,owner,month:monthKey()});},
   todo:async t=>{let fin=null;const todos=((S.month&&S.month.todos)||[]).map(x=>{if(x.id!==t.dataset.id)return x;if(!x.done)fin=x;return {...x,done:!x.done};});await mergeDoc('months/'+monthKey(),{todos});if(fin)planPost('todoDone',{text:fin.t,owner:fin.owner,month:monthKey()});},
   todoDel:async t=>{const todos=((S.month&&S.month.todos)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('months/'+monthKey(),{todos});},
-  goalAdd:async()=>{const v=val('goalIn').trim();if(!v)return;clearIn('goalIn');const goals=[...((S.year&&S.year.goals)||[]),{id:uidGen(),t:v,done:false}];await mergeDoc('years/'+todayKey().slice(0,4),{goals});planPost('goal',{text:v});},
-  goal:async t=>{let won=false;const goals=((S.year&&S.year.goals)||[]).map(x=>{if(x.id===t.dataset.id){won=!x.done;return {...x,done:!x.done};}return x;});await mergeDoc('years/'+todayKey().slice(0,4),{goals});if(won)confetti();},
-  goalDel:async t=>{const goals=((S.year&&S.year.goals)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('years/'+todayKey().slice(0,4),{goals});},
+  goalWho:t=>{S.goalWho=t.dataset.k;render(true);},goalYear:t=>{S.goalYear=+t.dataset.k;render(true);},
+  goalAdd:async()=>{const v=val('goalIn').trim();if(!v)return;const owner=S.goalWho||S.role;if(owner!==S.role&&owner!=='us')return;clearIn('goalIn');const goals=[...goalList(),{id:uidGen(),t:v,owner,done:false}];await mergeDoc('years/'+goalDocKey(),{goals});planPost('goal',{text:v});},
+  goal:async t=>{let won=false;const goals=goalList().map(x=>{if(x.id===t.dataset.id){won=!x.done;return {...x,done:!x.done};}return x;});await mergeDoc('years/'+goalDocKey(),{goals});if(won)confetti();},
+  goalDel:async t=>{const goals=goalList().filter(x=>x.id!==t.dataset.id);await mergeDoc('years/'+goalDocKey(),{goals});},
+  setStatus:async t=>{const k=t.dataset.k;await mergeDoc('pods/status',{[S.role]:{s:k,at:Date.now()}});toast(k==='sleep'?`Good night! ${NAMES[other(S.role)]} will see you're asleep 😴`:`Good morning! ${NAMES[other(S.role)]} will see you're up ☀️`);},
+  tot:async t=>{const i=t.dataset.i,k=+t.dataset.k,cur=((S.tot||{})[S.role])||{};await mergeDoc('tot/'+todayKey(),{[S.role]:{...cur,[i]:k}});},
+  sweetSheet:()=>{const pick=[...SWEET].sort(()=>Math.random()-.5).slice(0,3);openSheet(`${sheetHead('A sweet line for '+esc(NAMES[other(S.role)]))}<p class="small muted" style="margin:0">Tap one to use it, or write your own.</p>${pick.map(x=>`<button class="w" data-act="sweetPick" data-t="${esc(x)}"><span>${esc(x)}</span></button>`).join('')}<textarea id="sweetIn" placeholder="Or write your own…"></textarea><button class="btn primary" data-act="sweetSend">Send it 💌</button>`);},
+  sweetPick:t=>{const el=document.getElementById('sweetIn');if(el)el.value=t.dataset.t;},
+  sweetSend:async()=>{const v=val('sweetIn').trim();if(!v)return toast('Pick a line or write one');closeSheet();await sendMsg({text:v,sweet:true});floatHearts();toast('Sent 💌');},
+  daysSheet:()=>{const d=S.days||{},b=d.bday||{};openSheet(`${sheetHead('Our special days')}<p class="small muted" style="margin:0">Pods reminds you a week before, and on the day. Valentine's, Women's Day, Men's Day and Christmas are already in.</p>
+    <label class="f" for="dbMe">Your birthday<input type="date" id="dbMe" value="${esc(b[S.role]||'')}"></label><label class="f" for="dbYou">${esc(NAMES[other(S.role)])}'s birthday<input type="date" id="dbYou" value="${esc(b[other(S.role)]||'')}"></label>
+    <label class="f" for="dAnn">Our anniversary<input type="date" id="dAnn" value="${esc(d.anniv||'')}"></label><button class="btn primary" data-act="daysSave">Save</button>`);},
+  daysSave:async()=>{const bd={...((S.days||{}).bday||{})};const m=val('dbMe'),y=val('dbYou');if(m)bd[S.role]=m;if(y)bd[other(S.role)]=y;await mergeDoc('pods/days',{bday:bd,anniv:val('dAnn')||null});closeSheet();toast('Saved. Pods will remind you 💞');},
   moodAdd:async()=>{const v=val('moodIn').trim();if(!v)return;clearIn('moodIn');await addDoc('mood',{month:monthKey(),text:v,by:S.role,at:Date.now()});planPost('mood',{text:v,month:monthKey()});},
   dateSheet:()=>{const d=addDays(todayKey(),7);openSheet(`${sheetHead('Plan a date night')}
     <div class="row" style="flex-wrap:nowrap"><label class="f" for="dDate" style="flex:1">Date<input type="date" id="dDate" value="${d}"></label><label class="f" for="dTime" style="flex:1">Time in Ancona<input type="time" id="dTime" value="19:30"></label></div>
@@ -908,9 +975,18 @@ const A={
   wish:async t=>{let won=false;const items=((S.wish&&S.wish.items)||[]).map(x=>{if(x.id===t.dataset.id){won=!x.done;return {...x,done:!x.done};}return x;});await mergeDoc('pods/wishlist',{items});if(won)floatHearts();},
   wishDel:async t=>{const items=((S.wish&&S.wish.items)||[]).filter(x=>x.id!==t.dataset.id);await mergeDoc('pods/wishlist',{items});},
   letterSheet:()=>openSheet(`${sheetHead('Write a letter')}<label class="f" for="lWhen">Title on the envelope<select id="lWhen">${OPEN_WHEN.map(w=>`<option>${w}</option>`).join('')}</select></label><label class="f" for="lOwn">Or write your own title<input type="text" id="lOwn" maxlength="60" placeholder="e.g. To my favourite man"></label>
-    <label class="row small" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="lPop" checked style="width:auto"> Pop it up as a surprise the moment ${esc(NAMES[other(S.role)])} opens Pods</label><label class="f" for="lBody">Your letter to ${NAMES[other(S.role)]}<textarea id="lBody" style="min-height:180px"></textarea></label><button class="btn primary" data-act="letterSave">Seal and send</button>`),
-  letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lOwn').trim()||val('lWhen'),pop=!!(document.getElementById('lPop')||{}).checked;closeSheet();
-    const id=await addDoc('letters',{from:S.role,to:other(S.role),when,body,pop,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');await sendMsg({kind:'letter',letterId:id,when});},
+    <label class="row small" style="gap:8px;flex-wrap:nowrap"><input type="checkbox" id="lPop" checked style="width:auto"> Pop it up as a surprise the moment ${esc(NAMES[other(S.role)])} opens Pods</label><label class="f" for="lBody">Your letter to ${NAMES[other(S.role)]}<textarea id="lBody" style="min-height:180px"></textarea></label>
+    <label class="row small" style="gap:8px;flex-wrap:nowrap;font-weight:800"><input type="checkbox" id="lChq" style="width:auto" onchange="document.getElementById('chqBox').hidden=!this.checked"> Add a love cheque 💸</label>
+    <div id="chqBox" class="bank" hidden><div class="row" style="gap:8px;flex-wrap:nowrap"><label class="f" for="lCur" style="flex:0 0 84px">Money<select id="lCur"><option value="₦">₦</option><option value="€">€</option></select></label><label class="f grow" for="lAmt">Amount<input type="number" id="lAmt" min="1" inputmode="numeric" placeholder="3500"></label></div>
+      <label class="f" for="lMemo">What it's for<input type="text" id="lMemo" maxlength="80" placeholder="e.g. Your favourite jollof tomorrow 🍛"></label><p class="small muted" style="margin:0">The amount is written out in words on the cheque. Remember to actually send the money when they cash it 😄</p></div>
+    <button class="btn primary" data-act="letterSave">Seal and send</button>`),
+  cashCheque:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l||!l.cheque||l.cheque.cashed||l.to!==S.role)return;await mergeDoc('letters/'+l.id,{cheque:{...l.cheque,cashed:true,cashedAt:Date.now()}});confetti();closeSheet();const o=document.getElementById('envOv');if(o)o.remove();document.documentElement.style.overflow='';document.body.style.overflow='';
+    await sendMsg({text:`I'm cashing my love cheque of ${l.cheque.amount} 💸 for: ${l.cheque.memo} 😄`});toast('Cheque cashed! They\'ve been told 💸');},
+  letterSave:async()=>{const body=val('lBody').trim();if(!body)return toast('Write the letter first');const when=val('lOwn').trim()||val('lWhen'),pop=!!(document.getElementById('lPop')||{}).checked;
+    let cheque=null;if((document.getElementById('lChq')||{}).checked){const amt=Math.round(+val('lAmt'));if(!(amt>0))return toast('Put an amount on the cheque');const cur=val('lCur')||'₦';
+      cheque={amount:cur+amt.toLocaleString('en-GB'),words:numWords(amt)+' '+(cur==='€'?'euro':'naira')+' only',memo:val('lMemo').trim()||'With all my love'};}
+    closeSheet();
+    const id=await addDoc('letters',{from:S.role,to:other(S.role),when,body,pop,cheque,opened:false,at:Date.now()});floatHearts();toast('Letter sealed with love');await sendMsg({kind:'letter',letterId:id,when});},
   openLetter:async t=>{const l=S.letters.find(x=>x.id===t.dataset.id);if(!l)return;if(l.to===S.role&&!l.opened)return showEnvelope(l);openSheet(`${sheetHead(esc(l.when))}<div class="row">${av(l.from,40)}<span class="small muted">From ${esc(NAMES[l.from])} to ${esc(l.toName||NAMES[l.to])}${l.from===S.role?(l.opened?' · Opened 💖':' · Not opened yet'):''}</span></div><div style="white-space:pre-wrap;font-size:1.08rem;background:var(--blush);border-radius:18px;padding:16px">${esc(l.body)}</div>${chequeHtml(l.cheque,l)}`);if(!l.opened){floatHearts();await mergeDoc('letters/'+l.id,{opened:true});}},
 };
 async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const FR={60:.8,120:.8,260:13/20}[c*r],ta=(r>c&&FR)?Math.round((c/r)/FR*1000)/1000:1;const doc={ta,photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
