@@ -159,7 +159,7 @@ const WHOT_SPECIAL = { 1: 'Hold on', 2: 'Pick two', 5: 'Pick three', 8: 'Suspens
 function whotValid(st, c) { const [sh, n] = c.split('-'); if (sh === 'w') return true; if (st.need) return sh === st.need; const [tsh, tn] = st.pile[st.pile.length - 1].split('-'); return sh === tsh || n === tn; }
 G.whot = {
   name: 'Whot!', short: 'The Naija card classic', icon: ICON('<rect x="4" y="3" width="13" height="18" rx="2"/><path d="M8 3.5l12 3-3.5 14"/><circle cx="10.5" cy="12" r="2.5"/>'),
-  desc: 'Match the shape or number on top. 1 Hold on, 2 Pick two, 5 Pick three, 8 Suspension and 14 General market let you play again. Whot 20 lets you ask for a shape. First to empty their hand wins.',
+  desc: 'Match the shape or number on top. 1 Hold on, 2 Pick two, 5 Pick three, 8 Suspension and 14 General market let you play again. Whot 20 lets you ask for a shape. First to empty their hand wins, but you can\'t check up with a special card.',
   start(me) { const d = whotDeck(); const st = { kind: 'whot', draw: d, pile: [], hands: { anthonia: [], ifeayomi: [] }, turn: me, need: null };
     for (let k = 0; k < 6; k++) { st.hands.anthonia.push(d.pop()); st.hands.ifeayomi.push(d.pop()); }
     let i = d.findIndex((c) => !WHOT_SPECIAL[c.split('-')[1]]); st.pile.push(d.splice(i, 1)[0]); st.msg = `${NAMES[me]} starts`; return st; },
@@ -170,12 +170,13 @@ G.whot = {
     <div class="table">${whotCard(top, { cls: 'top' })}<div class="deckpile"><div class="pc back"></div><span class="small muted">${st.draw.length} in market</span></div></div>
     ${st.need ? `<div class="need">Asked for: <svg viewBox="0 0 40 40">${SHAPE_SVG[st.need]}</svg> ${SHAPE_NAME[st.need]}</div>` : ''}
     <span class="eyebrow">Your hand</span>
-    <div class="hand">${st.hands[me].map((c, k) => whotCard(c, { btn: mine ? `data-act="g" data-g="whot" data-a="play" data-x="${k}"` : 'disabled', cls: mine && whotValid(st, c) ? 'ok' : mine ? 'no' : '' })).join('')}</div>
-    ${mine ? `<div class="row">${gbtn('whot', 'market', 'Go to market')}<span class="small muted">Tap a glowing card to play it.</span></div>` : ''}`;
+    <div class="hand">${st.hands[me].map((c, k) => whotCard(c, { btn: mine ? `data-act="g" data-g="whot" data-a="play" data-x="${k}"` : 'disabled', cls: mine && whotValid(st, c) && !(st.hands[me].length === 1 && WHOT_SPECIAL[c.split('-')[1]]) ? 'ok' : mine ? 'no' : '' })).join('')}</div>
+    ${mine ? `<div class="row">${gbtn('whot', 'market', 'Go to market')}<span class="small muted">${st.hands[me].length === 1 && WHOT_SPECIAL[st.hands[me][0].split('-')[1]] ? "Your last card is a special card. You can't check up with it, so go to market." : 'Tap a glowing card to play it.'}</span></div>` : ''}`;
   },
   act: {
     play(st, t) { const me = S.role; if (st.turn !== me || st.over) return; const k = +t.dataset.x, c = st.hands[me][k]; if (!c || !whotValid(st, c)) return toast("That card doesn't match");
       const n = c.split('-')[1];
+      if (st.hands[me].length === 1 && WHOT_SPECIAL[n]) return toast("You can't check up with a special card. Go to market.");
       if (n === '20') { return openSheet(`${sheetHead('Ask for a shape')}<div class="shapes">${['c', 't', 'x', 's', 'r'].map((sh) => `<button data-act="g" data-g="whot" data-a="need" data-x="${k}" data-s="${sh}"><svg viewBox="0 0 40 40">${SHAPE_SVG[sh]}</svg>${SHAPE_NAME[sh]}</button>`).join('')}</div>`); }
       G.whot.finish(st, k, null); },
     need(st, t) { closeSheet(); G.whot.finish(st, +t.dataset.x, t.dataset.s); },
@@ -366,12 +367,16 @@ const JAR = [
 const ringPos = (i) => (i <= 8 ? [8, 8 - i] : i <= 16 ? [16 - i, 0] : i <= 24 ? [0, i - 16] : [i - 24, 8]);
 const groupOf = (g) => PSP.map((s, i) => (s.g === g ? i : -1)).filter((i) => i >= 0);
 const HOUSE_MULT = [1, 5, 15, 35, 60];
-function propRent(st, i, dice) { const s = PSP[i], o = st.own[i]; if (!o) return 0;
+const mortVal = (i) => Math.round(PSP[i].p / 2), unmortCost = (i) => Math.round(PSP[i].p * 0.55), houseSell = (i) => Math.round(PSP[i].p / 4);
+const groupHouses = (st, i) => PSP[i].g ? groupOf(PSP[i].g).some((k) => st.own[k] && (st.own[k].houses || 0) > 0) : false;
+function raisable(st, r) { let v = 0; for (const [i, o] of Object.entries(st.own)) if (o.by === r) { v += (o.houses || 0) * houseSell(i); if (!o.m) v += mortVal(i); } return v; }
+function propRent(st, i, dice) { const s = PSP[i], o = st.own[i]; if (!o || o.m) return 0;
   if (s.t === 'tr') { const n = TRANS.filter((k) => st.own[k] && st.own[k].by === o.by).length; return 25 * 2 ** (n - 1); }
   if (s.t === 'ut') return 6 * dice;
   const base = Math.round(s.p / 10), full = groupOf(s.g).every((k) => st.own[k] && st.own[k].by === o.by), h = o.houses || 0;
   return h ? base * HOUSE_MULT[h] : full ? base * 2 : base; }
-function worth(st, r) { let w = st.cash[r]; for (const [i, o] of Object.entries(st.own)) if (o.by === r) w += PSP[i].p + (o.houses || 0) * Math.round(PSP[i].p / 2); return w; }
+const LOAN_MAX = 350, LOAN_LAPS = 3, loanOf = (st, r) => (st.loan && st.loan[r]) || null;
+function worth(st, r) { let w = st.cash[r] - ((loanOf(st, r) || {}).amt || 0); for (const [i, o] of Object.entries(st.own)) if (o.by === r) w += (o.m ? mortVal(i) : PSP[i].p) + (o.houses || 0) * Math.round(PSP[i].p / 2); return w; }
 const DOTS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 const dieFace = (n, cls = '') => `<span class="dface ${cls}">${Array.from({ length: 9 }, (_, k) => `<i class="${(DOTS[n] || []).includes(k) ? 'on' : ''}"></i>`).join('')}</span>`;
 function spinDice(sel, faces, ms = 700) { return new Promise((res) => { const els = [...document.querySelectorAll(sel)]; els.forEach((e) => e.classList.add('rolling'));
@@ -381,26 +386,33 @@ let propAnim = null, propSeen = null;
 G.property = {
   legacy: (st) => !st || !st.laps || Object.values(st.pos || {}).some((p) => p >= PN),
   name: 'Pods Property', short: 'Buy Oyo, Ibadan, Ancona & Venice', icon: ICON('<path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/>'),
-  desc: 'Tap your avatar to roll, watch your piece hop round 32 places from Oyo Town to Venice, buy them and charge rent. Own a whole colour to double rent and build up to 4 houses. Love Notes, Lucky Jars and Date Nights bring surprises. Run your partner out of money, or end the game and the richest wins.',
+  desc: 'Tap your avatar to roll and hop round 32 places from Oyo Town to Venice. Buy places or send them to auction, charge rent, own a whole colour to double rent and build up to 4 houses. Mortgage places, sell houses or take a bank loan (up to ₦350, paid back within 3 laps) when cash is low, and trade places and money with your partner. Love Notes, Lucky Jars and Date Nights bring surprises. Last one standing wins, or end the game and the richest wins.',
   start(first) { return { kind: 'property', pos: { anthonia: 0, ifeayomi: 0 }, cash: { anthonia: 2000, ifeayomi: 2000 }, own: {}, turn: first, phase: 'roll', dice: [3, 4], dbl: 0, jail: { anthonia: 0, ifeayomi: 0 }, free: {}, laps: { anthonia: 0, ifeayomi: 0 }, mv: null, msg: `${NAMES[first]} rolls first` }; },
   score: (st) => ['₦' + worth(st, 'anthonia'), '₦' + worth(st, 'ifeayomi')],
   view(st, me) {
     const mine = st.turn === me && !st.over, cells = [], shown = { ...st.pos, ...(propAnim ? { [propAnim.who]: propAnim.at } : {}) };
     for (let i = 0; i < PN; i++) { const s = PSP[i], [r, c] = ringPos(i), o = st.own[i];
       const tok = ['anthonia', 'ifeayomi'].filter((x) => shown[x] === i).map((x) => `<span class="ptok ${propAnim && propAnim.who === x ? 'hop' : ''}">${av(x, 20)}</span>`).join('');
-      cells.push(`<button class="pcell ${s.t}${st.mv && st.mv.to === i && !propAnim ? ' landed' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}" data-act="g" data-g="property" data-a="info" data-x="${i}">${s.g ? `<i style="background:${PCOL[s.g]}"></i>` : ''}<span class="${s.n.length > 12 ? 'xlong' : s.n.length > 7 ? 'long' : ''}">${PSHY[s.n] || s.n}</span>${s.p && s.t !== 'tax' ? `<em>₦${s.p}</em>` : s.t === 'tax' ? `<em>-₦${s.p}</em>` : ''}${o ? `<u class="${o.by}">${o.houses ? '<b>' + '⌂'.repeat(o.houses) + '</b>' : ''}</u>` : ''}<div class="toks">${tok}</div></button>`); }
+      cells.push(`<button class="pcell ${s.t}${st.mv && st.mv.to === i && !propAnim ? ' landed' : ''}${o && o.m ? ' mort' : ''}${st.auc && st.auc.i === i ? ' landed' : ''}" style="grid-row:${r + 1};grid-column:${c + 1}" data-act="g" data-g="property" data-a="info" data-x="${i}">${s.g ? `<i style="background:${PCOL[s.g]}"></i>` : ''}<span class="${s.n.length > 12 ? 'xlong' : s.n.length > 7 ? 'long' : ''}">${PSHY[s.n] || s.n}</span>${s.p && s.t !== 'tax' ? `<em>₦${s.p}</em>` : s.t === 'tax' ? `<em>-₦${s.p}</em>` : ''}${o ? `<u class="${o.by}">${o.houses ? '<b>' + '⌂'.repeat(o.houses) + '</b>' : ''}</u>` : ''}<div class="toks">${tok}</div></button>`); }
     const here = PSP[st.pos[me]], d = st.dice;
-    const buildable = Object.entries(st.own).filter(([i, o]) => o.by === me && PSP[i].g && (o.houses || 0) < 4 && groupOf(PSP[i].g).every((k) => st.own[k] && st.own[k].by === me));
-    const wallet = (r) => { const n = Object.values(st.own).filter((o) => o.by === r).length; const canRoll = r === me && mine && st.phase === 'roll';
-      return `<button class="wallet ${r} ${st.turn === r && !st.over ? 'active' : ''} ${canRoll ? 'canroll' : ''}" ${canRoll ? 'data-act="g" data-g="property" data-a="roll"' : 'disabled'}>${av(r, 44)}<span><b>${NAMES[r]}</b><span class="cash">₦${st.cash[r].toLocaleString()}</span><span class="small muted">${n} place${n === 1 ? '' : 's'}${st.jail[r] ? ' · on a missed call' : ''}${st.free && st.free[r] ? ' · free card' : ''}</span></span>${canRoll ? '<em class="tap">Tap to roll</em>' : ''}</button>`; };
+    const buildable = Object.entries(st.own).filter(([i, o]) => o.by === me && PSP[i].g && (o.houses || 0) < 4 && groupOf(PSP[i].g).every((k) => st.own[k] && st.own[k].by === me && !st.own[k].m));
+    const you = other(me), a = st.auc, off = st.offer, debt = !st.over && st.cash[me] < 0;
+    const wallet = (r) => { const n = Object.values(st.own).filter((o) => o.by === r).length; const canRoll = r === me && mine && st.phase === 'roll' && st.cash[me] >= 0 && !st.auc;
+      return `<button class="wallet ${r} ${st.turn === r && !st.over ? 'active' : ''} ${canRoll ? 'canroll' : ''}" ${canRoll ? 'data-act="g" data-g="property" data-a="roll"' : 'disabled'}>${av(r, 44)}<span><b>${NAMES[r]}</b><span class="cash ${st.cash[r] < 0 ? 'neg' : ''}">${st.cash[r] < 0 ? '-' : ''}₦${Math.abs(st.cash[r]).toLocaleString()}</span><span class="small muted">${n} place${n === 1 ? '' : 's'}${loanOf(st, r) ? ` · loan ₦${loanOf(st, r).amt}` : ''}${st.jail[r] ? ' · on a missed call' : ''}${st.free && st.free[r] ? ' · free card' : ''}</span></span>${canRoll ? '<em class="tap">Tap to roll</em>' : ''}</button>`; };
     const center = `<div class="pcenter"><div class="pdice">${dieFace(d[0], 'pd')}${dieFace(d[1], 'pd')}</div>
       ${st.card ? `<div class="lovecard">${esc(st.card)}</div>` : `<div class="small muted center">${esc(st.msg || '')}</div>`}
-      ${mine && !propAnim ? (st.phase === 'buy' ? `<div class="row" style="justify-content:center">${gbtn('property', 'buy', `Buy ${here.n} ₦${here.p}`, 'primary sm')}${gbtn('property', 'skip', 'No thanks', 'sm')}</div>`
-        : st.phase === 'end' ? gbtn('property', 'end', 'End turn', 'teal sm') : st.phase === 'roll' ? '<span class="small" style="color:var(--her);font-weight:800">Tap your avatar to roll</span>' : '') : ''}
+      ${a && !st.over ? `<div class="auc"><b>Auction: ${esc(PSP[a.i].n)}</b><span class="small">${a.by ? `Highest bid ₦${a.high} by ${esc(NAMES[a.by])}` : `Worth ₦${PSP[a.i].p} · no bids yet`}</span>
+        ${a.next === me ? `<div class="row" style="justify-content:center;gap:4px">${[10, 50, 100].map((x) => gbtn('property', 'bid', `+₦${x}`, 'sm' + (st.cash[me] >= a.high + x ? '' : ' off'), `data-x="${x}"`)).join('')}${gbtn('property', 'pass', a.by && a.by !== me ? `Let ${NAMES[a.by]} have it` : 'Pass', 'sm ghost')}</div>` : `<span class="small muted">Waiting for ${esc(NAMES[a.next])} to bid…</span>`}</div>` : ''}
+      ${mine && !propAnim && !a ? (st.phase === 'buy' ? `<div class="row" style="justify-content:center">${st.cash[me] >= here.p ? gbtn('property', 'buy', `Buy ${here.n} ₦${here.p}`, 'primary sm') : `<span class="small muted">Not enough cash to buy</span>`}${gbtn('property', 'skip', 'Auction it', 'sm')}</div>`
+        : st.phase === 'end' ? (debt ? '' : gbtn('property', 'end', 'End turn', 'teal sm')) : st.phase === 'roll' && !debt ? '<span class="small" style="color:var(--her);font-weight:800">Tap your avatar to roll</span>' : '') : ''}
       ${mine && st.jail[me] && st.phase === 'roll' ? (st.free && st.free[me] ? gbtn('property', 'useFree', 'Use free card', 'sm') : st.cash[me] >= 50 ? gbtn('property', 'bail', 'Pay ₦50 to leave', 'sm') : '') : ''}</div>`;
-    return `<div class="wallets">${wallet('anthonia')}${wallet('ifeayomi')}</div>
+    const tradeBox = off && !st.over ? (off.to === me ? `<div class="offer"><b>${esc(NAMES[off.from])} wants to trade</b>${G.property.offerText(st, off, me)}<div class="row">${gbtn('property', 'accept', 'Accept', 'primary sm')}${gbtn('property', 'decline', 'Decline', 'sm')}</div></div>`
+      : `<div class="offer mine"><b>Your trade offer</b>${G.property.offerText(st, off, me)}<div class="row"><span class="small muted">Waiting for ${esc(NAMES[off.to])}…</span>${gbtn('property', 'decline', 'Cancel offer', 'sm ghost')}</div></div>`) : '';
+    const debtBox = debt ? `<div class="debt"><b>You owe ₦${Math.abs(st.cash[me])}</b><span class="small">${raisable(st, me) + (LOAN_MAX - ((loanOf(st, me) || {}).amt || 0)) + st.cash[me] >= 0 ? 'Mortgage places, sell houses, borrow from the bank or trade to get back above ₦0 before you carry on.' : "Even mortgaging everything won't cover it. You can still try a trade, or declare bankrupt."}</span><div class="row">${gbtn('property', 'manage', 'My places', 'primary sm')}${gbtn('property', 'bankrupt', 'Declare bankrupt', 'sm ghost')}</div></div>`
+      : !st.over && st.cash[you] < 0 ? `<div class="debt soft"><span class="small">${esc(NAMES[you])} owes ₦${Math.abs(st.cash[you])} and must raise money on their turn.</span></div>` : '';
+    return `<div class="wallets">${wallet('anthonia')}${wallet('ifeayomi')}</div>${debtBox}${tradeBox}
     <div class="pboardwrap ${S.pzoom ? 'zoom' : ''}"><div class="pboard">${cells.join('')}${center}</div></div>
-    <div class="row">${gbtn('property', 'zoom', S.pzoom ? 'Fit board' : 'Zoom in', 'sm')}${!st.over ? gbtn('property', 'finish', 'End game & count', 'sm ghost') : ''}</div>
+    <div class="row">${!st.over ? gbtn('property', 'manage', 'My places', 'sm') + (off || a ? '' : gbtn('property', 'trade', 'Trade', 'sm')) : ''}${gbtn('property', 'zoom', S.pzoom ? 'Fit board' : 'Zoom in', 'sm')}${!st.over ? gbtn('property', 'finish', 'End game & count', 'sm ghost') : ''}</div>
     ${mine && buildable.length ? `<span class="eyebrow">Build a house (up to 4)</span><div class="row">${buildable.map(([i]) => gbtn('property', 'build', `${PSP[i].n} ₦${Math.round(PSP[i].p / 2)}`, 'sm', `data-x="${i}"`)).join('')}</div>` : ''}
     <div class="small muted">${(st.log || []).slice(0, 3).map(esc).join('<br>')}</div>`;
   },
@@ -410,7 +422,7 @@ G.property = {
   act: {
     zoom() { S.pzoom = !S.pzoom; render(true); },
     info(st, t) { const i = +t.dataset.x; openSheet('<div class="row" style="justify-content:flex-end;margin-bottom:-6px"><button class="x" data-act="close" aria-label="Close">×</button></div>' + G.property.deed(st, i)); },
-    async roll(st) { const me = S.role; if (st.turn !== me || st.phase !== 'roll' || propAnim) return; const d = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)], dbl = d[0] === d[1];
+    async roll(st) { const me = S.role; if (st.turn !== me || st.phase !== 'roll' || propAnim || st.auc) return; if (st.cash[me] < 0) return toast('Clear what you owe first: mortgage, sell houses or trade'); const d = [1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)], dbl = d[0] === d[1];
       st.dice = d; st.card = null; const from = st.pos[me]; let steps = 0;
       if (st.jail[me]) { if (dbl) { st.jail[me] = 0; logLine(st, `${NAMES[me]} rolled doubles and left Missed Call`); }
         else if (st.jail[me] >= 3) { st.jail[me] = 0; st.cash[me] -= 50; logLine(st, `${NAMES[me]} paid ₦50 after 3 tries`); }
@@ -421,35 +433,80 @@ G.property = {
       st.mv = { id: Date.now(), who: me, from, steps, dice: d, to: (from + steps) % PN }; saveGame('property', st); },
     bail(st) { const me = S.role; if (st.turn !== me || !st.jail[me]) return; st.cash[me] -= 50; st.jail[me] = 0; logLine(st, `${NAMES[me]} paid ₦50 to leave`); saveGame('property', st); },
     useFree(st) { const me = S.role; if (st.turn !== me || !st.jail[me] || !st.free[me]) return; st.free[me] = 0; st.jail[me] = 0; logLine(st, `${NAMES[me]} used a free card`); saveGame('property', st); },
-    buy(st) { const me = S.role, i = st.pos[me], s = PSP[i]; if (st.turn !== me || st.phase !== 'buy' || st.own[i] || st.cash[me] < s.p) return; st.cash[me] -= s.p; st.own[i] = { by: me, houses: 0 };
+    buy(st) { const me = S.role, i = st.pos[me], s = PSP[i]; if (st.turn !== me || st.phase !== 'buy' || st.own[i]) return; if (st.cash[me] < s.p) return toast('Not enough cash. Auction it or mortgage something first'); st.cash[me] -= s.p; st.own[i] = { by: me, houses: 0 };
       logLine(st, `${NAMES[me]} bought ${s.n}`); st.phase = st.again ? 'roll' : 'end'; floatHearts(); saveGame('property', st); },
-    skip(st) { if (st.turn !== S.role) return; st.phase = st.again ? 'roll' : 'end'; saveGame('property', st); },
+    skip(st) { const me = S.role; if (st.turn !== me || st.phase !== 'buy') return; const i = st.pos[me]; st.auc = { i, high: 0, by: null, next: other(me), passes: 0 }; st.phase = 'auction'; logLine(st, `${PSP[i].n} is up for auction`); saveGame('property', st); },
+    bid(st, t) { const me = S.role, a = st.auc; if (!a || a.next !== me) return; const amt = a.high + +t.dataset.x; if (st.cash[me] < amt) return toast("You don't have that much cash");
+      a.high = amt; a.by = me; a.next = other(me); a.passes = 0; logLine(st, `${NAMES[me]} bid ₦${amt} for ${PSP[a.i].n}`); saveGame('property', st); },
+    pass(st) { const me = S.role, a = st.auc; if (!a || a.next !== me) return;
+      if (a.by && a.by !== me) { st.own[a.i] = { by: a.by, houses: 0 }; st.cash[a.by] -= a.high; logLine(st, `${NAMES[a.by]} won ${PSP[a.i].n} for ₦${a.high}`); floatHearts(); G.property.endAuc(st); }
+      else { a.passes = (a.passes || 0) + 1; if (a.passes >= 2) { logLine(st, `Nobody bought ${PSP[a.i].n}`); G.property.endAuc(st); } else { a.next = other(me); logLine(st, `${NAMES[me]} passed`); } }
+      saveGame('property', st); },
+    manage(st) { const me = S.role, mine = Object.entries(st.own).filter(([, o]) => o.by === me).sort((x, y) => x[0] - y[0]);
+      openSheet(`${sheetHead('My places')}<p class="small muted" style="margin:0">Cash: <b>${st.cash[me] < 0 ? '-' : ''}₦${Math.abs(st.cash[me])}</b>. Mortgage a place for half its price; it earns no rent until you pay it off (+10%). Sell houses back for half what they cost. Sell a colour's houses before mortgaging it.</p>${G.property.bankBox(st, me)}<span class="eyebrow">Your places</span>
+        ${mine.length ? mine.map(([i, o]) => { i = +i; const s = PSP[i]; return `<div class="item mplace">${s.g ? `<i style="background:${PCOL[s.g]}"></i>` : '<i style="background:#3a1f2b"></i>'}<span class="grow"><b>${esc(s.n)}</b><br><span class="small muted">${o.m ? 'Mortgaged' : o.houses ? `${o.houses} house${o.houses > 1 ? 's' : ''}` : 'Earning rent'}</span></span>
+          ${o.houses ? gbtn('property', 'sellh', `Sell house +₦${houseSell(i)}`, 'sm', `data-x="${i}"`) : o.m ? gbtn('property', 'unmort', `Pay off ₦${unmortCost(i)}`, 'sm' + (st.cash[me] >= unmortCost(i) ? '' : ' off'), `data-x="${i}"`) : groupHouses(st, i) ? '<span class="small muted">Sell houses first</span>' : gbtn('property', 'mort', `Mortgage +₦${mortVal(i)}`, 'sm', `data-x="${i}"`)}</div>`; }).join('') : '<p class="small muted">You don\'t own any places yet.</p>'}`); },
+    mort(st, t) { const me = S.role, i = +t.dataset.x, o = st.own[i]; if (st.over || !o || o.by !== me || o.m || groupHouses(st, i)) return; o.m = true; st.cash[me] += mortVal(i); logLine(st, `${NAMES[me]} mortgaged ${PSP[i].n} for ₦${mortVal(i)}`); saveGame('property', st); G.property.act.manage(st); },
+    unmort(st, t) { const me = S.role, i = +t.dataset.x, o = st.own[i]; if (st.over || !o || o.by !== me || !o.m) return; if (st.cash[me] < unmortCost(i)) return toast('Not enough cash'); o.m = false; st.cash[me] -= unmortCost(i); logLine(st, `${NAMES[me]} paid off ${PSP[i].n}`); saveGame('property', st); G.property.act.manage(st); },
+    sellh(st, t) { const me = S.role, i = +t.dataset.x, o = st.own[i]; if (st.over || !o || o.by !== me || !(o.houses > 0)) return; o.houses--; st.cash[me] += houseSell(i); logLine(st, `${NAMES[me]} sold a house on ${PSP[i].n}`); saveGame('property', st); G.property.act.manage(st); },
+    borrow(st, t) { const me = S.role; if (st.over) return; st.loan = st.loan || {}; st.laps = st.laps || {}; const cur = loanOf(st, me), owed = cur ? cur.amt : 0, x = Math.min(+t.dataset.x, LOAN_MAX - owed); if (x <= 0) return toast(`The bank lends up to ₦${LOAN_MAX} in total`);
+      st.loan[me] = { amt: owed + x, due: cur ? cur.due : (st.laps[me] || 0) + LOAN_LAPS }; st.cash[me] += x; logLine(st, `${NAMES[me]} borrowed ₦${x} from the bank`); saveGame('property', st); G.property.act.manage(st); },
+    repay(st, t) { const me = S.role, cur = loanOf(st, me); if (st.over || !cur) return; const x = Math.min(t.dataset.x === 'all' ? cur.amt : +t.dataset.x, cur.amt); if (st.cash[me] < x) return toast('Not enough cash');
+      st.cash[me] -= x; cur.amt -= x; if (cur.amt <= 0) st.loan[me] = null; logLine(st, `${NAMES[me]} paid ₦${x} back to the bank`); saveGame('property', st); G.property.act.manage(st); },
+    trade(st) { const me = S.role, you = other(me); if (st.over || st.offer || st.auc) return;
+      const list = (r, nm) => { const l = Object.entries(st.own).filter(([i, o]) => o.by === r && !groupHouses(st, +i)); return l.length ? l.map(([i, o]) => `<label class="tpick"><input type="checkbox" name="${nm}" value="${i}"><i style="background:${PSP[i].g ? PCOL[PSP[i].g] : '#3a1f2b'}"></i>${esc(PSP[i].n)}${o.m ? ' <span class="small muted">(mortgaged)</span>' : ''}</label>`).join('') : '<p class="small muted" style="margin:0">Nothing to trade here</p>'; };
+      openSheet(`${sheetHead('Propose a trade')}<span class="eyebrow">You give</span><div class="tlist">${list(me, 'tg')}</div><label class="f" for="tCg">Plus cash from you (₦)<input type="number" id="tCg" min="0" step="10" inputmode="numeric" placeholder="0"></label>
+        <span class="eyebrow">You get from ${esc(NAMES[you])}</span><div class="tlist">${list(you, 'tt')}</div><label class="f" for="tCa">Plus cash from ${esc(NAMES[you])} (₦)<input type="number" id="tCa" min="0" step="10" inputmode="numeric" placeholder="0"></label>
+        <p class="small muted" style="margin:0">Places with houses on their colour can't be traded until the houses are sold.</p>${gbtn('property', 'offer', 'Send offer', 'primary')}`); },
+    offer(st) { const me = S.role, you = other(me); if (st.over || st.offer) return; const pick = (n) => [...document.querySelectorAll(`input[name=${n}]:checked`)].map((e) => +e.value);
+      const give = pick('tg'), get = pick('tt'), cg = Math.max(0, Math.round(+(document.getElementById('tCg') || {}).value || 0)), ca = Math.max(0, Math.round(+(document.getElementById('tCa') || {}).value || 0));
+      if (!give.length && !get.length && !cg && !ca) return toast('Pick something to trade'); if (cg > Math.max(0, st.cash[me])) return toast("You don't have that much cash");
+      closeSheet(); st.offer = { id: Date.now(), from: me, to: you, give, get, cg, ca }; logLine(st, `${NAMES[me]} offered a trade`); saveGame('property', st); },
+    accept(st) { const me = S.role, o = st.offer; if (!o || o.to !== me || st.over) return;
+      const ok = o.give.every((i) => st.own[i] && st.own[i].by === o.from && !groupHouses(st, i)) && o.get.every((i) => st.own[i] && st.own[i].by === me && !groupHouses(st, i));
+      if (!ok) { st.offer = null; saveGame('property', st); return toast('That trade is out of date'); }
+      if (o.ca > Math.max(0, st.cash[me])) return toast(`You don't have ₦${o.ca}. Mortgage something first or decline`);
+      o.give.forEach((i) => (st.own[i].by = me)); o.get.forEach((i) => (st.own[i].by = o.from)); st.cash[o.from] += o.ca - o.cg; st.cash[me] += o.cg - o.ca;
+      st.offer = null; logLine(st, `${NAMES[me]} accepted ${NAMES[o.from]}'s trade`); floatHearts(); saveGame('property', st); },
+    decline(st) { const me = S.role, o = st.offer; if (!o || (o.to !== me && o.from !== me)) return; st.offer = null; logLine(st, o.from === me ? `${NAMES[me]} cancelled the trade` : `${NAMES[me]} declined the trade`); saveGame('property', st); },
+    bankrupt(st, t) { const me = S.role; if (st.over || st.cash[me] >= 0) return; if (t.dataset.sure !== '1') { t.dataset.sure = '1'; t.textContent = 'Tap again to declare bankrupt'; return; }
+      st.over = true; st.turn = null; st.auc = null; st.offer = null; st.winner = other(me); logLine(st, `${NAMES[me]} went bankrupt. ${NAMES[other(me)]} wins!`); saveGame('property', st); },
     build(st, t) { const me = S.role, i = +t.dataset.x, o = st.own[i], cost = Math.round(PSP[i].p / 2); if (st.turn !== me || !o || o.by !== me || (o.houses || 0) >= 4) return; if (st.cash[me] < cost) return toast('Not enough cash');
       st.cash[me] -= cost; o.houses = (o.houses || 0) + 1; logLine(st, `${NAMES[me]} built a house on ${PSP[i].n}`); saveGame('property', st); },
-    end(st) { const me = S.role; if (st.turn !== me) return; st.turn = other(me); st.phase = 'roll'; st.again = false; st.dbl = 0; st.card = null; st.msg = `${NAMES[st.turn]}'s turn to roll`; saveGame('property', st); },
+    end(st) { const me = S.role; if (st.turn !== me || st.auc) return; if (st.cash[me] < 0) return toast('Clear what you owe first: mortgage, sell houses or trade'); st.turn = other(me); st.phase = 'roll'; st.again = false; st.dbl = 0; st.card = null; st.msg = `${NAMES[st.turn]}'s turn to roll`; saveGame('property', st); },
     finish(st, t) { if (t.dataset.sure !== '1') { t.dataset.sure = '1'; t.textContent = 'Tap again to end and count'; return; } const a = worth(st, 'anthonia'), i = worth(st, 'ifeayomi');
       st.over = true; st.turn = null; st.winner = a === i ? 'tie' : a > i ? 'anthonia' : 'ifeayomi'; logLine(st, `Final worth: Anthonia ₦${a}, Ifeayomi ₦${i}`); saveGame('property', st); },
   },
+  bankBox(st, me) { const cur = loanOf(st, me), owed = cur ? cur.amt : 0, room = LOAN_MAX - owed, left = cur ? Math.max(0, cur.due - ((st.laps || {})[me] || 0)) : 0;
+    return `<div class="bank"><b>🏦 Bank loan</b>${cur ? `<span class="small">You owe the bank <b>₦${owed}</b>. Pay it back before you pass Start ${left} more time${left === 1 ? '' : 's'}, or the bank takes it then.</span>` : `<span class="small">Borrow up to ₦${LOAN_MAX}. Pay it back within ${LOAN_LAPS} trips round the board.</span>`}
+      ${room > 0 ? `<div class="row" style="gap:6px">${[50, 100, 200].filter((x) => x <= room).map((x) => gbtn('property', 'borrow', `Borrow ₦${x}`, 'sm', `data-x="${x}"`)).join('')}${gbtn('property', 'borrow', `Borrow ₦${room}`, 'sm', `data-x="${room}"`)}</div>` : ''}
+      ${cur ? `<div class="row" style="gap:6px">${[50, 100].filter((x) => x < owed).map((x) => gbtn('property', 'repay', `Pay back ₦${x}`, 'sm' + (st.cash[me] >= x ? '' : ' off'), `data-x="${x}"`)).join('')}${gbtn('property', 'repay', `Pay it all ₦${owed}`, 'sm primary' + (st.cash[me] >= owed ? '' : ' off'), 'data-x="all"')}</div>` : ''}</div>`; },
+  endAuc(st) { st.auc = null; st.phase = st.again ? 'roll' : 'end'; },
+  offerText(st, o, me) { const nm = (l) => l.map((i) => esc(PSP[i].n)).join(', '), from = o.from === me ? 'You' : esc(NAMES[o.from]), to = o.to === me ? 'you' : esc(NAMES[o.to]);
+    const g = [nm(o.give), o.cg ? '₦' + o.cg : ''].filter(Boolean).join(' + ') || 'nothing', t = [nm(o.get), o.ca ? '₦' + o.ca : ''].filter(Boolean).join(' + ') || 'nothing';
+    return `<span class="small">${from} give${o.from === me ? '' : 's'}: <b>${g}</b><br>${to === 'you' ? 'You' : to} give${to === 'you' ? '' : 's'}: <b>${t}</b></span>`; },
   deed(st, i) { const s = PSP[i], o = st.own[i], here = ['anthonia', 'ifeayomi'].filter((r) => st.pos[r] === i);
-    const owner = o ? `<div class="deedown">${av(o.by, 30)}<span>Owned by <b>${NAMES[o.by]}</b>${o.houses ? ` · ${o.houses} house${o.houses > 1 ? 's' : ''}` : ''}</span></div>` : s.p && s.t !== 'tax' ? '<div class="deedown"><span>Nobody owns this yet</span></div>' : '';
+    const owner = o ? `<div class="deedown">${av(o.by, 30)}<span>Owned by <b>${NAMES[o.by]}</b>${o.houses ? ` · ${o.houses} house${o.houses > 1 ? 's' : ''}` : ''}${o.m ? ` · <b style="color:#c0392b">mortgaged</b>, no rent until paid off (₦${unmortCost(i)})` : ''}</span></div>` : s.p && s.t !== 'tax' ? '<div class="deedown"><span>Nobody owns this yet</span></div>' : '';
     const standing = here.length ? `<p class="small muted center" style="margin:0">${here.map((r) => NAMES[r]).join(' and ')} ${here.length > 1 ? 'are' : 'is'} here now</p>` : '';
     if (s.t === 'p') { const base = Math.round(s.p / 10), hc = Math.round(s.p / 2), grp = groupOf(s.g), full = o && grp.every((k) => st.own[k] && st.own[k].by === o.by), h = o ? o.houses || 0 : -1;
       const row = (label, v, on) => `<div class="drow ${on ? 'on' : ''}"><span>${label}</span><b>₦${v}</b></div>`;
       return `<div class="deed"><div class="deedtop" style="background:${PCOL[s.g]}"><small>TITLE DEED</small><h2>${s.n}</h2></div>
         <div class="deedbody">${row('Rent', base, o && !full && h === 0)}${row('Rent with the whole colour set', base * 2, o && full && h === 0)}${[1, 2, 3, 4].map((n) => row(`With ${n} house${n > 1 ? 's' : ''}`, base * HOUSE_MULT[n], h === n)).join('')}
-        <div class="dline"></div>${row('Price', s.p)}${row('Each house costs', hc)}
+        <div class="dline"></div>${row('Price', s.p)}${row('Each house costs', hc)}${row('Mortgage value', mortVal(i))}
         <p class="small muted" style="margin:4px 0 0">Colour set: ${grp.map((k) => `<span class="dset ${st.own[k] ? st.own[k].by : ''}">${PSP[k].n}</span>`).join(' ')}</p>${o ? `<p class="small" style="margin:4px 0 0">Rent right now: <b>₦${propRent(st, i, 7)}</b></p>` : ''}</div></div>${owner}${standing}`; }
     if (s.t === 'tr') { const n = o ? TRANS.filter((k) => st.own[k] && st.own[k].by === o.by).length : 0;
       return `<div class="deed"><div class="deedtop" style="background:#3a1f2b"><small>TRANSPORT</small><h2>${s.n}</h2></div><div class="deedbody">${[1, 2, 3].map((k) => `<div class="drow ${n === k ? 'on' : ''}"><span>Owner has ${k} transport${k > 1 ? 's' : ''}</span><b>₦${25 * 2 ** (k - 1)}</b></div>`).join('')}<div class="dline"></div><div class="drow"><span>Price</span><b>₦${s.p}</b></div><p class="small muted" style="margin:4px 0 0">${TRANS.map((k) => `<span class="dset ${st.own[k] ? st.own[k].by : ''}">${PSP[k].n}</span>`).join(' ')}</p></div></div>${owner}${standing}`; }
     if (s.t === 'ut') return `<div class="deed"><div class="deedtop" style="background:#ff8fab"><small>FARM</small><h2>${s.n}</h2></div><div class="deedbody"><div class="drow"><span>Rent</span><b>6 × the dice</b></div><div class="dline"></div><div class="drow"><span>Price</span><b>₦${s.p}</b></div></div></div>${owner}${standing}`;
     const info = { card: ['LOVE NOTE', '#ff4f7e', 'Pick a Love Note card: gifts, bills, surprise trips or a free card.'], jar: ['LUCKY JAR', '#ffb21f', 'Open the jar for a surprise: jackpots, swaps, repairs and more.'], date: ['DATE NIGHT', '#d6336c', 'You treat your partner: pay them ₦50.'], tax: ['PAY UP', '#6b7280', `Pay ₦${s.p}.`], jail: ['MISSED CALL', '#3a1f2b', 'Stuck here? Roll doubles, use a free card or pay ₦50. You leave free after 3 tries.'], gojail: ['GO TO MISSED CALL', '#3a1f2b', 'Go straight to Missed Call. Do not pass Start.'], start: ['START', '#22b3a3', 'Collect ₦200 every time you pass.'], free: ['FREE HUG', '#22b3a3', 'Nothing happens. Enjoy the hug.'] }[s.t];
     return `<div class="deed"><div class="deedtop" style="background:${info[1]}"><small>${info[0]}</small><h2>${s.n}</h2></div><div class="deedbody"><p style="margin:0">${info[2]}</p></div></div>${standing}`; },
-  move(st, steps, dbl) { st.laps = st.laps || {}; st.free = st.free || {}; const me = S.role, from = st.pos[me], to = (from + steps) % PN; if (from + steps >= PN) { st.cash[me] += 200; st.laps[me] = (st.laps[me] || 0) + 1; logLine(st, `${NAMES[me]} passed Start: +₦200`); }
+  move(st, steps, dbl) { st.laps = st.laps || {}; st.free = st.free || {}; const me = S.role, from = st.pos[me], to = (from + steps) % PN; if (from + steps >= PN) { st.cash[me] += 200; st.laps[me] = (st.laps[me] || 0) + 1; logLine(st, `${NAMES[me]} passed Start: +₦200`);
+      const ln = loanOf(st, me); if (ln && st.laps[me] >= ln.due) { st.cash[me] -= ln.amt; st.loan[me] = null; logLine(st, `Loan due! The bank took ₦${ln.amt} from ${NAMES[me]}`); st.card = `Loan due! The bank took back ₦${ln.amt}.`; } }
     st.pos[me] = to; st.again = dbl; G.property.land(st, steps); },
   land(st, dice) { const me = S.role, you = other(me), i = st.pos[me], s = PSP[i]; st.phase = st.again ? 'roll' : 'end';
     const toJail = () => { st.pos[me] = 8; st.jail[me] = 1; st.again = false; st.phase = 'end'; };
     if (s.t === 'p' || s.t === 'tr' || s.t === 'ut') { const o = st.own[i];
-      if (!o) { if (st.cash[me] >= s.p) st.phase = 'buy'; logLine(st, `${NAMES[me]} landed on ${s.n}`); }
+      if (!o) { st.phase = 'buy'; logLine(st, `${NAMES[me]} landed on ${s.n}`); }
+      else if (o.by === you && o.m) logLine(st, `${s.n} is mortgaged: no rent`);
       else if (o.by === you) { const rent = propRent(st, i, dice); st.cash[me] -= rent; st.cash[you] += rent; logLine(st, `${NAMES[me]} paid ${NAMES[you]} ₦${rent} rent for ${s.n}`); }
       else logLine(st, `${NAMES[me]} is home at ${s.n}`); }
     else if (s.t === 'tax') { st.cash[me] -= s.p; logLine(st, `${s.n}: ${NAMES[me]} paid ₦${s.p}`); }
@@ -468,7 +525,7 @@ G.property = {
       else if (typeof eff === 'string' && eff[0] === 'm') { const to = +eff.slice(1); if (to < st.pos[me]) st.cash[me] += 200; st.pos[me] = to; logLine(st, st.card); return G.property.land(st, dice); }
       logLine(st, st.card); }
     else logLine(st, `${NAMES[me]} landed on ${s.n}`);
-    for (const r of [me, you]) if (st.cash[r] < 0) { st.over = true; st.turn = null; st.winner = other(r); logLine(st, `${NAMES[r]} ran out of money!`); } },
+    for (const r of [me, you]) if (st.cash[r] < 0) logLine(st, `${NAMES[r]} owes ₦${-st.cash[r]} and must raise money`); },
 };
 
 /* =================================== LUDO (4 houses, 2 dice) =================================== */
