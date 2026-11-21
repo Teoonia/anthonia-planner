@@ -207,6 +207,12 @@ G.whot = {
 function stdDeck() { const d = []; for (const su of 'SHDC') for (const r of ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']) d.push(r + su); return shuffleArr(d); }
 function eightValid(st, c) { const r = c.slice(0, -1), su = c.slice(-1); if (r === '8') return true; if (st.need) return su === st.need; const t = st.pile[st.pile.length - 1]; return su === t.slice(-1) || r === t.slice(0, -1); }
 G.eights = {
+  rules: [
+    ['🃏', 'You each get 7 cards. Play a card that matches the top card\'s suit (♠ ♥ ♦ ♣) or its number.'],
+    ['🎱', '8s are wild: play one on anything and pick the suit your partner must follow.'],
+    ['📥', 'No card to play? Draw one from the deck and your turn passes.'],
+    ['🏆', 'First to get rid of all their cards wins.'],
+  ],
   name: 'Crazy Eights', short: 'Quick matching cards', icon: ICON('<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="9.5" r="2.5"/><circle cx="12" cy="14.5" r="3"/>'),
   desc: 'Match the suit or number on top. 8s are wild: play one and choose the suit. Can\'t play? Draw a card. First to empty their hand wins.',
   start(me) { const d = stdDeck(); const st = { kind: 'eights', draw: d, pile: [], hands: { anthonia: [], ifeayomi: [] }, turn: me, need: null, drew: false };
@@ -729,17 +735,19 @@ G.movie = {
   start(me) { return { kind: 'movie', videoId: null, playing: false, pos: 0, at: Date.now(), by: me, chat: [] }; },
   view(st, me) { return `<div class="row" style="flex-wrap:nowrap"><input type="text" id="ytUrl" placeholder="Paste a YouTube link"><button class="btn primary sm" data-act="g" data-g="movie" data-a="load">Load</button></div>
     <div class="yt" id="ytWrap"><div id="ytp"></div>${st.videoId ? '' : '<div class="ytEmpty">Paste a link to start watching together</div>'}
-      <div class="ytOverlay" id="ytOverlay">${G.movie.overlayHtml(st)}</div><button class="ytExit" data-act="g" data-g="movie" data-a="exitFull">Exit full screen</button></div>
+      <div class="ytOverlay" id="ytOverlay">${G.movie.overlayHtml(st)}</div><div class="ytReact">${['😂', '😍', '😮', '😭', '🔥', '❤️'].map((e) => `<button data-act="g" data-g="movie" data-a="react" data-x="${e}">${e}</button>`).join('')}</div><button class="ytExit" data-act="g" data-g="movie" data-a="exitFull">Exit full screen</button></div>
     <div class="row">${st.videoId ? gbtn('movie', 'full', 'Full screen', 'primary sm') : ''}${gbtn('movie', 'sync', 'Sync to partner', 'sm')}<span class="small muted" id="ytStatus">${G.movie.status(st)}</span></div>
     <div class="chat" id="ytChatList">${G.movie.chatHtml(st)}</div>
     <div class="row" style="flex-wrap:nowrap"><input type="text" id="ytChat" placeholder="Say something sweet"><button class="btn sm" data-act="g" data-g="movie" data-a="say">Send</button></div>
     <a class="small" href="https://www.teleparty.com/" target="_blank" rel="noopener" style="color:var(--her)">Watching Netflix? Open Teleparty</a>`; },
+  showReact(st) { const r = st && st.react; if (!r || r.at === G.movie.lastReact) return; const first = G.movie.lastReact == null; G.movie.lastReact = r.at; if (first && Date.now() - r.at > 8000) return;
+    const w = document.getElementById('ytWrap'); if (!w) return; for (let k = 0; k < 5; k++) { const e = document.createElement('div'); e.className = 'yfloat'; e.textContent = r.e; e.style.left = (10 + Math.random() * 70) + '%'; e.style.animationDelay = (k * 0.12) + 's'; w.appendChild(e); setTimeout(() => e.remove(), 2600); } },
   status: (st) => (st && st.videoId ? `${NAMES[st.by]} last ${st.playing ? 'pressed play' : 'paused'}` : ''),
   overlayHtml: (st) => ((st && st.chat) || []).slice(-3).map((m) => `<div class="ovl ${m.by}"><b>${esc(NAMES[m.by])}:</b> ${esc(m.t)}</div>`).join(''),
   chatHtml: (st) => ((st && st.chat) || []).slice(-30).map((m) => `<div class="bubble ${m.by}">${av(m.by, 24)}<div class="b">${esc(m.t)}</div></div>`).join(''),
   update(st, me) { if (!st || !st.videoId || !document.querySelector('#ytWrap iframe')) { render(true); return; }
     const c = document.getElementById('ytChatList'); if (c) { c.innerHTML = G.movie.chatHtml(st); c.scrollTop = c.scrollHeight; }
-    const s = document.getElementById('ytStatus'); if (s) s.textContent = G.movie.status(st); const o = document.getElementById('ytOverlay'); if (o) o.innerHTML = G.movie.overlayHtml(st); G.movie.post(st, me); },
+    const s = document.getElementById('ytStatus'); if (s) s.textContent = G.movie.status(st); G.movie.showReact(st); const o = document.getElementById('ytOverlay'); if (o) o.innerHTML = G.movie.overlayHtml(st); G.movie.post(st, me); },
   async post(st, me) {
     const host = document.getElementById('ytp'); if (!host || !st || !st.videoId) return;
     await loadYT(); if (!document.getElementById('ytp')) return;
@@ -765,6 +773,7 @@ G.movie = {
     exitFull() { const w = document.getElementById('ytWrap'); if (w) w.classList.remove('fs', 'rot'); document.body.classList.remove('fsmode'); if (G.movie.fix) window.removeEventListener('resize', G.movie.fix);
       try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {} if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); },
     sync(st) { if (!st) return; ytLastApplied = 0; G.movie.post(st, '__force'); },
+    react(st, t) { if (!st) return; st.react = { e: t.dataset.x, by: S.role, at: Date.now() }; G.movie.showReact(st); saveGame('movie', st); },
     say(st) { const t = val('ytChat').trim(); if (!t) return; st = st || G.movie.start(S.role); st.chat = [...(st.chat || []), { by: S.role, t, at: Date.now() }].slice(-40); clearIn('ytChat'); saveGame('movie', st); },
   },
 };
