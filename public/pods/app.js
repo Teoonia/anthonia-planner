@@ -349,6 +349,7 @@ function waitingCard(){
   if(S.jig&&!S.jig.done&&S.jig.turn===me)w.push(['play','Your turn in the jigsaw']);
   for(const [id,g] of Object.entries(S.games||{}))if(G[id]&&g&&!g.over&&g.turn===me&&!(G[id].legacy&&G[id].legacy(g)))w.push(['play','Your turn in '+G[id].name]);
   const tr=S.truths.filter(x=>x.to===me&&x.status==='sent').length;if(tr)w.push(['truth',`${tr} new message${tr>1?'s':''} in Truth Corner`]);
+  const ap=S.truths.filter(x=>x.to===me&&x.kind==='appr'&&x.status==='new').length;if(ap)w.push(['truth',`${ap} new appreciation${ap>1?'s':''} from ${NAMES[other(me)]} 💐`]);
   const lt=S.letters.filter(x=>x.to===me&&!x.opened).length;if(lt)w.push(['us',`${lt} sealed letter${lt>1?'s':''} for you`]);
   const mk=monthKey();if(!(S.month&&S.month.done)&&hostFor(mk)===me)w.push(['plan',Number(t.slice(8))<=7?"You host this month's planning date":"This month's planning date is overdue"]);
   const tl=todoRemindLine();if(tl)w.push(['plan',tl]);
@@ -478,6 +479,7 @@ function planView(){
 /* ---------- TRUTH ---------- */
 function truthView(){
   const me=S.role,you=other(me);
+  S.truths.filter(x=>x.to===me&&x.kind==='appr'&&x.status==='new').forEach(x=>{x.status='seen';mergeDoc('truths/'+x.id,{status:'seen'}).catch(()=>{});});
   const inbox=S.truths.filter(x=>x.to===me).sort((a,b)=>b.at-a.at),sent=S.truths.filter(x=>x.from===me).sort((a,b)=>b.at-a.at);
   const weekCount=sent.filter(x=>x.kind!=='appr'&&Date.now()-x.at<7*864e5).length;
   const card=(x,mine)=>{const advice=(x.advice||[]).filter(Boolean);let foot='';
@@ -648,8 +650,8 @@ function planSnippet(m,me){me=me||S.role;const w=planWho(m,me),mk=m.month?monthN
   return ({date:m.by===me?`You asked ${NAMES[other(me)]} out on a date`:`${NAMES[m.by]} is asking you out on a date…`,
     todo:`${w} added a to-do for ${o}: ${m.text||''}`,todoDone:`${w} ticked off: ${m.text||''}`,notes:`${w} updated the ${mk} planning notes`,
     planDone:`${w} marked the ${mk} planning date done`,goal:`${w} added a goal: ${m.text||''}`,mood:`${w} pinned to the ${mk} mood board${m.text?': '+m.text:''}`,
-    dateDone:`${w} marked your date night done${m.text?': '+m.text:''}`})[m.what]||`${w} updated the plan`;}
-const PLAN_ICON={todo:'📝',todoDone:'✅',notes:'🗒️',planDone:'🎉',goal:'🎯',mood:'🌸',dateDone:'💞'};
+    dateDone:`${w} marked your date night done${m.text?': '+m.text:''}`,appr:m.by===me?`You sent ${NAMES[other(me)]} an appreciation: ${m.text||''}`:`${NAMES[m.by]} appreciates you: ${m.text||''}`})[m.what]||`${w} updated the plan`;}
+const PLAN_ICON={appr:'💐',todo:'📝',todoDone:'✅',notes:'🗒️',planDone:'🎉',goal:'🎯',mood:'🌸',dateDone:'💞'};
 const PLAN_SEC={todo:'pTodos',todoDone:'pTodos',notes:'pNotes',planDone:'pNotes',goal:'pGoals',mood:'pMood',dateDone:'pDates',date:'pDates'};
 function planCard(m,me){
   if(m.what==='date'){const mine=m.by===me,d=m.d||{};
@@ -659,7 +661,7 @@ function planCard(m,me){
       ${d.herPlace||d.hisPlace?`<div class="small">${esc(NAMES.anthonia)}: ${esc(d.herPlace||'to be decided')}<br>${esc(NAMES.ifeayomi)}: ${esc(d.hisPlace||'to be decided')}</div>`:''}
       <div class="small">${d.host===me?'You host and pay both bills':esc(NAMES[d.host])+' hosts and pays both bills'}</div>
       <div class="row" style="justify-content:center;margin-top:6px">${!mine&&!m.yes?`<button class="btn sm primary" data-act="dateYes" data-id="${m.id}">Say yes 💖</button>`:''}${m.yes?`<span class="chip him">${mine?NAMES[other(me)]+' said yes!':'You said yes'} 💖</span>`:''}<button class="btn sm" data-act="planGo" data-k="pDates">See the date</button></div></div>`;}
-  return `<div class="plancard"><span class="pi">${PLAN_ICON[m.what]||'📅'}</span><div class="grow">${esc(planSnippet(m,me))}</div><button class="btn sm" data-act="planGo" data-k="${PLAN_SEC[m.what]||'pNotes'}">View</button></div>`;}
+  return `<div class="plancard"><span class="pi">${PLAN_ICON[m.what]||'📅'}</span><div class="grow">${esc(planSnippet(m,me))}</div>${m.what==='appr'?`<button class="btn sm" data-act="tab" data-k="truth">View</button>`:`<button class="btn sm" data-act="planGo" data-k="${PLAN_SEC[m.what]||'pNotes'}">View</button>`}</div>`;}
 /* Surprise letters Claude placed for one of you; created in the pod the first time that person opens Pods */
 const SURPRISES=[{id:'mensday2026',from:'anthonia',to:'ifeayomi',when:"A little something for you 💌",
   toName:"Ifeayotemi",body:"Ifeayotemi, my love,\n\nHappy belated International Men's Day! I'm sorry I missed it yesterday. That one is on me. Please forgive me, my love 🥺 I'm making it up to you.\n\nYou work so hard, you take care of me from miles away, and you never stop pushing for us. I'm so proud of the man you are.\n\nOne day isn't enough to celebrate you, so consider this your Men's Day extension. Tomorrow's jollof is on me 🍛",
@@ -967,7 +969,8 @@ const A={
   truthCancel:()=>{S.truthDraft=null;S.rawKeep=null;render();},
   truthSend:async()=>{const filtered=val('tFiltered').trim();if(!filtered)return toast('The message is empty');const advice=val('tAdvice').split('\n').map(s=>s.trim()).filter(Boolean);
     S.truthDraft=null;S.rawKeep=null;render();await addDoc('truths',{kind:'truth',from:S.role,to:other(S.role),filtered,advice,status:'sent',at:Date.now()});toast(`Sent to ${NAMES[other(S.role)]}`);},
-  apprSend:async()=>{const v=val('tRaw').trim();if(!v)return toast('Write what you appreciate first');await addDoc('truths',{kind:'appr',from:S.role,to:other(S.role),filtered:v,advice:[],status:'seen',at:Date.now()});floatHearts();toast('Appreciation sent');},
+  apprSend:async()=>{const v=val('tRaw').trim();if(!v)return toast('Write what you appreciate first');try{await addDoc('truths',{kind:'appr',from:S.role,to:other(S.role),filtered:v,advice:[],status:'new',at:Date.now()});}catch(e){return toast("Couldn't send. Check your connection and try again");}
+    clearIn('tRaw');floatHearts();toast(`Appreciation sent to ${NAMES[other(S.role)]} 💐`);planPost('appr',{text:v.length>80?v.slice(0,80)+'…':v});},
   respond:async t=>{await mergeDoc('truths/'+t.dataset.id,{status:t.dataset.s,respondedAt:Date.now()});floatHearts();},
   follow:async t=>{await mergeDoc('truths/'+t.dataset.id,{followup:t.dataset.v});if(t.dataset.v==='Better')confetti();},
   /* keep */
