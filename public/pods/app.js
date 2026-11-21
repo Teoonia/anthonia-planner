@@ -356,10 +356,16 @@ function jigCard(){
 function cancelBar(id,st){const r=st.cancelReq;if(!r||st.over)return '';const you=other(S.role);
   return r.by===S.role?`<div class="givebar">Waiting for ${NAMES[you]} to agree to a new game. <button class="btn sm" data-act="gDecline" data-g="${id}">Never mind</button></div>`
     :`<div class="givebar ask">${av(r.by,26)} ${NAMES[r.by]} wants to end this game and start a new one. <button class="btn sm primary" data-act="gAgree" data-g="${id}">Agree</button><button class="btn sm" data-act="gDecline" data-g="${id}">Keep playing</button></div>`;}
+/* Show a game's rules at the start of each new game, for your first 3 new games */
+function maybeRules(){const id=S.game,g=G[id],st=S.games[id];if(S.tab!=='play'||!g||!g.rules||!st||!st.gid||st.over)return;
+  let d={n:0,seen:[]};try{d=JSON.parse(localStorage.getItem('pods_rules_'+id))||d;}catch(e){}
+  if(d.n>=3||d.seen.includes(st.gid)||!document.getElementById('sheet').classList.contains('hidden')||document.getElementById('envOv'))return;
+  d.n++;d.seen=[...d.seen,st.gid].slice(-5);try{localStorage.setItem('pods_rules_'+id,JSON.stringify(d));}catch(e){}A.rules({dataset:{g:id}});}
 function playView(){
+  if(S.game&&G[S.game]&&G[S.game].rules)setTimeout(maybeRules,350);
   if(S.game==='jigsaw')return jigCard();
   if(S.game&&G[S.game]){const g=G[S.game],st=S.games[S.game];
-    return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>${g.name}</h2></div><button class="btn sm ghost" data-act="gNew" data-g="${S.game}">${st?'New game':'Start'}</button></div>
+    return `<section class="card"><div class="row between"><div class="row"><button class="btn sm" data-act="gameBack">‹ Games</button><h2>${g.name}</h2></div><div class="row" style="gap:4px">${g.rules?`<button class="btn sm ghost" data-act="rules" data-g="${S.game}">Rules</button>`:''}<button class="btn sm ghost" data-act="gNew" data-g="${S.game}">${st?'New game':'Start'}</button></div></div>
     ${st&&st.fresh&&st.turn===S.role&&!st.over?`<div class="givebar">${st.winnerStart?'You won last time, so you start.':'You start.'} <button class="btn sm" data-act="gGive" data-g="${S.game}">Let ${NAMES[other(S.role)]} go first</button></div>`:''}
     ${scoreLine(S.game)}
     ${st&&g.legacy&&g.legacy(st)?`<div class="givebar ask">This ${g.name} game was started before the update, so it can't continue. <button class="btn sm primary" data-act="gFresh" data-g="${S.game}">Start the new ${g.name}</button></div>`:''}
@@ -821,6 +827,7 @@ const A={
   recStop:()=>stopRec(),
   /* games */
   game:t=>{S.game=t.dataset.g;render();window.scrollTo(0,0);},
+  rules:t=>{const g=G[t.dataset.g];if(!g||!g.rules)return;openSheet(`${sheetHead('How to play '+g.name)}<div class="rules">${g.rules.map(([e,x])=>`<div class="rule"><span>${e}</span><p>${x}</p></div>`).join('')}</div><button class="btn primary" data-act="close">Got it, let's play</button>`);},
   gameBack:()=>{S.game=null;render();window.scrollTo(0,0);},
   g:t=>{const id=t.dataset.g,g=G[id];if(!g)return;const fn=g.act[t.dataset.a];if(fn)return fn(S.games[id]?JSON.parse(JSON.stringify(S.games[id])):null,t);},
   gNew:t=>{const id=t.dataset.g,st=S.games[id];if(st&&!st.over&&!st.fresh&&!(G[id].legacy&&G[id].legacy(st))){if(st.cancelReq)return toast(st.cancelReq.by===S.role?`Waiting for ${NAMES[other(S.role)]} to agree`:'Answer the request above first');
@@ -908,7 +915,7 @@ const A={
 };
 async function startJig(src,c,r){closeSheet();const pj=S.jig,pw=pj&&pj.done?winnerOfJig(pj):null,first=pw||S.role;const FR={60:.8,120:.8,260:13/20}[c*r],ta=(r>c&&FR)?Math.round((c/r)/FR*1000)/1000:1;const doc={ta,photo:src.photo||null,img:src.img||null,cols:c,rows:r,seed:Math.floor(Math.random()*1e9),placed:[],tray:shuffled(c*r),turn:first,run:0,best:null,counts:{anthonia:0,ifeayomi:0},done:false,by:S.role,at:Date.now()};S.sel=null;S.edgesOnly=false;await setDoc('games/jigsaw',doc);S.tab='play';S.game='jigsaw';render();toast(first===S.role?'Puzzle ready. You go first!':`Puzzle ready. ${NAMES[first]} goes first!`);}
 function winnerOfJig(j){const c=j.counts||{},a=c.anthonia||0,i=c.ifeayomi||0;return a===i?null:a>i?'anthonia':'ifeayomi';}
-function newGame(id,starter){const prev=S.games[id],w=prev&&prev.over&&prev.winner&&prev.winner!=='tie'?prev.winner:null,first=starter||w||S.role;const st=G[id].start(first);st.winnerStart=!!w;saveGame(id,st,true);
+function newGame(id,starter){const prev=S.games[id],w=prev&&prev.over&&prev.winner&&prev.winner!=='tie'?prev.winner:null,first=starter||w||S.role;const st=G[id].start(first);st.winnerStart=!!w;st.gid=Date.now();saveGame(id,st,true);
   toast(w?`${NAMES[w]} won last time, so ${w===S.role?'you start':NAMES[w]+' starts'}`:'New game started');}
 function drawPicker(memId){const cat=S.pickCat||'animals',size=S.pickSize||60;const ours=S.memories.filter(m=>m.kind!=='puzzle');
   openSheet(`${sheetHead('New jigsaw')}<label class="f" for="jigSize">How many pieces?<select id="jigSize">${SIZES.map(([n,c,r])=>`<option value="${n}" ${n===size?'selected':''}>${n} pieces (${c} × ${r})</option>`).join('')}</select></label>
