@@ -158,6 +158,13 @@ function whotDeck() { const d = [], add = (sh, ns) => ns.forEach((n) => d.push(s
 const WHOT_SPECIAL = { 1: 'Hold on', 2: 'Pick two', 5: 'Pick three', 8: 'Suspension', 14: 'General market', 20: 'Whot' };
 function whotValid(st, c) { const [sh, n] = c.split('-'); if (sh === 'w') return true; if (st.need) return sh === st.need; const [tsh, tn] = st.pile[st.pile.length - 1].split('-'); return sh === tsh || n === tn; }
 G.whot = {
+  rules: [
+    ['🃏', 'Match the shape or the number on top. No match? Go to market and pick one card.'],
+    ['✋', '1 Hold on, 8 Suspension: play again. 2 Pick two, 5 Pick three, 14 General market: your partner picks and you play again.'],
+    ['⭐', 'Whot 20 goes on anything and lets you ask for a shape.'],
+    ['🚫', "You can't check up with a special card (1, 2, 5, 8, 14 or 20). If that's your last card, go to market."],
+    ['🏆', 'First to empty their hand with a normal card wins.'],
+  ],
   name: 'Whot!', short: 'The Naija card classic', icon: ICON('<rect x="4" y="3" width="13" height="18" rx="2"/><path d="M8 3.5l12 3-3.5 14"/><circle cx="10.5" cy="12" r="2.5"/>'),
   desc: 'Match the shape or number on top. 1 Hold on, 2 Pick two, 5 Pick three, 8 Suspension and 14 General market let you play again. Whot 20 lets you ask for a shape. First to empty their hand wins, but you can\'t check up with a special card.',
   start(me) { const d = whotDeck(); const st = { kind: 'whot', draw: d, pile: [], hands: { anthonia: [], ifeayomi: [] }, turn: me, need: null };
@@ -375,7 +382,7 @@ function propRent(st, i, dice) { const s = PSP[i], o = st.own[i]; if (!o || o.m)
   if (s.t === 'ut') return 6 * dice;
   const base = Math.round(s.p / 10), full = groupOf(s.g).every((k) => st.own[k] && st.own[k].by === o.by), h = o.houses || 0;
   return h ? base * HOUSE_MULT[h] : full ? base * 2 : base; }
-const LOAN_MAX = 350, LOAN_LAPS = 3, loanOf = (st, r) => (st.loan && st.loan[r]) || null;
+const LOAN_MAX = 350, LOAN_LAPS = 3, LOAN_GRACE = 2, loanOf = (st, r) => (st.loan && st.loan[r]) || null;
 function worth(st, r) { let w = st.cash[r] - ((loanOf(st, r) || {}).amt || 0); for (const [i, o] of Object.entries(st.own)) if (o.by === r) w += (o.m ? mortVal(i) : PSP[i].p) + (o.houses || 0) * Math.round(PSP[i].p / 2); return w; }
 const DOTS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 const dieFace = (n, cls = '') => `<span class="dface ${cls}">${Array.from({ length: 9 }, (_, k) => `<i class="${(DOTS[n] || []).includes(k) ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -384,9 +391,19 @@ function spinDice(sel, faces, ms = 700) { return new Promise((res) => { const el
   setTimeout(() => { clearInterval(iv); els.forEach((e, k) => { e.classList.remove('rolling'); if (faces[k]) e.querySelectorAll('i').forEach((d, j) => d.classList.toggle('on', DOTS[faces[k]].includes(j))); }); res(); }, ms); }); }
 let propAnim = null, propSeen = null;
 G.property = {
+  rules: [
+    ['🎲', 'Tap your avatar to roll. Doubles let you roll again, but three doubles in a row sends you to Missed Call.'],
+    ['🏠', "Land on a free place to buy it. Don't want it, or short of cash? Tap <b>Auction it</b> and you both bid. Highest bid wins, and if you both pass nobody gets it."],
+    ['💸', 'Land on your partner\'s place and you pay rent. Own a whole colour and the rent doubles, then build up to 4 houses on it.'],
+    ['📉', 'Low on cash? Open <b>My places</b> to <b>mortgage</b> a place for half its price. It earns no rent until you pay it off (+10%). Sell houses back to the bank for half what they cost.'],
+    ['🏦', 'Borrow from the <b>bank</b> in My places, up to ₦350 in total. Pay it back within 3 trips round the board. Miss that and you get 2 more trips, then the bank takes places worth what you owe and puts them up for sale to either of you.'],
+    ['🤝', 'Tap <b>Trade</b> to offer places and money. Your partner can accept or decline.'],
+    ['😬', "If you go below ₦0 you can't roll until you raise money: mortgage, sell houses, borrow or trade. If you can't, declare bankrupt and your partner wins."],
+    ['🏁', 'Last one standing wins, or tap End game & count and the richest wins.'],
+  ],
   legacy: (st) => !st || !st.laps || Object.values(st.pos || {}).some((p) => p >= PN),
   name: 'Pods Property', short: 'Buy Oyo, Ibadan, Ancona & Venice', icon: ICON('<path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M9 21v-6h6v6"/>'),
-  desc: 'Tap your avatar to roll and hop round 32 places from Oyo Town to Venice. Buy places or send them to auction, charge rent, own a whole colour to double rent and build up to 4 houses. Mortgage places, sell houses or take a bank loan (up to ₦350, paid back within 3 laps) when cash is low, and trade places and money with your partner. Love Notes, Lucky Jars and Date Nights bring surprises. Last one standing wins, or end the game and the richest wins.',
+  desc: 'Tap your avatar to roll and hop round 32 places from Oyo Town to Venice. Buy places or send them to auction, charge rent, own a whole colour to double rent and build up to 4 houses. Mortgage places, sell houses or take a bank loan (up to ₦350, paid back within 3 laps or the bank takes places after 2 more) when cash is low, and trade places and money with your partner. Love Notes, Lucky Jars and Date Nights bring surprises. Last one standing wins, or end the game and the richest wins.',
   start(first) { return { kind: 'property', pos: { anthonia: 0, ifeayomi: 0 }, cash: { anthonia: 2000, ifeayomi: 2000 }, own: {}, turn: first, phase: 'roll', dice: [3, 4], dbl: 0, jail: { anthonia: 0, ifeayomi: 0 }, free: {}, laps: { anthonia: 0, ifeayomi: 0 }, mv: null, msg: `${NAMES[first]} rolls first` }; },
   score: (st) => ['₦' + worth(st, 'anthonia'), '₦' + worth(st, 'ifeayomi')],
   view(st, me) {
@@ -400,7 +417,7 @@ G.property = {
     const wallet = (r) => { const n = Object.values(st.own).filter((o) => o.by === r).length; const canRoll = r === me && mine && st.phase === 'roll' && st.cash[me] >= 0 && !st.auc;
       return `<button class="wallet ${r} ${st.turn === r && !st.over ? 'active' : ''} ${canRoll ? 'canroll' : ''}" ${canRoll ? 'data-act="g" data-g="property" data-a="roll"' : 'disabled'}>${av(r, 44)}<span><b>${NAMES[r]}</b><span class="cash ${st.cash[r] < 0 ? 'neg' : ''}">${st.cash[r] < 0 ? '-' : ''}₦${Math.abs(st.cash[r]).toLocaleString()}</span><span class="small muted">${n} place${n === 1 ? '' : 's'}${loanOf(st, r) ? ` · loan ₦${loanOf(st, r).amt}` : ''}${st.jail[r] ? ' · on a missed call' : ''}${st.free && st.free[r] ? ' · free card' : ''}</span></span>${canRoll ? '<em class="tap">Tap to roll</em>' : ''}</button>`; };
     const center = `<div class="pcenter"><div class="pdice">${dieFace(d[0], 'pd')}${dieFace(d[1], 'pd')}</div>
-      ${st.card ? `<div class="lovecard">${esc(st.card)}</div>` : `<div class="small muted center">${esc(st.msg || '')}</div>`}
+      ${st.note ? `<div class="lovecard bankmsg">🏦 ${esc(st.note)}</div>` : ''}${st.card ? `<div class="lovecard">${esc(st.card)}</div>` : `<div class="small muted center">${esc(st.msg || '')}</div>`}
       ${a && !st.over ? `<div class="auc"><b>Auction: ${esc(PSP[a.i].n)}</b><span class="small">${a.by ? `Highest bid ₦${a.high} by ${esc(NAMES[a.by])}` : `Worth ₦${PSP[a.i].p} · no bids yet`}</span>
         ${a.next === me ? `<div class="row" style="justify-content:center;gap:4px">${[10, 50, 100].map((x) => gbtn('property', 'bid', `+₦${x}`, 'sm' + (st.cash[me] >= a.high + x ? '' : ' off'), `data-x="${x}"`)).join('')}${gbtn('property', 'pass', a.by && a.by !== me ? `Let ${NAMES[a.by]} have it` : 'Pass', 'sm ghost')}</div>` : `<span class="small muted">Waiting for ${esc(NAMES[a.next])} to bid…</span>`}</div>` : ''}
       ${mine && !propAnim && !a ? (st.phase === 'buy' ? `<div class="row" style="justify-content:center">${st.cash[me] >= here.p ? gbtn('property', 'buy', `Buy ${here.n} ₦${here.p}`, 'primary sm') : `<span class="small muted">Not enough cash to buy</span>`}${gbtn('property', 'skip', 'Auction it', 'sm')}</div>`
@@ -473,14 +490,21 @@ G.property = {
       st.over = true; st.turn = null; st.auc = null; st.offer = null; st.winner = other(me); logLine(st, `${NAMES[me]} went bankrupt. ${NAMES[other(me)]} wins!`); saveGame('property', st); },
     build(st, t) { const me = S.role, i = +t.dataset.x, o = st.own[i], cost = Math.round(PSP[i].p / 2); if (st.turn !== me || !o || o.by !== me || (o.houses || 0) >= 4) return; if (st.cash[me] < cost) return toast('Not enough cash');
       st.cash[me] -= cost; o.houses = (o.houses || 0) + 1; logLine(st, `${NAMES[me]} built a house on ${PSP[i].n}`); saveGame('property', st); },
-    end(st) { const me = S.role; if (st.turn !== me || st.auc) return; if (st.cash[me] < 0) return toast('Clear what you owe first: mortgage, sell houses or trade'); st.turn = other(me); st.phase = 'roll'; st.again = false; st.dbl = 0; st.card = null; st.msg = `${NAMES[st.turn]}'s turn to roll`; saveGame('property', st); },
+    end(st) { const me = S.role; if (st.turn !== me || st.auc) return; if (st.cash[me] < 0) return toast('Clear what you owe first: mortgage, sell houses or trade'); st.turn = other(me); st.phase = 'roll'; st.again = false; st.dbl = 0; st.card = null; st.note = null; st.msg = `${NAMES[st.turn]}'s turn to roll`; saveGame('property', st); },
     finish(st, t) { if (t.dataset.sure !== '1') { t.dataset.sure = '1'; t.textContent = 'Tap again to end and count'; return; } const a = worth(st, 'anthonia'), i = worth(st, 'ifeayomi');
       st.over = true; st.turn = null; st.winner = a === i ? 'tie' : a > i ? 'anthonia' : 'ifeayomi'; logLine(st, `Final worth: Anthonia ₦${a}, Ifeayomi ₦${i}`); saveGame('property', st); },
   },
   bankBox(st, me) { const cur = loanOf(st, me), owed = cur ? cur.amt : 0, room = LOAN_MAX - owed, left = cur ? Math.max(0, cur.due - ((st.laps || {})[me] || 0)) : 0;
-    return `<div class="bank"><b>🏦 Bank loan</b>${cur ? `<span class="small">You owe the bank <b>₦${owed}</b>. Pay it back before you pass Start ${left} more time${left === 1 ? '' : 's'}, or the bank takes it then.</span>` : `<span class="small">Borrow up to ₦${LOAN_MAX}. Pay it back within ${LOAN_LAPS} trips round the board.</span>`}
+    return `<div class="bank"><b>🏦 Bank loan</b>${cur ? `<span class="small">You owe the bank <b>₦${owed}</b>. ${left > 0 ? `Pay it back before you pass Start ${left} more time${left === 1 ? '' : 's'}.` : `<b style="color:#c0392b">Overdue!</b> Pay before you pass Start ${Math.max(0, cur.due + LOAN_GRACE - ((st.laps || {})[me] || 0))} more time(s), or the bank takes places worth ₦${owed} and puts them up for sale.`}</span>` : `<span class="small">Borrow up to ₦${LOAN_MAX}. Pay it back within ${LOAN_LAPS} trips round the board. Miss that and you get ${LOAN_GRACE} more trips, then the bank takes places worth what you owe.</span>`}
       ${room > 0 ? `<div class="row" style="gap:6px">${[50, 100, 200].filter((x) => x <= room).map((x) => gbtn('property', 'borrow', `Borrow ₦${x}`, 'sm', `data-x="${x}"`)).join('')}${gbtn('property', 'borrow', `Borrow ₦${room}`, 'sm', `data-x="${room}"`)}</div>` : ''}
       ${cur ? `<div class="row" style="gap:6px">${[50, 100].filter((x) => x < owed).map((x) => gbtn('property', 'repay', `Pay back ₦${x}`, 'sm' + (st.cash[me] >= x ? '' : ' off'), `data-x="${x}"`)).join('')}${gbtn('property', 'repay', `Pay it all ₦${owed}`, 'sm primary' + (st.cash[me] >= owed ? '' : ' off'), 'data-x="all"')}</div>` : ''}</div>`; },
+  seize(st, r) { const ln = loanOf(st, r); if (!ln) return; let owed = ln.amt; const taken = [];
+    const val = (i, o) => (o.m ? mortVal(i) : PSP[i].p) + (o.houses || 0) * Math.round(PSP[i].p / 2);
+    const mine = Object.entries(st.own).filter(([, o]) => o.by === r).map(([i, o]) => [+i, val(+i, o)]).sort((a, b) => a[1] - b[1]);
+    while (owed > 0 && mine.length) { let k = mine.findIndex(([, v]) => v >= owed); if (k < 0) k = mine.length - 1; const [i, v] = mine.splice(k, 1)[0]; delete st.own[i]; taken.push(PSP[i].n); owed -= v; }
+    if (owed > 0) st.cash[r] -= owed; st.loan[r] = null;
+    const msg = taken.length ? `The bank took ${taken.join(', ')} from ${NAMES[r]} for the unpaid loan. ${taken.length > 1 ? 'They are' : 'It is'} for sale again!` : `The bank took ₦${ln.amt} from ${NAMES[r]} for the unpaid loan.`;
+    st.note = msg; logLine(st, msg); },
   endAuc(st) { st.auc = null; st.phase = st.again ? 'roll' : 'end'; },
   offerText(st, o, me) { const nm = (l) => l.map((i) => esc(PSP[i].n)).join(', '), from = o.from === me ? 'You' : esc(NAMES[o.from]), to = o.to === me ? 'you' : esc(NAMES[o.to]);
     const g = [nm(o.give), o.cg ? '₦' + o.cg : ''].filter(Boolean).join(' + ') || 'nothing', t = [nm(o.get), o.ca ? '₦' + o.ca : ''].filter(Boolean).join(' + ') || 'nothing';
@@ -500,7 +524,8 @@ G.property = {
     const info = { card: ['LOVE NOTE', '#ff4f7e', 'Pick a Love Note card: gifts, bills, surprise trips or a free card.'], jar: ['LUCKY JAR', '#ffb21f', 'Open the jar for a surprise: jackpots, swaps, repairs and more.'], date: ['DATE NIGHT', '#d6336c', 'You treat your partner: pay them ₦50.'], tax: ['PAY UP', '#6b7280', `Pay ₦${s.p}.`], jail: ['MISSED CALL', '#3a1f2b', 'Stuck here? Roll doubles, use a free card or pay ₦50. You leave free after 3 tries.'], gojail: ['GO TO MISSED CALL', '#3a1f2b', 'Go straight to Missed Call. Do not pass Start.'], start: ['START', '#22b3a3', 'Collect ₦200 every time you pass.'], free: ['FREE HUG', '#22b3a3', 'Nothing happens. Enjoy the hug.'] }[s.t];
     return `<div class="deed"><div class="deedtop" style="background:${info[1]}"><small>${info[0]}</small><h2>${s.n}</h2></div><div class="deedbody"><p style="margin:0">${info[2]}</p></div></div>${standing}`; },
   move(st, steps, dbl) { st.laps = st.laps || {}; st.free = st.free || {}; const me = S.role, from = st.pos[me], to = (from + steps) % PN; if (from + steps >= PN) { st.cash[me] += 200; st.laps[me] = (st.laps[me] || 0) + 1; logLine(st, `${NAMES[me]} passed Start: +₦200`);
-      const ln = loanOf(st, me); if (ln && st.laps[me] >= ln.due) { st.cash[me] -= ln.amt; st.loan[me] = null; logLine(st, `Loan due! The bank took ₦${ln.amt} from ${NAMES[me]}`); st.card = `Loan due! The bank took back ₦${ln.amt}.`; } }
+      const ln = loanOf(st, me); if (ln && st.laps[me] >= ln.due + LOAN_GRACE) G.property.seize(st, me);
+      else if (ln && st.laps[me] >= ln.due) { const left = ln.due + LOAN_GRACE - st.laps[me]; st.note = `Loan overdue! Pay the bank ₦${ln.amt} before you pass Start ${left} more time${left === 1 ? '' : 's'}, or it takes your places.`; logLine(st, `${NAMES[me]}'s loan is overdue`); } }
     st.pos[me] = to; st.again = dbl; G.property.land(st, steps); },
   land(st, dice) { const me = S.role, you = other(me), i = st.pos[me], s = PSP[i]; st.phase = st.again ? 'roll' : 'end';
     const toJail = () => { st.pos[me] = 8; st.jail[me] = 1; st.again = false; st.phase = 'end'; };
