@@ -293,7 +293,7 @@ function streakBadge(n){return n>=100?'🏆':n>=30?'🥇':n>=7?'🥈':'';}
 function maybeStreakParty(){const n=streak();const ms=[7,30,100].filter(m=>n>=m).pop();if(!ms)return;let k='';try{k=localStorage.getItem('pods_streakMs')||'';}catch(e){}if(String(ms)===k)return;try{localStorage.setItem('pods_streakMs',String(ms));}catch(e){}
   confetti();toast(`${streakBadge(n)} ${ms}-day streak together! Keep it going`);}
 /* Special days */
-const BUILTIN_DAYS=[['02-14',"Valentine's Day 💘",'both'],['03-08',"International Women's Day 💐",'anthonia'],['11-19',"International Men's Day 💙",'ifeayomi'],['12-25','Christmas 🎄','both']];
+const BUILTIN_DAYS=[['02-14',"Valentine's Day 💘",'both'],['03-08',"International Women's Day 💐",'anthonia'],['04-18','Couple Appreciation Day 💑','both'],['08-01','Girlfriend Day 👩‍❤️‍👨','anthonia'],['08-18','Couples Day 💞','both'],['10-03','Boyfriend Day 💙','ifeayomi'],['11-19',"International Men's Day 💙",'ifeayomi'],['12-25','Christmas 🎄','both']];
 function specialDays(){const me=S.role,d=S.days||{},y=+todayKey().slice(0,4),t=todayKey(),out=[];
   const add=(md,label,forWho)=>{if(!md)return;let dt=y+'-'+md;if(dt<t)dt=(y+1)+'-'+md;const n=daysBetween(t,dt);out.push({n,label,forWho,dt});};
   BUILTIN_DAYS.forEach(([md,l,w])=>add(md,l,w));
@@ -934,7 +934,7 @@ const A={
   sweetSheet:()=>{const pick=[...SWEET].sort(()=>Math.random()-.5).slice(0,3);openSheet(`${sheetHead('A sweet line for '+esc(NAMES[other(S.role)]))}<p class="small muted" style="margin:0">Tap one to use it, or write your own.</p>${pick.map(x=>`<button class="w" data-act="sweetPick" data-t="${esc(x)}"><span>${esc(x)}</span></button>`).join('')}<textarea id="sweetIn" placeholder="Or write your own…"></textarea><button class="btn primary" data-act="sweetSend">Send it 💌</button>`);},
   sweetPick:t=>{const el=document.getElementById('sweetIn');if(el)el.value=t.dataset.t;},
   sweetSend:async()=>{const v=val('sweetIn').trim();if(!v)return toast('Pick a line or write one');closeSheet();await sendMsg({text:v,sweet:true});floatHearts();toast('Sent 💌');},
-  daysSheet:()=>{const d=S.days||{},b=d.bday||{};openSheet(`${sheetHead('Our special days')}<p class="small muted" style="margin:0">Pods reminds you a week before, and on the day. Valentine's, Women's Day, Men's Day and Christmas are already in.</p>
+  daysSheet:()=>{const d=S.days||{},b=d.bday||{};openSheet(`${sheetHead('Our special days')}<p class="small muted" style="margin:0">Pods reminds you a week before, and on the day. Valentine's, Women's Day, Men's Day, Girlfriend Day, Boyfriend Day, Couples Day, Couple Appreciation Day and Christmas are already in.</p>
     <label class="f" for="dbMe">Your birthday<input type="date" id="dbMe" value="${esc(b[S.role]||'')}"></label><label class="f" for="dbYou">${esc(NAMES[other(S.role)])}'s birthday<input type="date" id="dbYou" value="${esc(b[other(S.role)]||'')}"></label>
     <label class="f" for="dAnn">Our anniversary<input type="date" id="dAnn" value="${esc(d.anniv||'')}"></label><button class="btn primary" data-act="daysSave">Save</button>`);},
   daysSave:async()=>{const bd={...((S.days||{}).bday||{})};const m=val('dbMe'),y=val('dbYou');if(m)bd[S.role]=m;if(y)bd[other(S.role)]=y;await mergeDoc('pods/days',{bday:bd,anniv:val('dAnn')||null});closeSheet();toast('Saved. Pods will remind you 💞');},
