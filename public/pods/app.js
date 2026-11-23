@@ -252,7 +252,8 @@ function subscribe(){
 
 /* ---------- render plumbing ---------- */
 let pending=false,lastTab=null;
-function refresh(){pushWidget();pushBadge();if(S.tab==='chat'&&document.getElementById('chatList')&&document.activeElement&&document.activeElement.id==='chatIn'){const tmp=document.createElement('div');tmp.innerHTML=chatView();const nl=tmp.querySelector('#chatList');document.getElementById('chatList').innerHTML=nl?nl.innerHTML:'';chatAfterRender();return;}if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
+let refreshT=0;function refresh(){if(refreshT)return;refreshT=setTimeout(()=>{refreshT=0;refreshNow();},80);}
+function refreshNow(){pushWidget();pushBadge();if(S.tab==='chat'&&document.getElementById('chatList')&&document.activeElement&&document.activeElement.id==='chatIn'){const tmp=document.createElement('div');tmp.innerHTML=chatView();const nl=tmp.querySelector('#chatList');document.getElementById('chatList').innerHTML=nl?nl.innerHTML:'';chatAfterRender();return;}if(S.tab==='play'&&S.game==='movie'&&document.querySelector('#ytWrap iframe')&&document.getElementById('sheet').classList.contains('hidden')){G.movie.update(S.games.movie,S.role);return;}const a=document.activeElement;if(a&&document.getElementById('view').contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){pending=true;return;}render(true);}
 document.addEventListener('focusout',()=>setTimeout(()=>{if(pending){const a=document.activeElement;if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))){pending=false;render(true);}}},0));
 function render(quiet){
   const v=document.getElementById('view');
@@ -274,7 +275,7 @@ function pickView(){return `<div class="card center" style="margin-top:20px"><h1
   <div class="pick"><button class="a" data-act="pick" data-r="anthonia">${av('anthonia',72)}Anthonia<span class="small muted">in Ancona</span></button><button class="i" data-act="pick" data-r="ifeayomi">${av('ifeayomi',72)}Ifeayomi<span class="small muted">in Ibadan</span></button></div></div>`;}
 setInterval(()=>{try{maybeCheckin();}catch(e){}},60000);
 function tickClocks(){const a=document.getElementById('clkA'),i=document.getElementById('clkI');const now=new Date();if(a)a.textContent=romeClock.format(now);if(i)i.textContent=lagosClock.format(now);}
-function makeBgHearts(){const el=document.getElementById('bgHearts');let h='';for(let i=0;i<12;i++){const s=14+Math.random()*26;h+=`<span style="left:${Math.random()*96}%;width:${s}px;height:${s}px;animation-duration:${18+Math.random()*22}s;animation-delay:-${Math.random()*30}s">${HEART}</span>`;}el.innerHTML=h;}
+function makeBgHearts(){const el=document.getElementById('bgHearts');let h='';const nH=/iPhone|iPad|iPod/.test(navigator.userAgent)?5:8;for(let i=0;i<nH;i++){const s=14+Math.random()*26;h+=`<span style="left:${Math.random()*96}%;width:${s}px;height:${s}px;animation-duration:${18+Math.random()*22}s;animation-delay:-${Math.random()*30}s">${HEART}</span>`;}el.innerHTML=h;}
 
 /* ---------- HOME ---------- */
 function streak(){const both=new Set(S.daily.filter(d=>d.anthonia&&d.ifeayomi).map(d=>d.id));let k=todayKey();if(!both.has(k))k=addDays(k,-1);let n=0;while(both.has(k)){n++;k=addDays(k,-1);}return n;}
