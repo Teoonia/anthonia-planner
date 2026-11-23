@@ -67,7 +67,6 @@ const QBANK = [
   ["Where I'd love us to live is…", ["Lagos", "Ibadan", "Abroad", "Anywhere together"]],
   ["The first thing I notice in people is…", ["Smile", "Eyes", "How they talk", "How they dress"]],
   ["My sleep style is…", ["Night owl", "Early bird", "Napper", "I can sleep anywhere"]],
-,
   ["My favourite snack is…", ["Chin chin", "Plantain chips", "Popcorn", "Chocolate"]],
   ["When I travel I always pack…", ["Too many clothes", "Snacks", "Chargers", "Only the basics"]],
   ["My favourite Nigerian dish to cook is…", ["Fried rice", "Efo riro", "Ofada stew", "Moi moi"]],
